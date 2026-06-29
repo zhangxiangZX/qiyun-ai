@@ -1,0 +1,12 @@
+{
+  "name": "@qiyun/ui",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "echo \"UI package skeleton will be added here\"",
+    "build": "echo \"Build later\"",
+    "lint": "echo \"Lint later\"",
+    "typecheck": "echo \"Typecheck later\"",
+    "test": "echo \"Test later\""
+  }
+}

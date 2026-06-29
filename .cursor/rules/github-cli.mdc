@@ -1,0 +1,64 @@
+---
+description: GitHub CLI workflow for branches, PRs, and issues in Qiyun AI / 企云 AI
+alwaysApply: true
+---
+
+# GitHub CLI Integration
+
+Use `gh` for all GitHub operations. Do not use the GitHub web UI when `gh` can do the job.
+
+## Prerequisites
+
+Before using `gh`, verify:
+
+```powershell
+gh --version
+gh auth status
+```
+
+If not installed on Windows:
+
+```powershell
+winget install --id GitHub.cli -e --accept-source-agreements --accept-package-agreements
+gh auth login
+```
+
+## Branch and PR Workflow
+
+1. One Task ID per branch: `feature/<TaskID>-<short-name>`.
+2. Push with upstream: `git push -u origin HEAD`.
+3. Create PRs with `gh pr create`; use a HEREDOC for the body.
+4. Return the PR URL after creation.
+
+Example:
+
+```powershell
+git checkout -b feature/P-04-knowledge-ui
+git push -u origin HEAD
+gh pr create --title "feat(console): knowledge base upload page (P-04)" --body @"
+## Summary
+- Add knowledge base upload UI with drag-and-drop and file list states
+
+## Test plan
+- [ ] Upload PDF/DOCX/TXT/MD under 20MB
+- [ ] Verify loading, empty, error, success states
+- [ ] Check mobile layout
+"@
+```
+
+## Common Commands
+
+| Task | Command |
+|---|---|
+| View PR | `gh pr view --comments` |
+| Check CI | `gh pr checks` |
+| List issues | `gh issue list` |
+| View issue | `gh issue view <number>` |
+| Create repo | `gh repo create <name> --private --source=. --remote=origin --push` |
+
+## Rules
+
+- Never force-push to `main` or `master`.
+- PR titles should include the Task ID when applicable.
+- Link dependent PRs in the body, for example `Depends on #123`.
+- Use `gh pr create` instead of opening PRs manually in the browser.

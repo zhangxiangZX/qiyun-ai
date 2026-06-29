@@ -1,0 +1,10 @@
+# Project Rules
+
+Qiyun AI / 企云 AI
+
+- Read `AGENTS.md` and the relevant docs before making changes.
+- Cursor owns UI work in `apps/console` and `packages/ui`.
+- Codex owns backend, database, worker, infra, and migration work.
+- Use one Git branch per Task ID and avoid long-lived edits on `main`.
+- Keep changes scoped to the assigned task and avoid unrelated refactors.
+- Follow the design system and API contracts in `docs/`.

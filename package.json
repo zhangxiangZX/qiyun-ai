@@ -1,0 +1,16 @@
+{
+  "name": "qiyun-ai",
+  "private": true,
+  "packageManager": "pnpm@10.12.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "echo \"Use module-level dev scripts\"",
+    "build": "echo \"Build scripts will be added per module\"",
+    "lint": "echo \"Lint scripts will be added per module\"",
+    "typecheck": "echo \"Typecheck scripts will be added per module\"",
+    "test": "echo \"Test scripts will be added per module\""
+  }
+}

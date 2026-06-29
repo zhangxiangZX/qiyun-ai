@@ -1,0 +1,12 @@
+{
+  "name": "@qiyun/config",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "echo \"Shared config package\"",
+    "build": "echo \"Build later\"",
+    "lint": "echo \"Lint later\"",
+    "typecheck": "echo \"Typecheck later\"",
+    "test": "echo \"Test later\""
+  }
+}
