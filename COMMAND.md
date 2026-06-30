@@ -8,11 +8,7 @@
 
 ### Doing
 
-- [ ] A-04 ESLint、Prettier、Husky、CI 基础检查
-  - Owner: Codex
-  - Branch: feature/A-04-code-quality
-  - Scope: package.json, .eslintrc.cjs, .prettierrc.json, .husky/**, .github/workflows/**
-  - Goal: 统一代码规范、提交钩子与 CI 基础校验
+- 暂无
 
 ### Ready for Cursor
 
@@ -32,6 +28,7 @@
 - [x] A-01 项目初始化
 - [x] A-02 工程骨架与模块目录
 - [x] A-03 环境变量校验与 `.env.example`
+- [x] A-04 ESLint、Prettier、Husky、CI 基础检查
 
 ## 角色分工
 
@@ -201,4 +198,4 @@ docs/04-data-model.md、docs/05-api-contract.md、docs/09-ai-development-rules.m
 ## 第一轮推荐分工
 
 - Cursor：P-01 控制台基础布局
-- Codex：A-04 代码规范与 CI 基础检查
+- Codex：等待下一项后端任务
