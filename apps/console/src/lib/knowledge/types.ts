@@ -10,6 +10,7 @@ export interface KnowledgeBase {
   name: string;
   status: "active" | "disabled";
   createdAt: string;
+  documentCount?: number;
 }
 
 export interface KnowledgeDocument {

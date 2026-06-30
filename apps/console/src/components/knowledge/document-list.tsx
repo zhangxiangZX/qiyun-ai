@@ -17,7 +17,11 @@ import {
 } from "@qiyun/ui";
 
 import { DocumentStatusBadgeWithRetry } from "@/components/knowledge/document-status-badge";
-import { formatDateTime, formatFileSize } from "@/lib/knowledge/format";
+import {
+  formatDateTime,
+  formatFileSize,
+  formatRelativeTime,
+} from "@/lib/knowledge/format";
 import type { KnowledgeDocument } from "@/lib/knowledge/types";
 
 export interface DocumentListProps {
@@ -62,7 +66,14 @@ export function DocumentList({
                   />
                 </TableCell>
                 <TableCell>{document.chunkCount ?? "-"}</TableCell>
-                <TableCell>{formatDateTime(document.updatedAt)}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <p>{formatDateTime(document.updatedAt)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatRelativeTime(document.updatedAt)}
+                    </p>
+                  </div>
+                </TableCell>
                 <TableCell className="text-right">
                   <DocumentActions documentId={document.id} onDelete={onDelete} />
                 </TableCell>
@@ -96,7 +107,7 @@ export function DocumentList({
                 onRetry={() => onRetry(document.id)}
               />
               <span>Chunks {document.chunkCount ?? "-"}</span>
-              <span>{formatDateTime(document.updatedAt)}</span>
+              <span>{formatRelativeTime(document.updatedAt)}</span>
             </div>
           </article>
         ))}

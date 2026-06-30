@@ -75,6 +75,10 @@ export function UploadZone({
             <p className="text-xs text-muted-foreground">
               Supports {ALLOWED_EXTENSIONS.join(", ")} files up to 20 MB each
             </p>
+            <p className="text-xs text-muted-foreground">
+              Demo tip: include <span className="font-medium text-foreground">fail</span> in a
+              file name to simulate a parsing error.
+            </p>
           </div>
           <Button
             type="button"
