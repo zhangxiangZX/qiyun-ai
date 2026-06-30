@@ -11,7 +11,14 @@
 
 ## Review
 
-- [ ] P-02 Dashboard 概览页
+- [ ] Console MVP UI（合并分支）
+  - Owner: Cursor
+  - Branch: `feature/console-mvp-ui`
+  - Scope: `apps/console/**`, `packages/ui/**`, `TASKS.md`, `COMMAND.md`
+  - Includes: P-01 布局 + P-02 看板 + P-03 机器人 + P-04 知识库 + P-05 会话 + P-06 线索 + P-07 站点
+  - Result: 控制台 MVP 页面 UI 已完成（mock 数据），待接后端 API
+
+- [ ] P-02 Dashboard 概览页（已并入 console-mvp-ui）
   - Owner: Cursor
   - Branch: feature/P-02-dashboard
   - Scope: apps/console/src/app/dashboard/**, apps/console/src/components/dashboard/**, apps/console/src/lib/dashboard/**

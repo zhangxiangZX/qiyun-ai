@@ -39,8 +39,11 @@ Codex 的项目级规则放在 `CODEX.md`。
 
 ### Review
 
-- P-02 Dashboard：`feature/P-02-dashboard`
-- P-04 知识库上传：`feature/P-04-knowledge-ui`
+- **Console MVP UI（推荐合并此 PR）**：`feature/console-mvp-ui`
+  - 包含 P-02 ~ P-07 全部控制台页面
+
+- P-02 Dashboard：`feature/P-02-dashboard`（历史分支，可关闭）
+- P-04 知识库上传：`feature/P-04-knowledge-ui`（历史分支，可关闭）
 - P-03 机器人列表：`feature/P-03-bots-ui`
 - P-05 会话页面：`feature/P-05-conversations-ui`
 - P-06 线索页面：`feature/P-06-leads-ui`
