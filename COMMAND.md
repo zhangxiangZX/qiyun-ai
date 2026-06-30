@@ -35,7 +35,21 @@ Codex 的项目级规则放在 `CODEX.md`。
 
 ## 当前看板
 
-以 `TASKS.md` 为唯一准入看板。  
+以 `TASKS.md` 为唯一准入看板。
+
+### Review
+
+- P-02 Dashboard：`feature/P-02-dashboard`
+- P-04 知识库上传：`feature/P-04-knowledge-ui`
+
+### Doing（Codex）
+
+- C-02 文件上传与文档状态机：`feature/C-02-upload`
+
+### Next（Cursor）
+
+- P-03 机器人列表与编辑
+
 任何新任务开始前，先补任务卡，再开分支。
 
 ## 给 Cursor 的固定提示词

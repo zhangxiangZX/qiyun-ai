@@ -2,20 +2,6 @@
 
 ## Doing
 
-- [ ] P-04 知识库上传页面
-  - Owner: Cursor
-  - Branch: feature/P-04-knowledge-ui
-  - Scope: apps/console/**, packages/ui/**
-  - Depends on: C-02 API contract
-  - Goal: 完成知识库创建、文件上传、状态列表、失败重试和移动端适配
-
-- [ ] P-02 Dashboard 概览页
-  - Owner: Cursor
-  - Branch: feature/P-04-knowledge-ui
-  - Scope: apps/console/src/app/dashboard/**, apps/console/src/components/dashboard/**, apps/console/src/lib/dashboard/**
-  - Depends on: A-05
-  - Goal: 完成 KPI、趋势图、高频问题、未解决问题和最近线索模块
-
 - [ ] C-02 文件上传与文档状态机
   - Owner: Codex
   - Branch: feature/C-02-upload
@@ -25,12 +11,24 @@
 
 ## Review
 
-- [ ] P-01 控制台基础布局
+- [ ] P-02 Dashboard 概览页
   - Owner: Cursor
-  - Reviewer: You
-  - Notes: 登录页、侧边栏、顶栏和基础布局已经可用，待统一验收
+  - Branch: feature/P-02-dashboard
+  - Scope: apps/console/src/app/dashboard/**, apps/console/src/components/dashboard/**, apps/console/src/lib/dashboard/**
+  - Result: KPI、7/30 天趋势图、高频问题、未解决问题、最近线索；顶栏工作区切换与通知；mock 数据，待接 E-06 API
+
+- [ ] P-04 知识库上传页面
+  - Owner: Cursor
+  - Branch: feature/P-04-knowledge-ui（已推送）；后续打磨在 feature/P-02-dashboard
+  - Scope: apps/console/**, packages/ui/**
+  - Result: 知识库创建、拖拽/点击上传、文档列表、状态流转模拟、失败重试、移动端适配；待接 C-02 API
 
 ## Done
+
+- [x] P-01 控制台基础布局
+  - Owner: Cursor
+  - Branch: feature/P-01-console-shell
+  - Result: 登录页、侧边栏、顶栏、移动端导航与基础布局骨架
 
 - [x] A-00 仓库与文档包
 - [x] A-01 项目初始化
@@ -40,13 +38,18 @@
 - [x] A-05 设计系统与基础 UI
   - Owner: Codex
   - Branch: feature/A-05-design-system
-  - Scope: packages/ui/**, apps/console/src/app/globals.css, apps/console/src/components/**
-  - Result: 完成 Design Token、Tailwind preset、核心 UI 组件、控制台登录页与基础布局
+  - Result: Design Token、Tailwind preset、核心 UI 组件
 
 - [x] G-01 GitHub Project / Issues 任务流模板
   - Owner: Codex
-  - Scope: .github/**, docs/github-project-workflow.md, scripts/create-gh-*.ps1
-  - Result: 完成 Project 初始化脚本、Issue 表单、PR 模板、标签定义、种子 Issue 脚本和 PM 巡检提示词
+  - Result: Project 脚本、Issue 表单、PR 模板、标签与种子 Issue
+
+## Next（Cursor）
+
+- [ ] P-03 机器人列表与编辑
+  - Branch: feature/P-03-bots-ui（待开）
+  - Depends on: P-01
+  - Goal: 列表、二级导航编辑页、右侧 Chat 预览
 
 ## 协作规则
 
