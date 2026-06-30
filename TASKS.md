@@ -4,7 +4,11 @@ Qiyun AI / 企云 AI
 
 ## Doing
 
-- 暂无
+- [ ] A-04 ESLint、Prettier、Husky、CI 基础检查
+  - Owner: Codex
+  - Branch: feature/A-04-code-quality
+  - Scope: package.json, .eslintrc.cjs, .prettierrc.json, .husky/**, .github/workflows/**
+  - Goal: 统一代码规范、提交钩子与 CI 基础校验
 
 ## Ready for Cursor
 

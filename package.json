@@ -7,10 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "echo \"Use module-level dev scripts\"",
-    "build": "echo \"Build scripts will be added per module\"",
-    "lint": "echo \"Lint scripts will be added per module\"",
-    "typecheck": "echo \"Typecheck scripts will be added per module\"",
-    "test": "echo \"Test scripts will be added per module\""
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   }
 }
