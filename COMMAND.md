@@ -8,11 +8,7 @@
 
 ### Doing
 
-- [ ] A-03 环境变量校验与 `.env.example`
-  - Owner: Codex
-  - Branch: feature/A-03-env-validation
-  - Scope: .env.example, packages/config/**, apps/api/**
-  - Goal: 先把后端和共享配置的环境变量入口补齐
+- 暂无
 
 ### Ready for Cursor
 
@@ -31,6 +27,7 @@
 - [x] A-00 仓库与文档包
 - [x] A-01 项目初始化
 - [x] A-02 工程骨架与模块目录
+- [x] A-03 环境变量校验与 `.env.example`
 
 ## 角色分工
 
