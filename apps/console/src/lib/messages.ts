@@ -59,6 +59,19 @@ const zhCN = {
       retry: "重新加载",
     },
   },
+  reports: {
+    eyebrow: "数据分析",
+    title: "报表",
+    description: "按周期查看趋势、机器人表现与问题分析，支持导出复盘。",
+    empty: {
+      title: "暂无报表数据",
+      description: "创建机器人并开始收集会话后，趋势与问题分析会显示在这里。",
+    },
+    error: {
+      load: "报表数据加载失败，请稍后重试。",
+      retry: "重新加载",
+    },
+  },
   topbar: {
     workspace: {
       label: "切换工作区",
@@ -248,6 +261,19 @@ const enUS = {
     },
     error: {
       load: "Failed to load dashboard data. Please try again.",
+      retry: "Reload",
+    },
+  },
+  reports: {
+    eyebrow: "Analytics",
+    title: "Reports",
+    description: "Period trends, bot performance, and question analysis with export for review.",
+    empty: {
+      title: "No report data yet",
+      description: "Create a bot and start collecting conversations to populate analytics.",
+    },
+    error: {
+      load: "Failed to load report data. Please try again.",
       retry: "Reload",
     },
   },

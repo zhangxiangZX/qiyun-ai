@@ -14,6 +14,11 @@ import {
 import { Alert, Button, EmptyState, PageHeader, Skeleton } from "@qiyun/ui";
 
 import { CreateKnowledgeBaseDialog } from "@/components/knowledge/create-knowledge-base-dialog";
+import { KnowledgeApiWorkspace } from "@/components/knowledge/knowledge-api-workspace";
+import {
+  ConsoleDataModeBanner,
+  ConsoleModeBadge,
+} from "@/components/console/console-data-mode-banner";
 import { DocumentList } from "@/components/knowledge/document-list";
 import { UploadZone } from "@/components/knowledge/upload-zone";
 import { getFileExtension } from "@/lib/knowledge/format";
@@ -26,12 +31,13 @@ import type {
   KnowledgeBase,
   KnowledgeDocument,
 } from "@/lib/knowledge/types";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 
 function estimateChunkCount(sizeBytes: number): number {
   return Math.max(1, Math.round(sizeBytes / 2048));
 }
 
-export function KnowledgeBaseWorkspace() {
+export function KnowledgePreviewWorkspace() {
   const timersRef = useRef<number[]>([]);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
@@ -96,10 +102,15 @@ export function KnowledgeBaseWorkspace() {
 
   function syncKnowledgeBaseCounts(nextDocumentsByBase: Record<string, KnowledgeDocument[]>) {
     setKnowledgeBases((current) =>
-      current.map((base) => ({
-        ...base,
-        documentCount: nextDocumentsByBase[base.id]?.length ?? 0,
-      })),
+      current.map((base) => {
+        const docs = nextDocumentsByBase[base.id] ?? [];
+        return {
+          ...base,
+          documentCount: docs.length,
+          readyDocumentCount: docs.filter((document) => document.status === "ready").length,
+          failedDocumentCount: docs.filter((document) => document.status === "failed").length,
+        };
+      }),
     );
   }
 
@@ -151,11 +162,16 @@ export function KnowledgeBaseWorkspace() {
     setPageError(null);
 
     queueTimer(() => {
+      const now = new Date().toISOString();
       const base: KnowledgeBase = {
         id: createKnowledgeBaseId(),
         name,
         status: "active",
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
+        documentCount: 0,
+        readyDocumentCount: 0,
+        failedDocumentCount: 0,
       };
 
       setKnowledgeBases((current) => [...current, base]);
@@ -340,14 +356,15 @@ export function KnowledgeBaseWorkspace() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Knowledge bases"
+        title="知识库"
         description={
           selectedBase
-            ? `${selectedBase.name} contains ${documents.length} document(s), with ${readyCount} ready for retrieval.`
-            : "Select a knowledge base to manage documents."
+            ? `${selectedBase.name} 共 ${documents.length} 个文档，${readyCount} 个可用于检索。`
+            : "选择知识库并管理文档。"
         }
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ConsoleModeBadge />
             <Button variant="ghost" onClick={handleResetAll}>
               <RotateCcw className="h-4 w-4" aria-hidden />
               Reset demo
@@ -359,6 +376,10 @@ export function KnowledgeBaseWorkspace() {
           </div>
         }
       />
+
+      <div className="px-4 sm:px-6 lg:px-page">
+        <ConsoleDataModeBanner feature="知识库" />
+      </div>
 
       <div className="grid gap-6 px-4 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-page">
         <aside className="space-y-3">
@@ -521,4 +542,29 @@ function CollectionInfoCard({
       <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
     </div>
   );
+}
+
+export function KnowledgeBaseWorkspace() {
+  const [mode, setMode] = useState<"loading" | "preview" | "upstream">("loading");
+
+  useEffect(() => {
+    void fetchConsoleMode()
+      .then((info) => setMode(isPreviewMode(info) ? "preview" : "upstream"))
+      .catch(() => setMode("preview"));
+  }, []);
+
+  if (mode === "loading") {
+    return (
+      <div className="space-y-6 px-4 sm:px-6 lg:px-page">
+        <Skeleton className="h-16 w-full max-w-xl" />
+        <Skeleton className="h-[420px] w-full rounded-card" />
+      </div>
+    );
+  }
+
+  if (mode === "upstream") {
+    return <KnowledgeApiWorkspace />;
+  }
+
+  return <KnowledgePreviewWorkspace />;
 }

@@ -10,11 +10,16 @@ import { EmbedCodeCard } from "@/components/sites/embed-code-card";
 import { SiteKeyCard } from "@/components/sites/site-key-card";
 import { TestMessageCard } from "@/components/sites/test-message-card";
 import {
-  fetchSites,
-  rotateSiteKey,
-  saveSiteDomains,
-  sendTestMessage,
-} from "@/lib/sites/mock-data";
+  ConsoleDataModeBanner,
+  ConsoleModeBadge,
+} from "@/components/console/console-data-mode-banner";
+import {
+  listSites,
+  rotateKey,
+  saveDomains,
+  SITES_API_AVAILABLE,
+  testMessage,
+} from "@/lib/sites/data";
 import type { SiteConfig } from "@/lib/sites/types";
 import { t } from "@/lib/i18n";
 import { defaultLocale } from "@/lib/messages";
@@ -45,7 +50,7 @@ export function SitesWorkspace() {
   const loadSites = useCallback(async () => {
     setLoadState("loading");
     try {
-      const data = await fetchSites();
+      const data = await listSites();
       setSites(data);
       setSelectedBotId((current) => current || data[0]?.botId || "");
       setLoadState("ready");
@@ -74,7 +79,7 @@ export function SitesWorkspace() {
     setSaving(true);
     setSaveMessage(null);
     await new Promise((resolve) => window.setTimeout(resolve, 400));
-    const updated = saveSiteDomains(selectedSite.id, draftDomains);
+    const updated = await saveDomains(selectedSite.id, draftDomains);
     if (updated) {
       setSites((current) => current.map((site) => (site.id === updated.id ? updated : site)));
       setSaveMessage(t(defaultLocale, "sites.domains.saved"));
@@ -87,7 +92,7 @@ export function SitesWorkspace() {
     setRotating(true);
     setRotateMessage(null);
     await new Promise((resolve) => window.setTimeout(resolve, 500));
-    const updated = rotateSiteKey(selectedSite.id);
+    const updated = await rotateKey(selectedSite.id);
     if (updated) {
       setSites((current) => current.map((site) => (site.id === updated.id ? updated : site)));
       setRotateMessage(t(defaultLocale, "sites.key.rotated"));
@@ -151,9 +156,17 @@ export function SitesWorkspace() {
       <PageHeader
         title={t(defaultLocale, "sites.title")}
         description={t(defaultLocale, "sites.description")}
+        actions={<ConsoleModeBadge />}
       />
 
       <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+        <ConsoleDataModeBanner feature="站点" />
+        {!SITES_API_AVAILABLE ? (
+          <Alert variant="warning" title="站点配置为 Preview / 演示模式">
+            白名单保存、密钥轮换与测试消息仅在浏览器内存中模拟，不会写入 apps/api。真实生效需等待站点
+            HTTP 接口接入。
+          </Alert>
+        ) : null}
         <div className="max-w-sm space-y-2 rounded-card border border-border bg-card p-4 shadow-card">
           <Label htmlFor="site-bot-select">{t(defaultLocale, "sites.selectBot")}</Label>
           <select
@@ -195,7 +208,7 @@ export function SitesWorkspace() {
           allowedDomains={draftDomains.length ? draftDomains : selectedSite.allowedDomains}
           savedDomains={selectedSite.allowedDomains}
           dirty={dirty}
-          onTest={(origin, message) => sendTestMessage(selectedSite, { origin, message })}
+          onTest={(origin, message) => testMessage(selectedSite, { origin, message })}
         />
       </div>
     </div>

@@ -10,7 +10,13 @@ import { DashboardKpiGrid } from "@/components/dashboard/dashboard-kpi-grid";
 import { DashboardRecentLeads } from "@/components/dashboard/dashboard-recent-leads";
 import { DashboardTrendChart } from "@/components/dashboard/dashboard-trend-chart";
 import { DashboardEmptyAction } from "@/components/dashboard/empty-action";
-import { dashboardEmpty, fetchDashboardSnapshot } from "@/lib/dashboard/mock-data";
+import {
+  ConsoleDataModeBanner,
+  ConsoleModeBadge,
+} from "@/components/console/console-data-mode-banner";
+import { DASHBOARD_API_AVAILABLE, loadDashboardSnapshot } from "@/lib/dashboard/data";
+import { dashboardEmpty } from "@/lib/dashboard/mock-data";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import type { DashboardSnapshot } from "@/lib/dashboard/types";
 import { t } from "@/lib/i18n";
 import { defaultLocale } from "@/lib/messages";
@@ -21,13 +27,20 @@ export function DashboardWorkspace() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [snapshot, setSnapshot] = useState<DashboardSnapshot>(dashboardEmpty);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState(true);
+
+  useEffect(() => {
+    void fetchConsoleMode()
+      .then((info) => setPreviewMode(isPreviewMode(info)))
+      .catch(() => setPreviewMode(true));
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     setLoadState("loading");
     setErrorMessage(null);
 
     try {
-      const data = await fetchDashboardSnapshot();
+      const data = await loadDashboardSnapshot();
       setSnapshot(data);
       setLoadState("ready");
     } catch {
@@ -40,6 +53,16 @@ export function DashboardWorkspace() {
     void loadDashboard();
   }, [loadDashboard]);
 
+  const demoDataAlert = !DASHBOARD_API_AVAILABLE ? (
+    <Alert variant="warning" title="概览数据为演示">
+      {previewMode
+        ? "未配置 API_BASE_URL，以下 KPI、趋势与最近线索为前端演示数据。"
+        : "已连接 apps/api，但概览分析接口（E-06）尚未接入，以下仍为演示数据。"}
+    </Alert>
+  ) : null;
+
+  const modeHeaderActions = <ConsoleModeBadge />;
+
   if (loadState === "loading") {
     return (
       <div className="space-y-6">
@@ -47,6 +70,7 @@ export function DashboardWorkspace() {
           eyebrow={t(defaultLocale, "dashboard.eyebrow")}
           title={t(defaultLocale, "dashboard.title")}
           description={t(defaultLocale, "dashboard.description")}
+          actions={modeHeaderActions}
         />
         <section className="px-4 sm:px-6 lg:px-page">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -74,8 +98,10 @@ export function DashboardWorkspace() {
           eyebrow={t(defaultLocale, "dashboard.eyebrow")}
           title={t(defaultLocale, "dashboard.title")}
           description={t(defaultLocale, "dashboard.description")}
+          actions={modeHeaderActions}
         />
         <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+          <ConsoleDataModeBanner feature="概览" />
           <Alert
             variant="error"
             title={errorMessage ?? t(defaultLocale, "dashboard.error.load")}
@@ -95,8 +121,11 @@ export function DashboardWorkspace() {
           eyebrow={t(defaultLocale, "dashboard.eyebrow")}
           title={t(defaultLocale, "dashboard.title")}
           description={t(defaultLocale, "dashboard.empty.pageDescription")}
+          actions={modeHeaderActions}
         />
-        <div className="px-4 sm:px-6 lg:px-page">
+        <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+          <ConsoleDataModeBanner feature="概览" />
+          {demoDataAlert}
           <EmptyState
             icon={<Bot className="h-8 w-8" aria-hidden />}
             title={t(defaultLocale, "dashboard.empty.title")}
@@ -114,7 +143,13 @@ export function DashboardWorkspace() {
         eyebrow={t(defaultLocale, "dashboard.eyebrow")}
         title={t(defaultLocale, "dashboard.title")}
         description={t(defaultLocale, "dashboard.description")}
+        actions={modeHeaderActions}
       />
+
+      <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+        <ConsoleDataModeBanner feature="概览" />
+        {demoDataAlert}
+      </div>
 
       <section className="px-4 sm:px-6 lg:px-page">
         <DashboardKpiGrid items={snapshot.kpis} />

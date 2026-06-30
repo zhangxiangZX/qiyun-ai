@@ -19,14 +19,20 @@ export function createKnowledgeDemoState(): KnowledgeDemoState {
       name: "Product Support Docs",
       status: "active",
       createdAt: minutesAgo(60 * 24 * 5),
+      updatedAt: minutesAgo(3),
       documentCount: 4,
+      readyDocumentCount: 2,
+      failedDocumentCount: 1,
     },
     {
       id: "kb-sales",
       name: "Sales Enablement",
       status: "active",
       createdAt: minutesAgo(60 * 24 * 2),
+      updatedAt: minutesAgo(2),
       documentCount: 3,
+      readyDocumentCount: 2,
+      failedDocumentCount: 0,
     },
   ];
 

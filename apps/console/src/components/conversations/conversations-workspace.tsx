@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Info, List, MessageSquareText } from "lucide-react";
 
 import {
@@ -13,17 +13,20 @@ import {
   Skeleton,
 } from "@qiyun/ui";
 
+import {
+  ConsoleDataModeBanner,
+  ConsoleModeBadge,
+} from "@/components/console/console-data-mode-banner";
 import { ConversationDetailPanel } from "@/components/conversations/conversation-detail-panel";
 import { ConversationFiltersBar } from "@/components/conversations/conversation-filters";
 import { ConversationList } from "@/components/conversations/conversation-list";
 import { ConversationMessageThread } from "@/components/conversations/conversation-message-thread";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import {
-  fetchConversationDetail,
-  fetchConversations,
-  getBotFilterOptions,
-  updateConversationStatus,
-  updateConversationTags,
-} from "@/lib/conversations/mock-data";
+  getConversationDetail,
+  listBotFilterOptions,
+  listConversations,
+} from "@/lib/conversations/data";
 import type {
   ConversationDetail,
   ConversationFilters,
@@ -49,17 +52,28 @@ export function ConversationsWorkspace() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [listSheetOpen, setListSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "thread">("list");
+  const [previewMode, setPreviewMode] = useState(true);
+  const [botOptions, setBotOptions] = useState<Array<{ id: string; name: string }>>([]);
 
-  const botOptions = useMemo(() => getBotFilterOptions(), []);
+  useEffect(() => {
+    void fetchConsoleMode()
+      .then((info) => setPreviewMode(isPreviewMode(info)))
+      .catch(() => setPreviewMode(true));
+  }, []);
+
+  useEffect(() => {
+    void listBotFilterOptions()
+      .then(setBotOptions)
+      .catch(() => setBotOptions([]));
+  }, [previewMode]);
 
   const loadList = useCallback(async (nextFilters: ConversationFilters) => {
     setLoadState("loading");
     try {
-      const data = await fetchConversations(nextFilters);
+      const data = await listConversations(nextFilters);
       setItems(data);
       setLoadState("ready");
       setSelectedId((current) => {
@@ -76,7 +90,7 @@ export function ConversationsWorkspace() {
   const loadDetail = useCallback(async (id: string) => {
     setDetailLoading(true);
     try {
-      const data = await fetchConversationDetail(id);
+      const data = await getConversationDetail(id);
       setDetail(data);
     } catch {
       setDetail(null);
@@ -107,30 +121,10 @@ export function ConversationsWorkspace() {
     setListSheetOpen(false);
   }
 
-  async function handleStatusChange(status: ConversationStatus) {
-    if (!selectedId) return;
-    setSaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 300));
-    const updated = updateConversationStatus(selectedId, status);
-    if (updated) {
-      setDetail(updated);
-      setItems((current) =>
-        current.map((item) =>
-          item.id === selectedId ? { ...item, status: updated.status, updatedAt: updated.updatedAt } : item,
-        ),
-      );
-    }
-    setSaving(false);
-  }
-
-  async function handleTagsChange(tags: string[]) {
-    if (!selectedId) return;
-    setSaving(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 200));
-    const updated = updateConversationTags(selectedId, tags);
-    if (updated) setDetail(updated);
-    setSaving(false);
-  }
+  const editingDisabled = true;
+  const editingDisabledReason = previewMode
+    ? "演示模式下会话状态与标签不会持久化，仅供 UI 预览。"
+    : "当前上游 API 尚未提供会话元数据更新接口，暂不可保存。";
 
   const listPanel = (
     <>
@@ -163,9 +157,11 @@ export function ConversationsWorkspace() {
     <ConversationDetailPanel
       conversation={detail}
       loading={detailLoading}
-      saving={saving}
-      onStatusChange={(status) => void handleStatusChange(status)}
-      onTagsChange={(tags) => void handleTagsChange(tags)}
+      saving={false}
+      editingDisabled={editingDisabled}
+      editingDisabledReason={editingDisabledReason}
+      onStatusChange={(_status: ConversationStatus) => undefined}
+      onTagsChange={(_tags: string[]) => undefined}
     />
   );
 
@@ -175,8 +171,10 @@ export function ConversationsWorkspace() {
         <PageHeader
           title={t(defaultLocale, "conversations.title")}
           description={t(defaultLocale, "conversations.description")}
+          actions={<ConsoleModeBadge />}
         />
         <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+          <ConsoleDataModeBanner feature="会话" />
           <Alert variant="error" title={t(defaultLocale, "conversations.error.load")} />
           <Button variant="outline" size="sm" onClick={() => void loadList(filters)}>
             {t(defaultLocale, "dashboard.error.retry")}
@@ -192,8 +190,10 @@ export function ConversationsWorkspace() {
         <PageHeader
           title={t(defaultLocale, "conversations.title")}
           description={t(defaultLocale, "conversations.description")}
+          actions={<ConsoleModeBadge />}
         />
-        <div className="px-4 sm:px-6 lg:px-page">
+        <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+          <ConsoleDataModeBanner feature="会话" />
           <EmptyState
             icon={<MessageSquareText className="h-8 w-8" aria-hidden />}
             title={t(defaultLocale, "conversations.empty.title")}
@@ -209,7 +209,12 @@ export function ConversationsWorkspace() {
       <PageHeader
         title={t(defaultLocale, "conversations.title")}
         description={t(defaultLocale, "conversations.description")}
+        actions={<ConsoleModeBadge />}
       />
+
+      <div className="px-4 sm:px-6 lg:px-page">
+        <ConsoleDataModeBanner feature="会话" />
+      </div>
 
       <div className="-mx-4 flex min-h-[calc(100dvh-11rem)] flex-col overflow-hidden rounded-card border border-border bg-card shadow-card sm:-mx-6 lg:mx-0">
         <div className="flex items-center gap-2 border-b border-border px-3 py-2 lg:hidden">

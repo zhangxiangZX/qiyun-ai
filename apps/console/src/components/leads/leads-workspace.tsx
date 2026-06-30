@@ -8,15 +8,20 @@ import { Alert, Button, EmptyState, PageHeader, Skeleton } from "@qiyun/ui";
 import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet";
 import { LeadFiltersBar } from "@/components/leads/lead-filters";
 import { LeadTable } from "@/components/leads/lead-table";
+import {
+  ConsoleDataModeBanner,
+  ConsoleModeBadge,
+} from "@/components/console/console-data-mode-banner";
 import { exportLeadsToCsv } from "@/lib/leads/export";
 import {
-  fetchLeadDetail,
-  fetchLeads,
+  getLeadDetail,
   getAssigneeOptions,
   getBotFilterOptions,
   getLeadsForExport,
-  updateLead,
-} from "@/lib/leads/mock-data";
+  LEADS_API_AVAILABLE,
+  listLeads,
+  saveLeadUpdate,
+} from "@/lib/leads/data";
 import type { LeadDetail, LeadFilters, LeadListItem, LeadStatus } from "@/lib/leads/types";
 import { t } from "@/lib/i18n";
 import { defaultLocale } from "@/lib/messages";
@@ -47,7 +52,7 @@ export function LeadsWorkspace() {
   const loadList = useCallback(async (nextFilters: LeadFilters) => {
     setLoadState("loading");
     try {
-      const data = await fetchLeads(nextFilters);
+      const data = await listLeads(nextFilters);
       setItems(data);
       setLoadState("ready");
     } catch {
@@ -57,7 +62,7 @@ export function LeadsWorkspace() {
   }, []);
 
   const loadDetail = useCallback(async (id: string) => {
-    const data = await fetchLeadDetail(id);
+    const data = await getLeadDetail(id);
     setDetail(data);
   }, []);
 
@@ -90,7 +95,7 @@ export function LeadsWorkspace() {
     setSaving(true);
     setSaveMessage(null);
     await new Promise((resolve) => window.setTimeout(resolve, 400));
-    const updated = updateLead(selectedId, patch);
+    const updated = await saveLeadUpdate(selectedId, patch);
     if (updated) {
       setDetail(updated);
       setItems((current) =>
@@ -135,14 +140,26 @@ export function LeadsWorkspace() {
         title={t(defaultLocale, "leads.title")}
         description={t(defaultLocale, "leads.description")}
         actions={
-          <Button variant="outline" onClick={handleExport} disabled={loadState === "loading"}>
+          <div className="flex items-center gap-2">
+            <ConsoleModeBadge />
+            <Button variant="outline" onClick={handleExport} disabled={loadState === "loading"}>
             <Download className="h-4 w-4" aria-hidden />
             {t(defaultLocale, "leads.export.action")}
           </Button>
+          </div>
         }
       />
 
       <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+        <ConsoleDataModeBanner feature="线索" />
+        {!LEADS_API_AVAILABLE ? (
+          <Alert
+            variant="warning"
+            title="线索列表接口尚未接入"
+          >
+            当前展示的是演示数据，用于验证筛选、详情与 CSV 导出交互。接入 GET /leads 后将自动切换为真实 API。
+          </Alert>
+        ) : null}
         <LeadFiltersBar
           filters={filters}
           botOptions={botOptions}

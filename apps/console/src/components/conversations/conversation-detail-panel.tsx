@@ -15,6 +15,8 @@ export interface ConversationDetailPanelProps {
   conversation: ConversationDetail | null;
   loading?: boolean;
   saving?: boolean;
+  editingDisabled?: boolean;
+  editingDisabledReason?: string;
   onStatusChange: (status: ConversationStatus) => void;
   onTagsChange: (tags: string[]) => void;
 }
@@ -23,6 +25,8 @@ export function ConversationDetailPanel({
   conversation,
   loading = false,
   saving = false,
+  editingDisabled = false,
+  editingDisabledReason,
   onStatusChange,
   onTagsChange,
 }: ConversationDetailPanelProps) {
@@ -86,6 +90,12 @@ export function ConversationDetailPanel({
 
       <section className="mt-4 space-y-3 rounded-card border border-border bg-card p-4 shadow-sm">
         <h3 className="text-sm font-medium text-card-foreground">处理状态</h3>
+        {editingDisabled ? (
+          <p className="text-sm text-muted-foreground">
+            {editingDisabledReason ??
+              "当前模式下无法保存状态与标签，仅供查看。"}
+          </p>
+        ) : null}
         <div className="flex items-center gap-2">
           <ConversationStatusBadge status={conversation.status} />
         </div>
@@ -93,9 +103,9 @@ export function ConversationDetailPanel({
           <Label htmlFor="conversation-status">更新状态</Label>
           <select
             id="conversation-status"
-            className="flex h-10 w-full rounded-control border border-input bg-background px-3 text-sm"
+            className="flex h-10 w-full rounded-control border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
             value={conversation.status}
-            disabled={saving}
+            disabled={saving || editingDisabled}
             onChange={(event) => onStatusChange(event.target.value as ConversationStatus)}
           >
             <option value="open">进行中</option>
@@ -129,9 +139,9 @@ export function ConversationDetailPanel({
             value={tagInput}
             onChange={(event) => setTagInput(event.target.value)}
             placeholder="添加标签"
-            disabled={saving}
+            disabled={saving || editingDisabled}
           />
-          <Button type="button" variant="outline" onClick={handleAddTag} disabled={saving}>
+          <Button type="button" variant="outline" onClick={handleAddTag} disabled={saving || editingDisabled}>
             添加
           </Button>
         </div>
