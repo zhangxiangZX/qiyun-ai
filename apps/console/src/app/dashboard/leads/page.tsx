@@ -1,5 +1,5 @@
-import PlaceholderPage from "@/components/layout/placeholder-page";
+import { LeadsWorkspace } from "@/components/leads/leads-workspace";
 
 export default function LeadsPage() {
-  return <PlaceholderPage segment="leads" />;
+  return <LeadsWorkspace />;
 }

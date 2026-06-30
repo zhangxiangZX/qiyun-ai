@@ -1,5 +1,5 @@
-import PlaceholderPage from "@/components/layout/placeholder-page";
+import { BotsWorkspace } from "@/components/bots/bots-workspace";
 
 export default function BotsPage() {
-  return <PlaceholderPage segment="bots" />;
+  return <BotsWorkspace />;
 }

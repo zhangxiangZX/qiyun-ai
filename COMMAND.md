@@ -41,14 +41,14 @@ Codex 的项目级规则放在 `CODEX.md`。
 
 - P-02 Dashboard：`feature/P-02-dashboard`
 - P-04 知识库上传：`feature/P-04-knowledge-ui`
+- P-03 机器人列表：`feature/P-03-bots-ui`
+- P-05 会话页面：`feature/P-05-conversations-ui`
+- P-06 线索页面：`feature/P-06-leads-ui`
+- P-07 站点与嵌入：`feature/P-07-sites-ui`
 
 ### Doing（Codex）
 
 - C-02 文件上传与文档状态机：`feature/C-02-upload`
-
-### Next（Cursor）
-
-- P-03 机器人列表与编辑
 
 任何新任务开始前，先补任务卡，再开分支。
 

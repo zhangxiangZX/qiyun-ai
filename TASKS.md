@@ -23,6 +23,30 @@
   - Scope: apps/console/**, packages/ui/**
   - Result: 知识库创建、拖拽/点击上传、文档列表、状态流转模拟、失败重试、移动端适配；待接 C-02 API
 
+- [ ] P-03 机器人列表与编辑
+  - Owner: Cursor
+  - Branch: feature/P-03-bots-ui
+  - Scope: apps/console/src/app/dashboard/bots/**, apps/console/src/components/bots/**, apps/console/src/lib/bots/**
+  - Result: 列表、二级导航编辑、五类配置分区、右侧 Chat 预览；mock 数据，待接 API
+
+- [ ] P-05 会话页面
+  - Owner: Cursor
+  - Branch: feature/P-05-conversations-ui
+  - Scope: apps/console/src/app/dashboard/conversations/**, apps/console/src/components/conversations/**, apps/console/src/lib/conversations/**
+  - Result: 三栏布局、筛选、消息流与引用、详情侧栏、移动端抽屉；mock 数据，待接 D-05 API
+
+- [ ] P-06 线索页面
+  - Owner: Cursor
+  - Branch: feature/P-06-leads-ui
+  - Scope: apps/console/src/app/dashboard/leads/**, apps/console/src/components/leads/**, apps/console/src/lib/leads/**
+  - Result: 线索表格、筛选搜索、状态/负责人/备注更新、CSV 导出、移动端卡片；mock 数据，待接 API
+
+- [ ] P-07 站点与嵌入
+  - Owner: Cursor
+  - Branch: feature/P-07-sites-ui
+  - Scope: apps/console/src/app/dashboard/sites/**, apps/console/src/components/sites/**, apps/console/src/lib/sites/**
+  - Result: 域名白名单、嵌入代码复制、站点密钥轮换、测试消息校验；mock 数据，待接 D-02 API
+
 ## Done
 
 - [x] P-01 控制台基础布局
@@ -46,10 +70,7 @@
 
 ## Next（Cursor）
 
-- [ ] P-03 机器人列表与编辑
-  - Branch: feature/P-03-bots-ui（待开）
-  - Depends on: P-01
-  - Goal: 列表、二级导航编辑页、右侧 Chat 预览
+- Cursor 控制台 MVP 页面（P-01 ~ P-07）UI 已全部完成，待分别开 PR 合并。
 
 ## 协作规则
 

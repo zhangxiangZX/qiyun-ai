@@ -1,5 +1,5 @@
-import PlaceholderPage from "@/components/layout/placeholder-page";
+import { ConversationsWorkspace } from "@/components/conversations/conversations-workspace";
 
 export default function ConversationsPage() {
-  return <PlaceholderPage segment="conversations" />;
+  return <ConversationsWorkspace />;
 }

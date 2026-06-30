@@ -1,5 +1,5 @@
-import PlaceholderPage from "@/components/layout/placeholder-page";
+import { SitesWorkspace } from "@/components/sites/sites-workspace";
 
 export default function SitesPage() {
-  return <PlaceholderPage segment="sites" />;
+  return <SitesWorkspace />;
 }
