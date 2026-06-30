@@ -1,3 +1,6 @@
+import { PublicChatApi } from "./chat/chat.api";
+import { InMemoryChatRepository } from "./chat/chat.repository";
+import { ChatService } from "./chat/chat.service";
 import { getApiPort, loadApiEnv } from "./config/env";
 import { DocumentApi } from "./documents/document.api";
 import { InMemoryDocumentQueue } from "./documents/document.queue";
@@ -32,6 +35,24 @@ export function createRagApi(): RagApi {
   );
 
   return new RagApi(service);
+}
+
+export function createPublicChatApi(): PublicChatApi {
+  const documentRepository = new InMemoryDocumentRepository();
+  const queue = new InMemoryDocumentQueue();
+  const documentService = new DocumentService(documentRepository, queue);
+  const ragRepository: RagRepository = new InMemoryRagRepository();
+  const vectorStore = new InMemoryQdrantStore(() => ragRepository.listChunks());
+  const ragService = new RagService(
+    ragRepository,
+    vectorStore,
+    documentService,
+    new SimpleEmbeddingProvider(),
+  );
+  const chatRepository = new InMemoryChatRepository();
+  const chatService = new ChatService(chatRepository, ragRepository, ragService);
+
+  return new PublicChatApi(chatService);
 }
 
 export function bootstrapApi(env: Record<string, string | undefined> = process.env): {
