@@ -4,7 +4,11 @@ Qiyun AI / 企云 AI
 
 ## Doing
 
-- 暂无
+- [ ] A-03 环境变量校验与 `.env.example`
+  - Owner: Codex
+  - Branch: feature/A-03-env-validation
+  - Scope: .env.example, packages/config/**, apps/api/**
+  - Goal: 先把后端和共享配置的环境变量入口补齐
 
 ## Ready for Cursor
 
