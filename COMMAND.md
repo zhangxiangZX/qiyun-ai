@@ -95,6 +95,7 @@ docs/04-data-model.md、docs/05-api-contract.md、docs/09-ai-development-rules.m
 
 - 每个任务只用一个独立分支。
 - 不要长期在 `main` 上直接改。
+- 分支与上传规范见 `docs/branch-workflow.md`。
 - 先更新 `TASKS.md`，再动代码。
 - 完成后先跑 lint 和 typecheck，再做合并。
 - 发现阻塞时，先记录在看板里，不要自己吞掉。
