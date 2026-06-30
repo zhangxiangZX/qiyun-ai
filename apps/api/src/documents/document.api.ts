@@ -19,6 +19,26 @@ export class DocumentApi {
     });
   }
 
+  listKnowledgeBases(context: RequestContext) {
+    return this.service.listKnowledgeBases(context.workspaceId);
+  }
+
+  getKnowledgeBase(context: RequestContext, knowledgeBaseId: string) {
+    return this.service.getKnowledgeBase(context.workspaceId, knowledgeBaseId);
+  }
+
+  updateKnowledgeBase(
+    context: RequestContext,
+    knowledgeBaseId: string,
+    body: { name?: string; status?: "active" | "disabled" },
+  ) {
+    return this.service.updateKnowledgeBase(context.workspaceId, knowledgeBaseId, body);
+  }
+
+  deleteKnowledgeBase(context: RequestContext, knowledgeBaseId: string) {
+    return this.service.deleteKnowledgeBase(context.workspaceId, knowledgeBaseId);
+  }
+
   uploadDocuments(
     context: RequestContext,
     knowledgeBaseId: string,

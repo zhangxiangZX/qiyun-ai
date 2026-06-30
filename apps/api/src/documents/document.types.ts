@@ -6,6 +6,20 @@ export interface KnowledgeBaseRecord {
   name: string;
   status: "active" | "disabled";
   createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface KnowledgeBaseSummary {
+  id: string;
+  workspaceId: string;
+  name: string;
+  status: "active" | "disabled";
+  documentCount: number;
+  readyDocumentCount: number;
+  failedDocumentCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DocumentRecord {
@@ -21,6 +35,7 @@ export interface DocumentRecord {
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface UploadDocumentInput {

@@ -5,6 +5,7 @@ import type {
   DocumentRecord,
   DocumentStatus,
   KnowledgeBaseRecord,
+  KnowledgeBaseSummary,
   QueueLike,
   UploadDocumentInput,
 } from "./document.types";
@@ -24,15 +25,93 @@ export class DocumentService {
   createKnowledgeBase(input: {
     workspaceId: string;
     name: string;
-  }): KnowledgeBaseRecord {
+  }): KnowledgeBaseSummary {
+    const normalizedName = input.name.trim();
+    if (!normalizedName) {
+      throw new DocumentValidationError("Knowledge base name is required.");
+    }
+    if (this.repository.findKnowledgeBaseByName(input.workspaceId, normalizedName)) {
+      throw new DocumentValidationError("Knowledge base name already exists in workspace.");
+    }
+
     const now = new Date().toISOString();
-    return this.repository.createKnowledgeBase({
+    const record = this.repository.createKnowledgeBase({
       id: `kb_${randomUUID()}`,
       workspaceId: input.workspaceId,
-      name: input.name,
+      name: normalizedName,
       status: "active",
       createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
     });
+
+    return this.toKnowledgeBaseSummary(record);
+  }
+
+  listKnowledgeBases(workspaceId: string): KnowledgeBaseSummary[] {
+    return this.repository
+      .listKnowledgeBases(workspaceId)
+      .map((item) => this.toKnowledgeBaseSummary(item))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  getKnowledgeBase(workspaceId: string, knowledgeBaseId: string): KnowledgeBaseSummary {
+    return this.toKnowledgeBaseSummary(this.requireKnowledgeBase(workspaceId, knowledgeBaseId));
+  }
+
+  updateKnowledgeBase(
+    workspaceId: string,
+    knowledgeBaseId: string,
+    patch: {
+      name?: string;
+      status?: "active" | "disabled";
+    },
+  ): KnowledgeBaseSummary {
+    const current = this.requireKnowledgeBase(workspaceId, knowledgeBaseId);
+    const nextName = patch.name?.trim();
+
+    if (patch.name !== undefined && !nextName) {
+      throw new DocumentValidationError("Knowledge base name is required.");
+    }
+
+    if (nextName && nextName.toLowerCase() !== current.name.toLowerCase()) {
+      const existing = this.repository.findKnowledgeBaseByName(workspaceId, nextName);
+      if (existing && existing.id !== knowledgeBaseId) {
+        throw new DocumentValidationError("Knowledge base name already exists in workspace.");
+      }
+    }
+
+    const updated = this.repository.updateKnowledgeBase(knowledgeBaseId, {
+      name: nextName ?? current.name,
+      status: patch.status ?? current.status,
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (!updated) {
+      throw new DocumentAccessError("Knowledge base not found in workspace.");
+    }
+
+    return this.toKnowledgeBaseSummary(updated);
+  }
+
+  deleteKnowledgeBase(
+    workspaceId: string,
+    knowledgeBaseId: string,
+  ): { id: string; deletedAt: string; documentCount: number } {
+    this.requireKnowledgeBase(workspaceId, knowledgeBaseId);
+    const deletedAt = new Date().toISOString();
+    const updated = this.repository.updateKnowledgeBase(knowledgeBaseId, {
+      deletedAt,
+      updatedAt: deletedAt,
+    });
+
+    if (!updated) {
+      throw new DocumentAccessError("Knowledge base not found in workspace.");
+    }
+
+    const documentCount = this.repository.softDeleteDocumentsByKnowledgeBase(knowledgeBaseId, deletedAt);
+
+    return { id: knowledgeBaseId, deletedAt, documentCount };
   }
 
   uploadDocuments(input: {
@@ -61,6 +140,7 @@ export class DocumentService {
         errorMessage: null,
         createdAt: now,
         updatedAt: now,
+        deletedAt: null,
       });
 
       this.queue.enqueue(this.toJob(document));
@@ -70,7 +150,7 @@ export class DocumentService {
 
   getDocument(workspaceId: string, documentId: string): DocumentRecord {
     const document = this.repository.findDocumentById(documentId);
-    if (!document || document.workspaceId !== workspaceId) {
+    if (!document || document.workspaceId !== workspaceId || document.deletedAt !== null) {
       throw new DocumentAccessError("Document not found in workspace.");
     }
     return document;
@@ -124,10 +204,26 @@ export class DocumentService {
 
   private requireKnowledgeBase(workspaceId: string, knowledgeBaseId: string): KnowledgeBaseRecord {
     const knowledgeBase = this.repository.findKnowledgeBaseById(knowledgeBaseId);
-    if (!knowledgeBase || knowledgeBase.workspaceId !== workspaceId) {
+    if (!knowledgeBase || knowledgeBase.workspaceId !== workspaceId || knowledgeBase.deletedAt !== null) {
       throw new DocumentAccessError("Knowledge base not found in workspace.");
     }
     return knowledgeBase;
+  }
+
+  private toKnowledgeBaseSummary(record: KnowledgeBaseRecord): KnowledgeBaseSummary {
+    const stats = this.repository.summarizeKnowledgeBase(record.id);
+
+    return {
+      id: record.id,
+      workspaceId: record.workspaceId,
+      name: record.name,
+      status: record.status,
+      documentCount: stats.documentCount,
+      readyDocumentCount: stats.readyDocumentCount,
+      failedDocumentCount: stats.failedDocumentCount,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    };
   }
 
   private validateUpload(file: UploadDocumentInput): void {
