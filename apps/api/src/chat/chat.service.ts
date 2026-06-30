@@ -48,14 +48,14 @@ export class ChatService {
     private readonly ragService: RagService,
   ) {}
 
-  createSite(input: {
+  async createSite(input: {
     workspaceId: string;
     botId: string;
     name: string;
     siteKey?: string;
     allowedDomains: string[];
     status?: SiteRecord["status"];
-  }): SiteRecord {
+  }): Promise<SiteRecord> {
     const bot = this.requireBot(input.workspaceId, input.botId);
 
     return this.repository.createSite({
@@ -69,13 +69,13 @@ export class ChatService {
     });
   }
 
-  stream(request: ChatStreamRequest): {
+  async stream(request: ChatStreamRequest): Promise<{
     conversation: ConversationRecord;
     userMessage: MessageRecord;
     assistantMessage: MessageRecord;
     events: ChatStreamEvent[];
-  } {
-    const site = this.requireSite(request.siteKey);
+  }> {
+    const site = await this.requireSite(request.siteKey);
     const bot = this.requireBot(site.workspaceId, request.botId);
 
     if (site.botId !== bot.id) {
@@ -90,9 +90,9 @@ export class ChatService {
       throw new ChatValidationError("Message is required.");
     }
 
-    const conversation = this.resolveConversation(site.workspaceId, bot.id, request);
+    const conversation = await this.resolveConversation(site.workspaceId, bot.id, request);
     const now = new Date().toISOString();
-    const userMessage = this.repository.createMessage({
+    const userMessage = await this.repository.createMessage({
       id: `msg_${randomUUID()}`,
       workspaceId: site.workspaceId,
       botId: bot.id,
@@ -112,7 +112,7 @@ export class ChatService {
       retrieval.citations,
       retrieval.needsLeadCapture,
     );
-    const assistantMessage = this.repository.createMessage({
+    const assistantMessage = await this.repository.createMessage({
       id: `msg_${randomUUID()}`,
       workspaceId: site.workspaceId,
       botId: bot.id,
@@ -156,15 +156,15 @@ export class ChatService {
     };
   }
 
-  submitLead(request: LeadSubmissionRequest): LeadRecord {
-    const site = this.requireSite(request.siteKey);
+  async submitLead(request: LeadSubmissionRequest): Promise<LeadRecord> {
+    const site = await this.requireSite(request.siteKey);
     const bot = this.requireBot(site.workspaceId, request.botId);
 
     if (site.botId !== bot.id) {
       throw new ChatAccessError("Site does not belong to bot.");
     }
 
-    const conversation = this.repository.findConversationById(request.conversationId);
+    const conversation = await this.repository.findConversationById(request.conversationId);
     if (
       !conversation ||
       conversation.workspaceId !== site.workspaceId ||
@@ -192,44 +192,49 @@ export class ChatService {
     });
   }
 
-  listConversations(workspaceId: string): ConversationSummary[] {
-    return this.repository.listConversationsByWorkspace(workspaceId).map((conversation) => {
-      const messages = this.repository.listMessagesByConversation(conversation.id);
+  async listConversations(workspaceId: string): Promise<ConversationSummary[]> {
+    const conversations = await this.repository.listConversationsByWorkspace(workspaceId);
+    const output: ConversationSummary[] = [];
+
+    for (const conversation of conversations) {
+      const messages = await this.repository.listMessagesByConversation(conversation.id);
       const lastMessage = messages.at(-1) ?? null;
 
-      return {
+      output.push({
         ...conversation,
         lastMessagePreview: lastMessage?.content.slice(0, 80) ?? null,
         messageCount: messages.length,
-      };
-    });
+      });
+    }
+
+    return output;
   }
 
-  getConversation(workspaceId: string, conversationId: string): ConversationDetail {
-    const conversation = this.repository.findConversationById(conversationId);
+  async getConversation(workspaceId: string, conversationId: string): Promise<ConversationDetail> {
+    const conversation = await this.repository.findConversationById(conversationId);
 
     if (!conversation || conversation.workspaceId !== workspaceId) {
       throw new ChatAccessError("Conversation not found in workspace.");
     }
 
-    const summary = this.listConversations(workspaceId).find((item) => item.id === conversationId);
+    const summary = (await this.listConversations(workspaceId)).find((item) => item.id === conversationId);
     if (!summary) {
       throw new ChatAccessError("Conversation not found in workspace.");
     }
 
     return {
       ...summary,
-      messages: this.repository.listMessagesByConversation(conversationId),
+      messages: await this.repository.listMessagesByConversation(conversationId),
     };
   }
 
-  private resolveConversation(
+  private async resolveConversation(
     workspaceId: string,
     botId: string,
     request: ChatStreamRequest,
-  ): ConversationRecord {
+  ): Promise<ConversationRecord> {
     if (request.conversationId) {
-      const existing = this.repository.findConversationById(request.conversationId);
+      const existing = await this.repository.findConversationById(request.conversationId);
       if (
         existing &&
         existing.workspaceId === workspaceId &&
@@ -251,8 +256,8 @@ export class ChatService {
     });
   }
 
-  private requireSite(siteKey: string): SiteRecord {
-    const site = this.repository.findSiteByKey(siteKey);
+  private async requireSite(siteKey: string): Promise<SiteRecord> {
+    const site = await this.repository.findSiteByKey(siteKey);
 
     if (!site || site.status !== "active") {
       throw new ChatAccessError("Site not found or inactive.");

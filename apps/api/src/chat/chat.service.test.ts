@@ -29,7 +29,7 @@ function createHarness() {
   return { chat, documents, rag };
 }
 
-test("public chat stream emits meta token citations and done events", () => {
+test("public chat stream emits meta token citations and done events", async () => {
   const { chat, documents, rag } = createHarness();
   const knowledgeBase = documents.createKnowledgeBase({
     workspaceId: "ws_alpha",
@@ -61,7 +61,7 @@ test("public chat stream emits meta token citations and done events", () => {
     content: "The motor warranty period is 24 months and includes free parts replacement.",
   });
 
-  const site = chat.createSite({
+  const site = await chat.createSite({
     workspaceId: "ws_alpha",
     botId: bot.id,
     name: "Main Site",
@@ -69,7 +69,7 @@ test("public chat stream emits meta token citations and done events", () => {
     allowedDomains: ["localhost", "example.com"],
   });
 
-  const result = chat.stream({
+  const result = await chat.stream({
     botId: bot.id,
     siteKey: site.siteKey,
     visitorId: "visitor_1",
@@ -92,7 +92,7 @@ test("public chat stream emits meta token citations and done events", () => {
   }
 });
 
-test("public chat stream sets needsLeadCapture on low-confidence retrieval", () => {
+test("public chat stream sets needsLeadCapture on low-confidence retrieval", async () => {
   const { chat, documents, rag } = createHarness();
   const knowledgeBase = documents.createKnowledgeBase({
     workspaceId: "ws_alpha",
@@ -103,7 +103,7 @@ test("public chat stream sets needsLeadCapture on low-confidence retrieval", () 
     name: "Sales Bot",
     knowledgeBaseIds: [knowledgeBase.id],
   });
-  const site = chat.createSite({
+  const site = await chat.createSite({
     workspaceId: "ws_alpha",
     botId: bot.id,
     name: "Main Site",
@@ -111,7 +111,7 @@ test("public chat stream sets needsLeadCapture on low-confidence retrieval", () 
     allowedDomains: ["localhost"],
   });
 
-  const result = chat.stream({
+  const result = await chat.stream({
     botId: bot.id,
     siteKey: site.siteKey,
     visitorId: "visitor_2",
@@ -127,7 +127,7 @@ test("public chat stream sets needsLeadCapture on low-confidence retrieval", () 
   }
 });
 
-test("public chat stream rejects origin outside allowlist", () => {
+test("public chat stream rejects origin outside allowlist", async () => {
   const { chat, documents, rag } = createHarness();
   const knowledgeBase = documents.createKnowledgeBase({
     workspaceId: "ws_alpha",
@@ -139,7 +139,7 @@ test("public chat stream rejects origin outside allowlist", () => {
     knowledgeBaseIds: [knowledgeBase.id],
   });
 
-  chat.createSite({
+  await chat.createSite({
     workspaceId: "ws_alpha",
     botId: bot.id,
     name: "Main Site",
@@ -147,7 +147,7 @@ test("public chat stream rejects origin outside allowlist", () => {
     allowedDomains: ["example.com"],
   });
 
-  assert.throws(
+  await assert.rejects(
     () =>
       chat.stream({
         botId: bot.id,
@@ -161,7 +161,7 @@ test("public chat stream rejects origin outside allowlist", () => {
   );
 });
 
-test("public lead submission persists lead and conversation detail is queryable", () => {
+test("public lead submission persists lead and conversation detail is queryable", async () => {
   const { chat, documents, rag } = createHarness();
   const knowledgeBase = documents.createKnowledgeBase({
     workspaceId: "ws_alpha",
@@ -172,7 +172,7 @@ test("public lead submission persists lead and conversation detail is queryable"
     name: "Support Bot",
     knowledgeBaseIds: [knowledgeBase.id],
   });
-  const site = chat.createSite({
+  const site = await chat.createSite({
     workspaceId: "ws_alpha",
     botId: bot.id,
     name: "Main Site",
@@ -180,7 +180,7 @@ test("public lead submission persists lead and conversation detail is queryable"
     allowedDomains: ["localhost"],
   });
 
-  const result = chat.stream({
+  const result = await chat.stream({
     botId: bot.id,
     siteKey: site.siteKey,
     visitorId: "visitor_4",
@@ -189,7 +189,7 @@ test("public lead submission persists lead and conversation detail is queryable"
     message: "I need a quote",
   });
 
-  const lead = chat.submitLead({
+  const lead = await chat.submitLead({
     botId: bot.id,
     siteKey: site.siteKey,
     conversationId: result.conversation.id,
@@ -204,11 +204,11 @@ test("public lead submission persists lead and conversation detail is queryable"
   assert.equal(lead.fields.phone, "13800000000");
   assert.equal("company" in lead.fields, false);
 
-  const conversations = chat.listConversations("ws_alpha");
+  const conversations = await chat.listConversations("ws_alpha");
   assert.equal(conversations.length, 1);
   assert.equal(conversations[0]?.messageCount, 2);
 
-  const detail = chat.getConversation("ws_alpha", result.conversation.id);
+  const detail = await chat.getConversation("ws_alpha", result.conversation.id);
   assert.equal(detail.messages.length, 2);
   assert.equal(detail.messages[0]?.role, "user");
   assert.equal(detail.messages[1]?.role, "assistant");

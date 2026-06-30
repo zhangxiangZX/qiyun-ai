@@ -4,19 +4,19 @@ import type { ChatStreamRequest, LeadSubmissionRequest } from "./chat.types";
 export class PublicChatApi {
   constructor(private readonly service: ChatService) {}
 
-  stream(body: ChatStreamRequest) {
+  async stream(body: ChatStreamRequest) {
     return this.service.stream(body);
   }
 
-  submitLead(body: LeadSubmissionRequest) {
+  async submitLead(body: LeadSubmissionRequest) {
     return this.service.submitLead(body);
   }
 
-  listConversations(workspaceId: string) {
+  async listConversations(workspaceId: string) {
     return this.service.listConversations(workspaceId);
   }
 
-  getConversation(workspaceId: string, conversationId: string) {
+  async getConversation(workspaceId: string, conversationId: string) {
     return this.service.getConversation(workspaceId, conversationId);
   }
 }

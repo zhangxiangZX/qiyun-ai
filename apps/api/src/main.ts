@@ -1,6 +1,7 @@
 import { PublicChatApi } from "./chat/chat.api";
-import { InMemoryChatRepository } from "./chat/chat.repository";
+import { createChatRepository, type ChatRepositoryMode } from "./chat/chat.repository";
 import { ChatService } from "./chat/chat.service";
+import type { SqlClient } from "./chat/chat.postgres.repository";
 import { getApiPort, loadApiEnv } from "./config/env";
 import { DocumentApi } from "./documents/document.api";
 import { InMemoryDocumentQueue } from "./documents/document.queue";
@@ -20,9 +21,15 @@ export interface ApiRuntime {
   chatService: ChatService;
   ragApi: RagApi;
   ragService: RagService;
+  chatRepositoryMode: ChatRepositoryMode;
 }
 
-export function createApiRuntime(): ApiRuntime {
+export interface ApiRuntimeOptions {
+  chatRepositoryMode?: ChatRepositoryMode;
+  sqlClient?: SqlClient;
+}
+
+export function createApiRuntime(options: ApiRuntimeOptions = {}): ApiRuntime {
   const documentRepository = new InMemoryDocumentRepository();
   const queue = new InMemoryDocumentQueue();
   const documentService = new DocumentService(documentRepository, queue);
@@ -34,7 +41,11 @@ export function createApiRuntime(): ApiRuntime {
     documentService,
     new SimpleEmbeddingProvider(),
   );
-  const chatRepository = new InMemoryChatRepository();
+  const chatRepositoryMode = options.chatRepositoryMode ?? "memory";
+  const chatRepository = createChatRepository({
+    mode: chatRepositoryMode,
+    sqlClient: options.sqlClient,
+  });
   const chatService = new ChatService(chatRepository, ragRepository, ragService);
 
   return {
@@ -44,6 +55,7 @@ export function createApiRuntime(): ApiRuntime {
     chatService,
     ragApi: new RagApi(ragService),
     ragService,
+    chatRepositoryMode,
   };
 }
 

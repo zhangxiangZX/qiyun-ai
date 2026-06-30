@@ -54,6 +54,9 @@ all remain possible later.
 - create lead
 - persist lead fields into `lead_fields`
 - list leads by workspace
+- runtime repository mode switch:
+  - `memory`
+  - `postgres`
 
 ## Why This Matters
 
@@ -62,7 +65,17 @@ The runtime still defaults to in-memory repositories, but the database-facing co
 That means the next step is not redesigning chat persistence, only:
 
 1. wiring a real SQL client
-2. swapping the runtime from in-memory repository to PostgreSQL repository
+2. selecting PostgreSQL mode in runtime options
+3. gradually moving remaining in-memory entities to SQL persistence
+
+Current runtime entry:
+
+```ts
+createApiRuntime({
+  chatRepositoryMode: "postgres",
+  sqlClient
+});
+```
 
 ## Tests Added
 
@@ -71,8 +84,7 @@ That means the next step is not redesigning chat persistence, only:
 
 ## Current Limits
 
-- repository is not yet wired into `createApiRuntime()`
-- `sites` are still in-memory only
+- `sites` are still in-memory only inside postgres mode
 - no transaction wrapper yet for multi-step inserts
 - no auth or tenancy middleware at DB layer yet
 
@@ -80,4 +92,4 @@ That means the next step is not redesigning chat persistence, only:
 
 1. add shared transaction helper for chat persistence
 2. add PostgreSQL repository for `sites`
-3. switch runtime behind a feature flag or environment variable
+3. wire runtime mode from environment or bootstrap configuration

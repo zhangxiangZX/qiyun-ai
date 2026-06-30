@@ -51,7 +51,7 @@ export function createApiServer(runtime: ApiRuntime) {
         const body = (await readJsonBody(request)) as unknown as Parameters<
           ApiRuntime["publicChatApi"]["stream"]
         >[0];
-        const result = runtime.publicChatApi.stream(body);
+        const result = await runtime.publicChatApi.stream(body);
         sendSse(response, result.events);
         return;
       }
@@ -60,7 +60,7 @@ export function createApiServer(runtime: ApiRuntime) {
         const body = (await readJsonBody(request)) as unknown as Parameters<
           ApiRuntime["publicChatApi"]["submitLead"]
         >[0];
-        const result = runtime.publicChatApi.submitLead(body);
+        const result = await runtime.publicChatApi.submitLead(body);
         sendJson(response, 201, result);
         return;
       }
@@ -75,7 +75,7 @@ export function createApiServer(runtime: ApiRuntime) {
           return;
         }
 
-        sendJson(response, 200, runtime.publicChatApi.listConversations(workspaceId));
+        sendJson(response, 200, await runtime.publicChatApi.listConversations(workspaceId));
         return;
       }
 
@@ -90,7 +90,7 @@ export function createApiServer(runtime: ApiRuntime) {
         }
 
         const conversationId = url.pathname.split("/")[2] ?? "";
-        sendJson(response, 200, runtime.publicChatApi.getConversation(workspaceId, conversationId));
+        sendJson(response, 200, await runtime.publicChatApi.getConversation(workspaceId, conversationId));
         return;
       }
 

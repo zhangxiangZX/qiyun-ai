@@ -38,7 +38,7 @@ async function createSeededRuntime() {
     content: "The motor warranty period is 24 months and includes free parts replacement.",
   });
 
-  const site = runtime.chatService.createSite({
+  const site = await runtime.chatService.createSite({
     workspaceId: "ws_alpha",
     botId: bot.id,
     name: "Main Site",

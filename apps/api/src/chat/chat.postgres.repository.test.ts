@@ -1,11 +1,13 @@
 import * as assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { createApiRuntime } from "../main";
 import {
   PostgresChatRepository,
   type SqlClient,
   type SqlQueryResult,
 } from "./chat.postgres.repository";
+import { createChatRepository } from "./chat.repository";
 
 class FakeSqlClient implements SqlClient {
   readonly calls: Array<{ sql: string; params: readonly unknown[] }> = [];
@@ -80,4 +82,21 @@ test("postgres repository lists conversations by workspace", async () => {
   assert.equal(conversations[0]?.workspaceId, "ws_alpha");
   assert.match(client.calls[0]?.sql ?? "", /FROM conversations/);
   assert.deepEqual(client.calls[0]?.params, ["ws_alpha"]);
+});
+
+test("chat repository factory requires sql client in postgres mode", () => {
+  assert.throws(
+    () => createChatRepository({ mode: "postgres" }),
+    /sqlClient/i,
+  );
+});
+
+test("api runtime can be created in postgres mode", () => {
+  const client = new FakeSqlClient();
+  const runtime = createApiRuntime({
+    chatRepositoryMode: "postgres",
+    sqlClient: client,
+  });
+
+  assert.equal(runtime.chatRepositoryMode, "postgres");
 });
