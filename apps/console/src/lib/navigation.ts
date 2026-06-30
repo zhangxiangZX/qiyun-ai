@@ -1,12 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  BookOpenText,
   Bot,
   Globe2,
   LayoutDashboard,
   MessageSquareText,
   Users,
-  BookOpenText,
 } from "lucide-react";
 
 export interface NavigationItem {
