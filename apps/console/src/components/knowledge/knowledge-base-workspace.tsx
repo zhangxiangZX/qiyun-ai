@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { BookOpenText, FolderPlus, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  BookOpenText,
+  CheckCircle2,
+  Database,
+  FolderPlus,
+  Plus,
+} from "lucide-react";
 
 import { Alert, Button, EmptyState, PageHeader, Skeleton } from "@qiyun/ui";
 
@@ -13,15 +19,21 @@ import {
   createDocumentId,
   createKnowledgeBaseId,
 } from "@/lib/knowledge/validation";
-import type { KnowledgeBase, KnowledgeDocument } from "@/lib/knowledge/types";
+import type {
+  KnowledgeBase,
+  KnowledgeDocument,
+} from "@/lib/knowledge/types";
 
 function estimateChunkCount(sizeBytes: number): number {
   return Math.max(1, Math.round(sizeBytes / 2048));
 }
 
 export function KnowledgeBaseWorkspace() {
+  const timersRef = useRef<number[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
-  const [documentsByBase, setDocumentsByBase] = useState<Record<string, KnowledgeDocument[]>>({});
+  const [documentsByBase, setDocumentsByBase] = useState<
+    Record<string, KnowledgeDocument[]>
+  >({});
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creatingBase, setCreatingBase] = useState(false);
@@ -29,63 +41,93 @@ export function KnowledgeBaseWorkspace() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
-  const selectedBase = useMemo(
-    () => knowledgeBases.find((item) => item.id === selectedBaseId) ?? null,
-    [knowledgeBases, selectedBaseId],
-  );
-
-  const documents = selectedBaseId ? documentsByBase[selectedBaseId] ?? [] : [];
-
-  const scheduleStatusProgress = useCallback((baseId: string, documentId: string, sizeBytes: number) => {
-    const updates: Array<{ status: KnowledgeDocument["status"]; delay: number; chunkCount?: number }> = [
-      { status: "parsing", delay: 800 },
-      { status: "indexing", delay: 2000 },
-      { status: "ready", delay: 3400, chunkCount: estimateChunkCount(sizeBytes) },
-    ];
-
-    for (const update of updates) {
-      window.setTimeout(() => {
-        setDocumentsByBase((current) => ({
-          ...current,
-          [baseId]: (current[baseId] ?? []).map((item) =>
-            item.id === documentId
-              ? {
-                  ...item,
-                  status: update.status,
-                  chunkCount: update.chunkCount ?? item.chunkCount,
-                  errorMessage: null,
-                  updatedAt: new Date().toISOString(),
-                }
-              : item,
-          ),
-        }));
-      }, update.delay);
-    }
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach(window.clearTimeout);
+    };
   }, []);
+
+  const selectedBase =
+    knowledgeBases.find((item) => item.id === selectedBaseId) ?? null;
+  const documents = selectedBaseId ? documentsByBase[selectedBaseId] ?? [] : [];
+  const readyCount = documents.filter((document) => document.status === "ready").length;
+  const processingCount = documents.filter((document) =>
+    ["uploaded", "parsing", "indexing"].includes(document.status),
+  ).length;
+
+  function queueTimer(callback: () => void, delay: number) {
+    const timer = window.setTimeout(callback, delay);
+    timersRef.current.push(timer);
+  }
+
+  function updateDocument(
+    baseId: string,
+    documentId: string,
+    updater: (document: KnowledgeDocument) => KnowledgeDocument,
+  ) {
+    setDocumentsByBase((current) => ({
+      ...current,
+      [baseId]: (current[baseId] ?? []).map((document) =>
+        document.id === documentId ? updater(document) : document,
+      ),
+    }));
+  }
+
+  function scheduleStatusProgress(baseId: string, document: KnowledgeDocument) {
+    const willFail = document.fileName.toLowerCase().includes("fail");
+
+    queueTimer(() => {
+      updateDocument(baseId, document.id, (item) => ({
+        ...item,
+        status: "parsing",
+        updatedAt: new Date().toISOString(),
+      }));
+    }, 700);
+
+    queueTimer(() => {
+      updateDocument(baseId, document.id, (item) => ({
+        ...item,
+        status: "indexing",
+        updatedAt: new Date().toISOString(),
+      }));
+    }, 1700);
+
+    queueTimer(() => {
+      updateDocument(baseId, document.id, (item) => ({
+        ...item,
+        status: willFail ? "failed" : "ready",
+        chunkCount: willFail ? null : estimateChunkCount(item.sizeBytes),
+        errorMessage: willFail ? "Demo failure. Rename without 'fail' or retry." : null,
+        updatedAt: new Date().toISOString(),
+      }));
+    }, 3000);
+  }
 
   function handleCreateBase(name: string) {
     setCreatingBase(true);
     setPageError(null);
 
-    window.setTimeout(() => {
+    queueTimer(() => {
       const base: KnowledgeBase = {
         id: createKnowledgeBaseId(),
         name,
         status: "active",
         createdAt: new Date().toISOString(),
       };
+
       setKnowledgeBases((current) => [...current, base]);
       setDocumentsByBase((current) => ({ ...current, [base.id]: [] }));
       setSelectedBaseId(base.id);
       setCreatingBase(false);
       setDialogOpen(false);
-      setSuccessMessage(`知识库「${name}」已创建`);
-    }, 400);
+      setSuccessMessage(`Created knowledge base "${name}".`);
+    }, 350);
   }
 
   function handleUpload(files: File[]) {
     if (!selectedBaseId) {
-      setPageError("请先创建并选择一个知识库");
+      setPageError("Create or select a knowledge base before uploading files.");
       return;
     }
 
@@ -107,48 +149,51 @@ export function KnowledgeBaseWorkspace() {
       updatedAt: createdAt,
     }));
 
-    window.setTimeout(() => {
+    queueTimer(() => {
       setDocumentsByBase((current) => ({
         ...current,
         [baseId]: [...(current[baseId] ?? []), ...newDocuments],
       }));
       setUploading(false);
-      setSuccessMessage(`已添加 ${newDocuments.length} 个文件，正在解析与索引`);
-      newDocuments.forEach((document) =>
-        scheduleStatusProgress(baseId, document.id, document.sizeBytes),
-      );
-    }, 500);
+      setSuccessMessage(`Queued ${newDocuments.length} file(s) for processing.`);
+      newDocuments.forEach((document) => scheduleStatusProgress(baseId, document));
+    }, 450);
   }
 
   function handleRetry(documentId: string) {
     if (!selectedBaseId) return;
     const baseId = selectedBaseId;
-    const target = (documentsByBase[baseId] ?? []).find((item) => item.id === documentId);
+    const target = (documentsByBase[baseId] ?? []).find(
+      (document) => document.id === documentId,
+    );
+
     if (!target) return;
 
-    setDocumentsByBase((current) => ({
-      ...current,
-      [baseId]: (current[baseId] ?? []).map((item) =>
-        item.id === documentId
-          ? {
-              ...item,
-              status: "uploaded",
-              errorMessage: null,
-              chunkCount: null,
-              updatedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
-    }));
-    scheduleStatusProgress(baseId, documentId, target.sizeBytes);
+    const retried: KnowledgeDocument = {
+      ...target,
+      status: "uploaded",
+      chunkCount: null,
+      errorMessage: null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    updateDocument(baseId, documentId, () => retried);
+    setSuccessMessage(`Retrying "${target.fileName}".`);
+    scheduleStatusProgress(baseId, {
+      ...retried,
+      fileName: target.fileName.replace(/fail/gi, "retry"),
+    });
   }
 
   function handleDelete(documentId: string) {
     if (!selectedBaseId) return;
     const baseId = selectedBaseId;
+
     setDocumentsByBase((current) => ({
       ...current,
-      [baseId]: (current[baseId] ?? []).filter((item) => item.id !== documentId),
+      [baseId]: (current[baseId] ?? []).filter(
+        (document) => document.id !== documentId,
+      ),
     }));
   }
 
@@ -156,24 +201,24 @@ export function KnowledgeBaseWorkspace() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="知识库"
-          description="上传 PDF、Word、Markdown 等资料，供机器人检索回答。"
+          title="Knowledge bases"
+          description="Upload product docs, policies, FAQs, and support material for retrieval."
           actions={
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4" aria-hidden />
-              新建知识库
+              New knowledge base
             </Button>
           }
         />
         <div className="px-4 sm:px-6 lg:px-page">
           <EmptyState
-            title="还没有知识库"
-            description="创建第一个知识库，然后上传产品手册、FAQ 或内部文档。"
+            title="No knowledge base yet"
+            description="Create the first collection before uploading source documents."
             icon={<BookOpenText className="h-6 w-6" aria-hidden />}
             action={
               <Button onClick={() => setDialogOpen(true)}>
                 <FolderPlus className="h-4 w-4" aria-hidden />
-                创建第一个知识库
+                Create knowledge base
               </Button>
             }
           />
@@ -191,59 +236,87 @@ export function KnowledgeBaseWorkspace() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="知识库"
+        title="Knowledge bases"
         description={
           selectedBase
-            ? `当前：${selectedBase.name} · ${documents.length} 个文件`
-            : "管理文档上传、解析与索引状态"
+            ? `${selectedBase.name} contains ${documents.length} document(s).`
+            : "Select a knowledge base to manage documents."
         }
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {knowledgeBases.length > 1 ? (
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="sr-only">切换知识库</span>
-                <select
-                  className="h-10 rounded-control border border-input bg-background px-3 text-sm text-foreground"
-                  value={selectedBaseId ?? ""}
-                  onChange={(event) => setSelectedBaseId(event.target.value)}
-                >
-                  {knowledgeBases.map((base) => (
-                    <option key={base.id} value={base.id}>
-                      {base.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <Button variant="outline" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4" aria-hidden />
-              新建知识库
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden />
+            New knowledge base
+          </Button>
         }
       />
 
-      <div className="space-y-6 px-4 sm:px-6 lg:px-page">
-        {pageError ? <Alert variant="error" title={pageError} /> : null}
-        {successMessage ? <Alert variant="success" title={successMessage} /> : null}
+      <div className="grid gap-6 px-4 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-page">
+        <aside className="space-y-3">
+          <div className="rounded-card border border-border bg-card p-3 shadow-card">
+            <div className="mb-3 flex items-center gap-2 px-1 text-sm font-medium text-foreground">
+              <Database className="h-4 w-4 text-primary" aria-hidden />
+              Collections
+            </div>
+            <div className="space-y-1">
+              {knowledgeBases.map((base) => {
+                const count = documentsByBase[base.id]?.length ?? 0;
+                const selected = base.id === selectedBaseId;
 
-        <UploadZone loading={uploading} onFilesSelected={handleUpload} />
-
-        {uploading ? (
-          <div className="space-y-3 rounded-card border border-border bg-card p-4">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+                return (
+                  <button
+                    key={base.id}
+                    type="button"
+                    onClick={() => setSelectedBaseId(base.id)}
+                    className={`w-full rounded-control px-3 py-2 text-left text-sm transition-colors ${
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    <span className="block truncate font-medium">{base.name}</span>
+                    <span className="block text-xs opacity-80">{count} document(s)</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ) : documents.length ? (
-          <DocumentList documents={documents} onRetry={handleRetry} onDelete={handleDelete} />
-        ) : (
-          <EmptyState
-            title="还没有文件"
-            description="使用上方上传区添加文档。支持拖拽，也可点击「选择文件」。"
-            icon={<BookOpenText className="h-6 w-6" aria-hidden />}
-          />
-        )}
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+            <StatusStat label="Ready" value={readyCount} />
+            <StatusStat label="Processing" value={processingCount} />
+          </div>
+        </aside>
+
+        <main className="space-y-6">
+          {pageError ? <Alert variant="error" title={pageError} /> : null}
+          {successMessage ? (
+            <Alert variant="success" title={successMessage}>
+              {processingCount > 0 ? "Documents will move through parsing and indexing." : null}
+            </Alert>
+          ) : null}
+
+          <UploadZone loading={uploading} onFilesSelected={handleUpload} />
+
+          {uploading ? (
+            <div className="space-y-3 rounded-card border border-border bg-card p-4">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : documents.length ? (
+            <DocumentList
+              documents={documents}
+              onRetry={handleRetry}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <EmptyState
+              title="No documents uploaded"
+              description="Upload PDF, DOCX, TXT, or Markdown files to start building searchable context."
+              icon={<BookOpenText className="h-6 w-6" aria-hidden />}
+            />
+          )}
+        </main>
       </div>
 
       <CreateKnowledgeBaseDialog
@@ -252,6 +325,18 @@ export function KnowledgeBaseWorkspace() {
         onClose={() => setDialogOpen(false)}
         onCreate={handleCreateBase}
       />
+    </div>
+  );
+}
+
+function StatusStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-card border border-border bg-card p-4 shadow-card">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+        {label}
+      </div>
+      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
     </div>
   );
 }
