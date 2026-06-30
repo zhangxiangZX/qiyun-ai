@@ -1,5 +1,5 @@
-import PlaceholderPage from "@/components/layout/placeholder-page";
+import { redirect } from "next/navigation";
 
-export default function KnowledgePage() {
-  return <PlaceholderPage segment="knowledge" />;
+export default function LegacyKnowledgePage() {
+  redirect("/dashboard/knowledge-bases");
 }

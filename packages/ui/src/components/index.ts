@@ -10,3 +10,4 @@ export * from "./page-header";
 export * from "./sheet";
 export * from "./skeleton";
 export * from "./stat-card";
+export * from "./table";
