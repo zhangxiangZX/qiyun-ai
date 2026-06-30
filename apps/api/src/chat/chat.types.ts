@@ -21,9 +21,21 @@ export interface ConversationRecord {
 
 export interface MessageRecord {
   id: string;
+  workspaceId: string;
+  botId: string;
   conversationId: string;
   role: "user" | "assistant";
   content: string;
+  createdAt: string;
+}
+
+export interface LeadRecord {
+  id: string;
+  workspaceId: string;
+  botId: string;
+  conversationId: string;
+  siteKey: string;
+  fields: Record<string, string>;
   createdAt: string;
 }
 
@@ -35,6 +47,13 @@ export interface ChatStreamRequest {
   sdkVersion: string;
   origin: string;
   message: string;
+}
+
+export interface LeadSubmissionRequest {
+  botId: string;
+  siteKey: string;
+  conversationId: string;
+  fields: Record<string, string>;
 }
 
 export interface ChatMetaEvent {
@@ -71,3 +90,18 @@ export type ChatStreamEvent =
   | ChatTokenEvent
   | ChatCitationsEvent
   | ChatDoneEvent;
+
+export interface ConversationSummary {
+  id: string;
+  workspaceId: string;
+  botId: string;
+  visitorId: string;
+  origin: string;
+  createdAt: string;
+  lastMessagePreview: string | null;
+  messageCount: number;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: MessageRecord[];
+}

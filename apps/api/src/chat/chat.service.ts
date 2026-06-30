@@ -7,7 +7,11 @@ import type { ChatRepository } from "./chat.repository";
 import type {
   ChatStreamEvent,
   ChatStreamRequest,
+  ConversationDetail,
   ConversationRecord,
+  ConversationSummary,
+  LeadRecord,
+  LeadSubmissionRequest,
   MessageRecord,
   SiteRecord,
 } from "./chat.types";
@@ -34,7 +38,7 @@ function buildAssistantReply(citations: RagCitation[], needsLeadCapture: boolean
   }
 
   const primary = citations[0];
-  return `根据 ${primary?.title}，${primary?.snippet ?? "我已找到相关资料。"}`
+  return `根据 ${primary?.title}，${primary?.snippet ?? "我已找到相关资料。"}`;
 }
 
 export class ChatService {
@@ -90,6 +94,8 @@ export class ChatService {
     const now = new Date().toISOString();
     const userMessage = this.repository.createMessage({
       id: `msg_${randomUUID()}`,
+      workspaceId: site.workspaceId,
+      botId: bot.id,
       conversationId: conversation.id,
       role: "user",
       content: request.message.trim(),
@@ -108,6 +114,8 @@ export class ChatService {
     );
     const assistantMessage = this.repository.createMessage({
       id: `msg_${randomUUID()}`,
+      workspaceId: site.workspaceId,
+      botId: bot.id,
       conversationId: conversation.id,
       role: "assistant",
       content: assistantReply,
@@ -145,6 +153,73 @@ export class ChatService {
       userMessage,
       assistantMessage,
       events,
+    };
+  }
+
+  submitLead(request: LeadSubmissionRequest): LeadRecord {
+    const site = this.requireSite(request.siteKey);
+    const bot = this.requireBot(site.workspaceId, request.botId);
+
+    if (site.botId !== bot.id) {
+      throw new ChatAccessError("Site does not belong to bot.");
+    }
+
+    const conversation = this.repository.findConversationById(request.conversationId);
+    if (
+      !conversation ||
+      conversation.workspaceId !== site.workspaceId ||
+      conversation.botId !== bot.id
+    ) {
+      throw new ChatAccessError("Conversation not found in workspace.");
+    }
+
+    const fields = Object.fromEntries(
+      Object.entries(request.fields).filter(([, value]) => value.trim() !== ""),
+    );
+
+    if (Object.keys(fields).length === 0) {
+      throw new ChatValidationError("At least one lead field is required.");
+    }
+
+    return this.repository.createLead({
+      id: `lead_${randomUUID()}`,
+      workspaceId: site.workspaceId,
+      botId: bot.id,
+      conversationId: conversation.id,
+      siteKey: request.siteKey,
+      fields,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  listConversations(workspaceId: string): ConversationSummary[] {
+    return this.repository.listConversationsByWorkspace(workspaceId).map((conversation) => {
+      const messages = this.repository.listMessagesByConversation(conversation.id);
+      const lastMessage = messages.at(-1) ?? null;
+
+      return {
+        ...conversation,
+        lastMessagePreview: lastMessage?.content.slice(0, 80) ?? null,
+        messageCount: messages.length,
+      };
+    });
+  }
+
+  getConversation(workspaceId: string, conversationId: string): ConversationDetail {
+    const conversation = this.repository.findConversationById(conversationId);
+
+    if (!conversation || conversation.workspaceId !== workspaceId) {
+      throw new ChatAccessError("Conversation not found in workspace.");
+    }
+
+    const summary = this.listConversations(workspaceId).find((item) => item.id === conversationId);
+    if (!summary) {
+      throw new ChatAccessError("Conversation not found in workspace.");
+    }
+
+    return {
+      ...summary,
+      messages: this.repository.listMessagesByConversation(conversationId),
     };
   }
 

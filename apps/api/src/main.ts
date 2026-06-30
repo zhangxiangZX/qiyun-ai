@@ -7,41 +7,26 @@ import { InMemoryDocumentQueue } from "./documents/document.queue";
 import { InMemoryDocumentRepository } from "./documents/document.repository";
 import { DocumentService } from "./documents/document.service";
 import { InMemoryQdrantStore, SimpleEmbeddingProvider } from "./rag/rag.providers";
-import { RagRepository, InMemoryRagRepository } from "./rag/rag.repository";
+import { InMemoryRagRepository } from "./rag/rag.repository";
 import { RagApi } from "./rag/rag.api";
 import { RagService } from "./rag/rag.service";
 
 export const appName = "qiyun-api";
 
-export function createDocumentApi(): DocumentApi {
-  const repository = new InMemoryDocumentRepository();
-  const queue = new InMemoryDocumentQueue();
-  const service = new DocumentService(repository, queue);
-  return new DocumentApi(service);
+export interface ApiRuntime {
+  documentApi: DocumentApi;
+  documentService: DocumentService;
+  publicChatApi: PublicChatApi;
+  chatService: ChatService;
+  ragApi: RagApi;
+  ragService: RagService;
 }
 
-export function createRagApi(): RagApi {
+export function createApiRuntime(): ApiRuntime {
   const documentRepository = new InMemoryDocumentRepository();
   const queue = new InMemoryDocumentQueue();
   const documentService = new DocumentService(documentRepository, queue);
-  const ragRepository: RagRepository = new InMemoryRagRepository();
-  const vectorStore = new InMemoryQdrantStore(() => ragRepository.listChunks());
-  const embeddingProvider = new SimpleEmbeddingProvider();
-  const service = new RagService(
-    ragRepository,
-    vectorStore,
-    documentService,
-    embeddingProvider,
-  );
-
-  return new RagApi(service);
-}
-
-export function createPublicChatApi(): PublicChatApi {
-  const documentRepository = new InMemoryDocumentRepository();
-  const queue = new InMemoryDocumentQueue();
-  const documentService = new DocumentService(documentRepository, queue);
-  const ragRepository: RagRepository = new InMemoryRagRepository();
+  const ragRepository = new InMemoryRagRepository();
   const vectorStore = new InMemoryQdrantStore(() => ragRepository.listChunks());
   const ragService = new RagService(
     ragRepository,
@@ -52,7 +37,26 @@ export function createPublicChatApi(): PublicChatApi {
   const chatRepository = new InMemoryChatRepository();
   const chatService = new ChatService(chatRepository, ragRepository, ragService);
 
-  return new PublicChatApi(chatService);
+  return {
+    documentApi: new DocumentApi(documentService),
+    documentService,
+    publicChatApi: new PublicChatApi(chatService),
+    chatService,
+    ragApi: new RagApi(ragService),
+    ragService,
+  };
+}
+
+export function createDocumentApi(): DocumentApi {
+  return createApiRuntime().documentApi;
+}
+
+export function createRagApi(): RagApi {
+  return createApiRuntime().ragApi;
+}
+
+export function createPublicChatApi(): PublicChatApi {
+  return createApiRuntime().publicChatApi;
 }
 
 export function bootstrapApi(env: Record<string, string | undefined> = process.env): {

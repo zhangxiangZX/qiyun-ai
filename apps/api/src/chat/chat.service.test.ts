@@ -160,3 +160,56 @@ test("public chat stream rejects origin outside allowlist", () => {
     ChatAccessError,
   );
 });
+
+test("public lead submission persists lead and conversation detail is queryable", () => {
+  const { chat, documents, rag } = createHarness();
+  const knowledgeBase = documents.createKnowledgeBase({
+    workspaceId: "ws_alpha",
+    name: "Support Docs",
+  });
+  const bot = rag.createBot({
+    workspaceId: "ws_alpha",
+    name: "Support Bot",
+    knowledgeBaseIds: [knowledgeBase.id],
+  });
+  const site = chat.createSite({
+    workspaceId: "ws_alpha",
+    botId: bot.id,
+    name: "Main Site",
+    siteKey: "pk_lead",
+    allowedDomains: ["localhost"],
+  });
+
+  const result = chat.stream({
+    botId: bot.id,
+    siteKey: site.siteKey,
+    visitorId: "visitor_4",
+    sdkVersion: "1.0.0",
+    origin: "http://localhost:3000",
+    message: "I need a quote",
+  });
+
+  const lead = chat.submitLead({
+    botId: bot.id,
+    siteKey: site.siteKey,
+    conversationId: result.conversation.id,
+    fields: {
+      name: "Li",
+      phone: "13800000000",
+      company: "",
+    },
+  });
+
+  assert.equal(lead.fields.name, "Li");
+  assert.equal(lead.fields.phone, "13800000000");
+  assert.equal("company" in lead.fields, false);
+
+  const conversations = chat.listConversations("ws_alpha");
+  assert.equal(conversations.length, 1);
+  assert.equal(conversations[0]?.messageCount, 2);
+
+  const detail = chat.getConversation("ws_alpha", result.conversation.id);
+  assert.equal(detail.messages.length, 2);
+  assert.equal(detail.messages[0]?.role, "user");
+  assert.equal(detail.messages[1]?.role, "assistant");
+});
