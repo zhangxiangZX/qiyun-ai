@@ -1,10 +1,14 @@
+---
+description: Qiyun AI project rules for Cursor
+---
+
 # Project Rules
 
-Qiyun AI / 企云 AI
-
-- Read `AGENTS.md` and the relevant docs before making changes.
-- Cursor owns UI work in `apps/console` and `packages/ui`.
-- Codex owns backend, database, worker, infra, and migration work.
-- Use one Git branch per Task ID and avoid long-lived edits on `main`.
-- Keep changes scoped to the assigned task and avoid unrelated refactors.
-- Follow the design system and API contracts in `docs/`.
+- Always read `TASKS.md`, `COMMAND.md`, and `AGENTS.md` before starting work.
+- Cursor only edits `apps/console/**` and `packages/ui/**`.
+- Use the existing design tokens and shared UI components first.
+- Keep UI work responsive, with loading, empty, error, and success states.
+- Do not change database schema, backend APIs, Docker, or auth logic.
+- Prefer small, task-scoped branches named `feature/<TaskID>-<short-name>`.
+- After each task, list changed files and run lint plus typecheck.
+- Update `TASKS.md` when the task is done or blocked.

@@ -1,0 +1,45 @@
+- name: task
+  color: "2f6fed"
+  description: Scoped implementation task
+- name: bug
+  color: "d73a4a"
+  description: Reproducible bug or regression
+- name: needs-triage
+  color: "ededed"
+  description: Needs owner, priority, or scope confirmation
+- name: blocked
+  color: "b60205"
+  description: Cannot move forward without another task or decision
+- name: review
+  color: "fbca04"
+  description: Ready for human or agent review
+- name: cursor
+  color: "7c3aed"
+  description: Owned by Cursor frontend/UI workflow
+- name: codex
+  color: "0e8a16"
+  description: Owned by Codex backend/engineering workflow
+- name: area:console
+  color: "c5def5"
+  description: Console frontend
+- name: area:api
+  color: "c5def5"
+  description: Backend API
+- name: area:worker
+  color: "c5def5"
+  description: Worker and queues
+- name: area:widget
+  color: "c5def5"
+  description: Website widget
+- name: area:infra
+  color: "c5def5"
+  description: Infrastructure and deployment
+- name: priority:p0
+  color: "b60205"
+  description: Release blocker
+- name: priority:p1
+  color: "d93f0b"
+  description: Important for current milestone
+- name: priority:p2
+  color: "fbca04"
+  description: Normal priority

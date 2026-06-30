@@ -14,6 +14,6 @@
     "test": "turbo test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "node -e \"try{require('child_process').execSync('husky',{stdio:'ignore'})}catch(e){}\""
   }
 }

@@ -1,0 +1,84 @@
+name: Task
+description: Create a scoped implementation task for Cursor or Codex.
+title: "[Task] <TaskID> <short title>"
+labels: ["task", "needs-triage"]
+body:
+  - type: input
+    id: task_id
+    attributes:
+      label: Task ID
+      description: Use the backlog ID from docs/10-task-backlog.md, for example C-02 or P-04.
+      placeholder: "C-02"
+    validations:
+      required: true
+  - type: dropdown
+    id: owner
+    attributes:
+      label: Owner
+      options:
+        - Codex
+        - Cursor
+        - You
+    validations:
+      required: true
+  - type: input
+    id: branch
+    attributes:
+      label: Branch
+      placeholder: "feature/C-02-upload"
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Allowed scope
+      description: List the directories or files this task may change.
+      placeholder: |
+        apps/api/**
+        apps/worker/**
+        migration/**
+    validations:
+      required: true
+  - type: textarea
+    id: depends_on
+    attributes:
+      label: Depends on
+      description: List prerequisite tasks, APIs, designs, or decisions.
+      placeholder: "C-01 Knowledge base CRUD"
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      description: Describe exactly what should be implemented.
+      placeholder: |
+        1. Validate file type and size.
+        2. Store files in private object storage.
+        3. Return document status.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: These checks must pass before the task can move to Review.
+      placeholder: |
+        - [ ] Multi-tenant data is scoped by workspace_id.
+        - [ ] Empty/error/success states are covered where relevant.
+        - [ ] lint, typecheck, and related tests pass.
+    validations:
+      required: true
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test plan
+      placeholder: |
+        - pnpm --filter qiyun-api test
+        - pnpm --filter qiyun-api typecheck
+    validations:
+      required: true
+  - type: textarea
+    id: blocked_by
+    attributes:
+      label: Blocked by
+      description: Leave empty if not blocked.
+      placeholder: "Waiting for API contract or design review."

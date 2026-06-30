@@ -1,0 +1,91 @@
+:root {
+  color-scheme: light;
+  --font-sans:
+    "Inter",
+    "PingFang SC",
+    "Microsoft YaHei",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  --background: 0 0% 98%;
+  --foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+  --info: 221 83% 53%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 217.2 91.2% 59.8%;
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-dialog: 1rem;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 12px 36px rgba(15, 23, 42, 0.08);
+  --page-max-width: 1440px;
+  --page-padding: 1.5rem;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 6.5%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 6.5%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 72.2% 50.6%;
+  --destructive-foreground: 210 40% 98%;
+  --success: 142 76% 36%;
+  --warning: 38 92% 50%;
+  --info: 221 83% 65%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 217.2 91.2% 59.8%;
+  --shadow-card: 0 1px 2px rgba(2, 6, 23, 0.2), 0 20px 48px rgba(2, 6, 23, 0.28);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(circle at top left, rgba(47, 125, 255, 0.12), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 28%),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+  line-height: 1.6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.18);
+  color: hsl(var(--foreground));
+}

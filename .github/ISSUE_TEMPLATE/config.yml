@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project command document
+    url: https://github.com/zhangxiangZX/qiyun-ai/blob/main/COMMAND.md
+    about: Read the project command document before creating work items.

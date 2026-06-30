@@ -3,5 +3,7 @@ node_modules
 dist
 coverage
 .next
+.vscode/
+*.tsbuildinfo
 .DS_Store
 *.log

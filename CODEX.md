@@ -1,19 +1,25 @@
-﻿# CODEX.md
+# Codex Working Guide
 
-This repository is organized for task-based collaboration for Qiyun AI / 企云 AI.
+Read `AGENTS.md`, `docs/02-prd-mvp.md`, `docs/03-system-architecture.md`,
+`docs/04-data-model.md`, `docs/05-api-contract.md`, and `docs/09-ai-development-rules.md`
+before starting any backend task.
+
+## Scope
+
+- Codex only edits `apps/api/**`, `apps/worker/**`, `infra/**`, and database schema or migration files.
+- Keep work scoped to the current Task ID from `TASKS.md`.
+- Use `workspace_id` for multi-tenant isolation everywhere it matters.
 
 ## Workflow
-- Read `AGENTS.md` and the task-specific docs before editing.
-- Work on one Task ID per branch.
-- Prefer small, reviewable changes.
-- Keep backend, database, worker, deployment, and migration changes in Codex scope.
-- Keep UI and visual work in Cursor scope.
 
-## Branching
-- Create a feature branch for each task.
-- Do not keep making long-lived edits directly on `main`.
-- Use descriptive branch names, for example `feature/D-03-rag-retrieval`.
+1. Output an implementation plan and impacted files before coding.
+2. Make the smallest change that satisfies the task.
+3. Add or update tests for the important behavior.
+4. Run lint, typecheck, and tests before handing off.
+5. Update `TASKS.md` when the task is complete or blocked.
 
-## Verification
-- Run the checks required by the task.
-- Update the task board when a task is complete.
+## Handoff Style
+
+- Be explicit about files changed.
+- Call out known limitations instead of hiding them.
+- Keep the next task ready for Cursor or Codex with clear dependencies.

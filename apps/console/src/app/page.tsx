@@ -1,8 +1,5 @@
-export default function ConsoleHomePage() {
-  return (
-    <main>
-      <h1>Qiyun AI Console</h1>
-      <p>Console skeleton is ready for Cursor.</p>
-    </main>
-  );
+import { redirect } from "next/navigation";
+
+export default function HomePage() {
+  redirect("/dashboard");
 }

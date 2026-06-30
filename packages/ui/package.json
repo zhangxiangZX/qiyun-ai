@@ -2,11 +2,33 @@
   "name": "@qiyun/ui",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./globals.css": "./src/globals.css",
+    "./tailwind.preset": "./tailwind.preset.ts"
+  },
   "scripts": {
-    "dev": "echo \"UI package skeleton will be added here\"",
-    "build": "echo \"Build later\"",
-    "lint": "echo \"Lint later\"",
-    "typecheck": "echo \"Typecheck later\"",
-    "test": "echo \"Test later\""
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests yet\""
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.487.0",
+    "tailwind-merge": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.8.2"
   }
 }

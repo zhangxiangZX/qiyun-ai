@@ -1,0 +1,61 @@
+name: Bug Report
+description: Report a reproducible bug or regression.
+title: "[Bug] <short title>"
+labels: ["bug", "needs-triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: "Knowledge upload stays in processing forever."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Upload ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Console UI
+        - API
+        - Worker
+        - Widget
+        - Infra
+        - Docs
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add screenshots, logs, request IDs, or command output.
+  - type: textarea
+    id: checks
+    attributes:
+      label: Fix checklist
+      value: |
+        - [ ] Regression test added or updated.
+        - [ ] Related docs or task notes updated.
+        - [ ] lint/typecheck/test command recorded in PR.
