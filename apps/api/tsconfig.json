@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmit": false,
+    "types": ["node"],
+    "typeRoots": ["../../node_modules/.pnpm/@types+node@22.20.0/node_modules/@types"]
+  },
+  "include": ["src/**/*.ts"]
+}

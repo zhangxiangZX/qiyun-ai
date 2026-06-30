@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "echo \"NestJS API skeleton will be added here\"",
-    "build": "echo \"Build later\"",
-    "lint": "echo \"Lint later\"",
-    "typecheck": "echo \"Typecheck later\"",
-    "test": "echo \"Test later\""
+    "dev": "node dist/main.js",
+    "build": "node ../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/tsc.js -p tsconfig.json",
+    "lint": "node ../../node_modules/.pnpm/eslint@9.39.4_jiti@1.21.7/node_modules/eslint/bin/eslint.js \"src/**/*.ts\"",
+    "typecheck": "node ../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/tsc.js -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/**/*.test.js"
   }
 }

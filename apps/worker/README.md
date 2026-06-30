@@ -1,8 +1,6 @@
 # qiyun-worker
 
-文档解析与向量化任务模块。
-
-- 文件解析
-- Embedding
-- 队列处理
-- 失败重试
+当前阶段提供 `C-02` 所需的最小处理器能力：
+- 文档状态流转：`uploaded -> parsing -> indexing -> ready|failed`
+- 基于文件名模拟失败场景
+- 供后续接入 BullMQ / Redis / 真正解析器的纯逻辑入口
