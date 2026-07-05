@@ -1,0 +1,5 @@
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS site_key_hash TEXT NULL;
+CREATE INDEX IF NOT EXISTS idx_sites_site_key_hash ON sites (site_key_hash);
+
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS llm_temperature REAL NOT NULL DEFAULT 0.3;
+ALTER TABLE bots ADD COLUMN IF NOT EXISTS max_output_tokens INTEGER NOT NULL DEFAULT 1024;
