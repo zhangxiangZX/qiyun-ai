@@ -27,35 +27,43 @@ export const dashboardWithBots: DashboardSnapshot = {
   kpis: [
     {
       id: "sessions",
-      label: "今日会话",
-      value: "186",
-      description: "较昨日 +12%，峰值出现在 14:00 到 16:00",
-      trend: "+12%",
-      trendDirection: "up",
-    },
-    {
-      id: "visitors",
-      label: "今日访客",
-      value: "94",
-      description: "独立访客，包含官网 Widget 和测试页面",
-      trend: "+8%",
+      label: "总会话数",
+      value: "1,258",
+      description: "较上周 +23.5%",
+      trend: "23.5%",
       trendDirection: "up",
     },
     {
       id: "leads",
-      label: "今日线索",
-      value: "17",
-      description: "留资转化率 9.1%，其中 6 条待跟进",
-      trend: "+3",
+      label: "新增线索数",
+      value: "356",
+      description: "较上周 +18.2%",
+      trend: "18.2%",
+      trendDirection: "up",
+    },
+    {
+      id: "visitors",
+      label: "高意向线索",
+      value: "92",
+      description: "较上周 +25.6%",
+      trend: "25.6%",
       trendDirection: "up",
     },
     {
       id: "response",
-      label: "平均响应",
-      value: "1.8s",
-      description: "首 token P95 为 4.2s，检索链路正常",
-      trend: "稳定",
-      trendDirection: "neutral",
+      label: "平均响应时间",
+      value: "2.3s",
+      description: "较上周更快",
+      trend: "stable",
+      trendDirection: "up",
+    },
+    {
+      id: "unresolved",
+      label: "未解决问题",
+      value: "36",
+      description: "较上周 -8.3%",
+      trend: "8.3%",
+      trendDirection: "down",
     },
   ],
   trend7: buildTrend(7, 120, 8),
@@ -73,12 +81,14 @@ export const dashboardWithBots: DashboardSnapshot = {
       question: "能否对接企业微信自动回复？",
       askedAt: "2026-06-29T09:14:00.000Z",
       botName: "官网客服",
+      citedSource: "集成说明 / 渠道能力",
     },
     {
       id: "uq-2",
       question: "私有化部署的最低服务器配置是什么？",
       askedAt: "2026-06-29T08:02:00.000Z",
       botName: "产品助手",
+      citedSource: "部署指南 / 环境要求",
     },
     {
       id: "uq-3",
@@ -92,6 +102,13 @@ export const dashboardWithBots: DashboardSnapshot = {
       askedAt: "2026-06-28T17:22:00.000Z",
       botName: "产品助手",
     },
+  ],
+  channelDistribution: [
+    { label: "官网", sessions: 574 },
+    { label: "搜索引擎", sessions: 306 },
+    { label: "直接访问", sessions: 199 },
+    { label: "社交媒体", sessions: 110 },
+    { label: "其他", sessions: 69 },
   ],
   recentLeads: [
     {
@@ -109,7 +126,7 @@ export const dashboardWithBots: DashboardSnapshot = {
       contact: "lwei@example.com",
       sourceBot: "销售顾问",
       lastQuestion: "能否安排产品演示？",
-      status: "following",
+      status: "pending",
       createdAt: "2026-06-29T09:18:00.000Z",
     },
     {
@@ -145,6 +162,6 @@ export const dashboardEmpty: DashboardSnapshot = {
 
 export function fetchDashboardSnapshot(): Promise<DashboardSnapshot> {
   return new Promise((resolve) => {
-    window.setTimeout(() => resolve(dashboardWithBots), 600);
+    setTimeout(() => resolve(dashboardWithBots), 600);
   });
 }

@@ -64,7 +64,7 @@ export function DashboardTrendChart({
 
   if (loading) {
     return (
-      <section className="rounded-card border border-border bg-card p-6 shadow-card">
+      <section className="console-panel">
         <div className="flex items-center justify-between gap-3">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-9 w-28" />
@@ -75,7 +75,7 @@ export function DashboardTrendChart({
   }
 
   return (
-    <section className="rounded-card border border-border bg-card p-6 shadow-card">
+    <section className="console-panel">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-card-foreground">会话与线索趋势</h2>
@@ -114,6 +114,11 @@ export function DashboardTrendChart({
       </div>
 
       <div className="mt-4 overflow-x-auto">
+        {!data.length ? (
+          <div className="flex min-h-[220px] items-center justify-center rounded-control border border-dashed border-border/80 bg-muted/20 px-4 text-center text-sm text-muted-foreground">
+            当前时间范围内暂无会话或线索数据。
+          </div>
+        ) : (
         <svg
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           className="h-[220px] w-full min-w-[320px]"
@@ -151,6 +156,7 @@ export function DashboardTrendChart({
             ) : null,
           )}
         </svg>
+        )}
       </div>
     </section>
   );

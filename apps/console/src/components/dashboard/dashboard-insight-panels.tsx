@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { AlertCircle, MessageCircleQuestion } from "lucide-react";
 
-import { Badge, Button, EmptyState } from "@qiyun/ui";
+import { Badge, Button } from "@qiyun/ui";
+
+import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
 
 import { formatRelativeTime } from "@/lib/dashboard/format";
 import type { InsightItem, UnresolvedItem } from "@/lib/dashboard/types";
@@ -19,7 +21,7 @@ export function DashboardInsightPanels({
 }: DashboardInsightPanelsProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <section className="rounded-card border border-border bg-card p-6 shadow-card">
+      <section className="console-panel">
         <div className="flex items-center gap-2">
           <MessageCircleQuestion className="h-5 w-5 text-primary" aria-hidden />
           <h2 className="text-lg font-semibold text-card-foreground">高频问题</h2>
@@ -46,15 +48,12 @@ export function DashboardInsightPanels({
           </ol>
         ) : (
           <div className="mt-5">
-            <EmptyState
-              title="暂无高频问题"
-              description="有会话数据后，系统会按相似问题聚合展示。"
-            />
+            <ConsoleEmptyState preset="noFrequentQuestions" />
           </div>
         )}
       </section>
 
-      <section className="rounded-card border border-border bg-card p-6 shadow-card">
+      <section className="console-panel">
         <div className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-warning" aria-hidden />
           <h2 className="text-lg font-semibold text-card-foreground">未解决问题</h2>
@@ -79,10 +78,7 @@ export function DashboardInsightPanels({
           </ul>
         ) : (
           <div className="mt-5">
-            <EmptyState
-              title="暂无未解决问题"
-              description="机器人回答稳定时，这里会保持为空。"
-            />
+            <ConsoleEmptyState preset="noUnresolvedQuestions" />
           </div>
         )}
 

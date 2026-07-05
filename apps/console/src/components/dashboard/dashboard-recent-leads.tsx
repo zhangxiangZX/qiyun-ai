@@ -24,8 +24,12 @@ function statusVariant(status: RecentLead["status"]) {
   switch (status) {
     case "new":
       return "info" as const;
-    case "following":
+    case "pending":
       return "warning" as const;
+    case "contacted":
+      return "secondary" as const;
+    case "proposal":
+      return "default" as const;
     case "won":
       return "success" as const;
     case "invalid":
@@ -35,7 +39,7 @@ function statusVariant(status: RecentLead["status"]) {
 
 export function DashboardRecentLeads({ leads }: DashboardRecentLeadsProps) {
   return (
-    <section className="rounded-card border border-border bg-card shadow-card">
+    <section className="console-panel overflow-hidden p-0">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-6 py-5">
         <div>
           <h2 className="text-lg font-semibold text-card-foreground">最近线索</h2>

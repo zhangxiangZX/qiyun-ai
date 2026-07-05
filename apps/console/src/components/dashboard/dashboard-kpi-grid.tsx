@@ -1,13 +1,25 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { StatCard } from "@qiyun/ui";
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Clock3, MessageSquareText, Minus, Users } from "lucide-react";
 
 import type { DashboardKpi } from "@/lib/dashboard/types";
 
 export interface DashboardKpiGridProps {
   items: DashboardKpi[];
 }
+
+const kpiIconMap: Record<
+  string,
+  { icon: ReactNode; tone: "brand" | "success" | "purple" | "warning" | "info" }
+> = {
+  sessions: { icon: <MessageSquareText className="h-5 w-5" aria-hidden />, tone: "brand" },
+  visitors: { icon: <Users className="h-5 w-5" aria-hidden />, tone: "purple" },
+  leads: { icon: <Users className="h-5 w-5" aria-hidden />, tone: "success" },
+  response: { icon: <Clock3 className="h-5 w-5" aria-hidden />, tone: "warning" },
+};
 
 function TrendBadge({ item }: { item: DashboardKpi }) {
   if (item.trendDirection === "up") {
@@ -39,15 +51,24 @@ function TrendBadge({ item }: { item: DashboardKpi }) {
 export function DashboardKpiGrid({ items }: DashboardKpiGridProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => (
-        <StatCard
-          key={item.id}
-          label={item.label}
-          value={item.value}
-          description={item.description}
-          trend={<TrendBadge item={item} />}
-        />
-      ))}
+      {items.map((item) => {
+        const visual = kpiIconMap[item.id] ?? {
+          icon: <MessageSquareText className="h-5 w-5" aria-hidden />,
+          tone: "brand" as const,
+        };
+
+        return (
+          <StatCard
+            key={item.id}
+            label={item.label}
+            value={item.value}
+            description={item.description}
+            trend={<TrendBadge item={item} />}
+            icon={visual.icon}
+            iconTone={visual.tone}
+          />
+        );
+      })}
     </div>
   );
 }

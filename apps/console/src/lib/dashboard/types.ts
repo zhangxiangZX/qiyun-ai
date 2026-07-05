@@ -28,6 +28,7 @@ export interface UnresolvedItem {
   question: string;
   askedAt: string;
   botName: string;
+  citedSource?: string;
 }
 
 export interface RecentLead {
@@ -36,8 +37,14 @@ export interface RecentLead {
   contact: string;
   sourceBot: string;
   lastQuestion: string;
-  status: "new" | "following" | "won" | "invalid";
+  status: "new" | "pending" | "contacted" | "proposal" | "won" | "invalid";
   createdAt: string;
+}
+
+/** 渠道来源会话数；来自 Dashboard API，缺失时概览页展示空态。 */
+export interface ChannelDistributionItem {
+  label: string;
+  sessions: number;
 }
 
 export interface DashboardSnapshot {
@@ -48,4 +55,5 @@ export interface DashboardSnapshot {
   frequentQuestions: InsightItem[];
   unresolvedQuestions: UnresolvedItem[];
   recentLeads: RecentLead[];
+  channelDistribution?: ChannelDistributionItem[];
 }
