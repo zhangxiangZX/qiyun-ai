@@ -1,14 +1,21 @@
----
-description: Qiyun AI project rules for Cursor
----
-
 # Project Rules
 
-- Always read `TASKS.md`, `COMMAND.md`, and `AGENTS.md` before starting work.
-- Cursor only edits `apps/console/**` and `packages/ui/**`.
-- Use the existing design tokens and shared UI components first.
-- Keep UI work responsive, with loading, empty, error, and success states.
-- Do not change database schema, backend APIs, Docker, or auth logic.
-- Prefer small, task-scoped branches named `feature/<TaskID>-<short-name>`.
-- After each task, list changed files and run lint plus typecheck.
-- Update `TASKS.md` when the task is done or blocked.
+AI云 · 工业官网获客系统
+
+## 必读（按顺序）
+
+1. `docs/AI云_项目核心需求护栏与开发防跑偏规则_V1.0.md`
+2. `AGENTS.md`
+3. 当前 `docs/tasks/{Task-ID}.md`
+
+## 分工
+
+- **Cursor**：`apps/console/**`、`apps/widget/**`、`packages/ui/**`
+- **Codex**：`apps/api/**`、`apps/worker/**`、`infra/**`、migration
+
+## 纪律
+
+- 一个 Task ID、一个分支、一个可验收结果
+- 编码前输出「不做什么」与文件清单；编码后只报告任务范围内改动
+- 偏离 P0/P1 闭环 → `docs/BACKLOG.md`，不直接实现
+- 遵循 `docs/07-design-system.md` 与 `docs/05-api-contract.md`
