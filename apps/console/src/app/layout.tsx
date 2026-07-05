@@ -1,21 +1,21 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Inter } from "next/font/google";
 
-import "../styles/console.css";
+import "@/styles/console.css";
 
-export const metadata: Metadata = {
-  title: "Qiyun AI Console",
-  description: "Qiyun AI enterprise console",
-};
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: ReactNode;
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="bg-background text-foreground antialiased">{children}</body>
+      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
     </html>
   );
 }

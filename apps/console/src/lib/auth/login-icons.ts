@@ -1,0 +1,18 @@
+export const loginIcons = {
+  user: "/assets/login/icon-user.svg",
+  lock: "/assets/login/icon-lock.svg",
+  eye: "/assets/login/icon-eye.svg",
+  eyeOff: "/assets/login/icon-eye-off.svg",
+  shield: "/assets/login/icon-shield.svg",
+  register: "/assets/login/icon-user-plus.svg",
+  codeLogin: "/assets/login/icon-shield.svg",
+  wechat: "/assets/login/icon-wechat.svg",
+  dingtalk: "/assets/login/icon-dingtalk.svg",
+  feishu: "/assets/login/icon-feishu.svg",
+  sso: "/assets/login/icon-sso.svg",
+  featureAi: "/assets/login/icon-ai-service.svg",
+  featureKnowledge: "/assets/login/icon-knowledge.svg",
+  featureGrowth: "/assets/login/icon-growth.svg",
+  brandLockup: "/assets/login/brand-lockup.png",
+  brandIllustration: "/assets/login/brand-illustration.png",
+} as const;
