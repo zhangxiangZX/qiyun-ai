@@ -42,7 +42,7 @@ export function PlaceholderPage({ title, description, segment, icon, action }: P
   return (
     <div className="space-y-6">
       <PageHeader title={resolvedTitle} description={resolvedDescription} />
-      <div className="px-4 sm:px-6 lg:px-page">
+      <div>
         <EmptyState title={resolvedTitle} description={resolvedDescription} icon={icon} action={action} />
       </div>
     </div>

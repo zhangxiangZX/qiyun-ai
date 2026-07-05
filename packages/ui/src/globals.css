@@ -1,3 +1,5 @@
+@import "./styles/motion.css";
+
 :root {
   color-scheme: light;
   --font-sans:
@@ -73,10 +75,7 @@ body {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background:
-    radial-gradient(circle at top left, rgba(47, 125, 255, 0.12), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 28%),
-    hsl(var(--background));
+  background: hsl(var(--background));
   color: hsl(var(--foreground));
   line-height: 1.6;
 }

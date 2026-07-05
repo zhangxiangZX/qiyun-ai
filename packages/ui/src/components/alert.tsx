@@ -37,7 +37,7 @@ export function Alert({ variant = "info", title, className, children, ...props }
     <div
       role="alert"
       className={cn(
-        "flex gap-3 rounded-card border p-4 text-sm shadow-sm",
+        "flex gap-3 rounded-card border p-4 text-sm shadow-sm animate-slide-in-down",
         styles.container,
         className,
       )}

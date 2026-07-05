@@ -7,21 +7,40 @@ export interface PageHeaderProps {
   description?: string;
   actions?: ReactNode;
   eyebrow?: ReactNode;
+  /** `compact` hides the title — use when the shell topbar already shows the page name. */
+  variant?: "default" | "compact";
   className?: string;
 }
 
-export function PageHeader({ title, description, actions, eyebrow, className }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  eyebrow,
+  variant = "default",
+  className,
+}: PageHeaderProps) {
+  const compact = variant === "compact";
+
   return (
     <header
       className={cn(
-        "flex flex-col gap-4 border-b border-border bg-background/80 px-page py-6 backdrop-blur sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:py-7",
+        "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between animate-fade-in-up",
         className,
       )}
     >
-      <div className="space-y-2">
-        {eyebrow ? <div className="text-sm font-medium text-primary">{eyebrow}</div> : null}
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
-        {description ? <p className="max-w-3xl text-sm text-muted-foreground">{description}</p> : null}
+      <div className="space-y-1.5">
+        {eyebrow ? (
+          <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">{eyebrow}</div>
+        ) : null}
+        {compact ? null : (
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+            {title}
+          </h1>
+        )}
+        {description ? (
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </header>

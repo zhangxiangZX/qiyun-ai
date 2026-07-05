@@ -1,3 +1,385 @@
+@import "../../../../packages/ui/src/styles/theme.css";
+@import "../../../../packages/ui/src/styles/motion.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .surface-card,
+  .console-panel,
+  .console-metric-card {
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.2s ease;
+  }
+
+  .surface-card:hover,
+  .console-panel:hover,
+  .console-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 4px 12px hsl(var(--primary) / 0.08),
+      0 12px 32px hsl(var(--primary) / 0.06);
+  }
+
+  .surface-card {
+    @apply rounded-card border border-border bg-card shadow-card;
+  }
+
+  .surface-muted {
+    @apply rounded-card border border-border/80 bg-muted/40;
+  }
+
+  .page-stack {
+    @apply space-y-6;
+  }
+
+  .page-stack > * {
+    animation: ui-fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .page-stack > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .page-stack > *:nth-child(2) {
+    animation-delay: 55ms;
+  }
+  .page-stack > *:nth-child(3) {
+    animation-delay: 110ms;
+  }
+  .page-stack > *:nth-child(4) {
+    animation-delay: 165ms;
+  }
+  .page-stack > *:nth-child(5) {
+    animation-delay: 220ms;
+  }
+  .page-stack > *:nth-child(6) {
+    animation-delay: 275ms;
+  }
+  .page-stack > *:nth-child(7) {
+    animation-delay: 330ms;
+  }
+  .page-stack > *:nth-child(8) {
+    animation-delay: 385ms;
+  }
+
+  .page-section {
+    @apply space-y-4;
+  }
+
+  /* Main content canvas — light grey field + white cards (design mockup) */
+  .console-main-canvas {
+    @apply min-h-[calc(100dvh-3.75rem)] bg-background;
+    background-image:
+      radial-gradient(circle at 85% 8%, hsl(var(--primary) / 0.06), transparent 38%),
+      radial-gradient(circle at 12% 92%, hsl(var(--info) / 0.05), transparent 42%);
+    background-size: 200% 200%;
+    animation: ui-canvas-drift 22s ease-in-out infinite;
+  }
+
+  .console-panel {
+    @apply rounded-card border border-border bg-card p-5 shadow-card sm:p-6;
+  }
+
+  .console-metric-card {
+    @apply relative overflow-hidden;
+  }
+
+  .console-metric-card::before {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-400/80 via-brand-500/40 to-transparent;
+  }
+
+  .console-metric-card::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(
+      105deg,
+      transparent 42%,
+      hsl(var(--primary) / 0.04) 50%,
+      transparent 58%
+    );
+  }
+
+  .console-metric-card:hover::after {
+    @apply opacity-100;
+    animation: ui-tech-scan 3.5s ease-in-out infinite;
+  }
+
+  .console-topbar-search {
+    @apply h-10 w-full rounded-full border border-border bg-muted/40 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .console-workspace-shell {
+    @apply overflow-hidden rounded-card border border-border bg-card shadow-card;
+  }
+
+  .console-workspace-shell > .console-workspace-grid {
+    @apply min-h-[min(72vh,52rem)] lg:grid lg:grid-cols-[280px_minmax(0,1fr)_300px];
+  }
+
+  .console-filter-tabs {
+    @apply inline-flex flex-wrap gap-1 rounded-control border border-border bg-muted/30 p-1;
+  }
+
+  .console-filter-tab {
+    @apply rounded-control px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground;
+  }
+
+  .console-filter-tab[data-active="true"] {
+    @apply bg-card text-primary shadow-sm;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px hsl(var(--primary) / 0.12);
+  }
+
+  .console-drawer-body {
+    @apply flex h-full flex-col overflow-y-auto pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))];
+  }
+
+  /* Dashboard sidebar — reference dark nav (always loaded via layout) */
+  .console-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100dvh;
+    padding: 25px 15px;
+    background: linear-gradient(180deg, #0d1e40 0%, #07142d 100%);
+    color: #d2ddf4;
+    font-family: Inter, var(--font-inter), "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    box-shadow: 6px 0 26px rgba(10, 28, 70, 0.08);
+  }
+
+  .console-sidebar__logo {
+    padding: 0 11px 30px;
+  }
+
+  .console-sidebar__logo-brand {
+    gap: 11px !important;
+  }
+
+  .console-sidebar__logo-brand > div:first-child {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(145deg, #4f79ff, #25caff) !important;
+    box-shadow: 0 8px 18px rgba(50, 96, 255, 0.28) !important;
+  }
+
+  .console-sidebar__logo-brand > div:first-child img {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .console-sidebar__logo-brand p:first-of-type {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+  }
+
+  .console-sidebar__logo-brand p:last-of-type {
+    margin-top: 2px;
+    font-size: 10px !important;
+    color: #c0cce3 !important;
+  }
+
+  .console-sidebar__nav {
+    display: grid;
+    flex: 1;
+    gap: 8px;
+    align-content: start;
+    overflow-y: auto;
+    padding: 0 1px;
+  }
+
+  .console-sidebar__nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 49px;
+    padding: 0 15px;
+    border-radius: 8px;
+    color: #d2ddf4 !important;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.2s ease;
+  }
+
+  .console-sidebar__nav-item:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(3px);
+  }
+
+  .console-sidebar__nav-item--active {
+    color: #fff !important;
+    background: linear-gradient(105deg, #4654fa, #6257ff) !important;
+    box-shadow: 0 9px 22px rgba(60, 72, 255, 0.38);
+    animation: ui-glow-pulse 3s ease-in-out infinite;
+  }
+
+  .console-sidebar__nav-item--active:hover {
+    background: linear-gradient(105deg, #4654fa, #6257ff) !important;
+  }
+
+  .console-sidebar__nav-icon {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+    color: #aab9d3;
+    stroke: currentColor;
+  }
+
+  .console-sidebar__nav-item:hover .console-sidebar__nav-icon {
+    color: #d2ddf4;
+  }
+
+  .console-sidebar__nav-item--active .console-sidebar__nav-icon {
+    color: #fff;
+  }
+
+  .console-sidebar__nav-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .console-sidebar__nav-chevron {
+    margin-left: auto;
+    color: #afbdd5;
+    font-size: 13px;
+    font-style: normal;
+    line-height: 1;
+  }
+
+  .console-sidebar__nav-item--active .console-sidebar__nav-chevron {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .console-sidebar__bottom {
+    margin-top: auto;
+    padding-top: 22px;
+  }
+
+  .console-sidebar__plan {
+    padding: 22px 16px 18px;
+    border: 1px solid rgba(128, 151, 212, 0.28);
+    border-radius: 13px;
+    background: linear-gradient(145deg, rgba(57, 79, 155, 0.66), rgba(35, 54, 121, 0.62));
+    text-align: center;
+  }
+
+  .console-sidebar__plan-title {
+    display: block;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .console-sidebar__plan-subtitle {
+    display: block;
+    margin: 11px 0 18px;
+    color: #c9d7f5;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .console-sidebar__plan-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 42px;
+    border: 0;
+    border-radius: 22px;
+    color: #fff !important;
+    background: linear-gradient(135deg, #4457fc, #5b4ff5);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.2s ease;
+  }
+
+  .console-sidebar__plan-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(68, 87, 252, 0.35);
+  }
+
+  .console-sidebar__user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 22px;
+    padding: 0;
+    border: 0;
+    color: #fff;
+    background: transparent;
+    text-align: left;
+    text-decoration: none !important;
+    cursor: pointer;
+  }
+
+  .console-sidebar__user-avatar {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #e9effb;
+    color: #65759a;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .console-sidebar__user-name {
+    display: block;
+    overflow: hidden;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .console-sidebar__user-role {
+    display: block;
+    margin-top: 3px;
+    overflow: hidden;
+    color: #b2c1dc;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .console-sidebar__user-chevron {
+    margin-left: auto;
+    color: #b8c6dc;
+    font-size: 26px;
+    font-style: normal;
+    line-height: 1;
+  }
+}

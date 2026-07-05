@@ -3,16 +3,16 @@ const preset = {
     extend: {
       colors: {
         brand: {
-          50: "#eef7ff",
-          100: "#dceeff",
-          200: "#b8dcff",
-          300: "#86c1ff",
-          400: "#58a0ff",
-          500: "#2f7dff",
-          600: "#1f64eb",
-          700: "#1d52c2",
-          800: "#1d469c",
-          900: "#1d3c7d",
+          50: "#eef5ff",
+          100: "#dce9ff",
+          200: "#b8d4ff",
+          300: "#86b8ff",
+          400: "#3b8cff",
+          500: "#1266ff",
+          600: "#0f55d9",
+          700: "#0d46b3",
+          800: "#0c3a92",
+          900: "#0b3178",
         },
         neutral: {
           50: "#fafafa",
@@ -48,6 +48,13 @@ const preset = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          muted: "hsl(var(--sidebar-muted))",
+          border: "hsl(var(--sidebar-border))",
+          accent: "hsl(var(--sidebar-accent))",
+        },
       },
       borderRadius: {
         control: "var(--radius-control)",
@@ -65,6 +72,35 @@ const preset = {
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
+      },
+      keyframes: {
+        "fade-in-up": {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.97)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "slide-in-down": {
+          from: { opacity: "0", transform: "translateY(-10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0)" },
+          "50%": { boxShadow: "0 0 18px 2px hsl(var(--primary) / 0.14)" },
+        },
+      },
+      animation: {
+        "fade-in-up": "fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-in": "fade-in 0.35s ease-out both",
+        "scale-in": "scale-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "slide-in-down": "slide-in-down 0.38s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "glow-pulse": "glow-pulse 2.8s ease-in-out infinite",
       },
     },
   },
