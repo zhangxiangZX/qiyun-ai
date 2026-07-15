@@ -1,0 +1,259 @@
+name: qiyun-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qiyun-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qiyun_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d qiyun_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: qiyun-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: qiyun-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qiyun-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "test -r /proc/1/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile.prod
+    container_name: qiyun-api-migrate
+    profiles: ["ops"]
+    env_file:
+      - ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_NAME: qiyun-ai
+      APP_URL: http://localhost:3000
+      API_PORT: 3001
+      API_RUNTIME_DRIVER: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qiyun_ai
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: qiyun-ai
+      MINIO_REGION: us-east-1
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION_NAME: qiyun_chunks
+      VECTOR_STORE_DRIVER: qdrant
+      DOCUMENT_QUEUE_DRIVER: redis
+      DOCUMENT_STORAGE_DRIVER: minio
+      # JWT_SECRET / JWT_REFRESH_SECRET / QDRANT_VECTOR_SIZE sourced from env_file (../.env)
+      LLM_PROVIDER: openai-compatible
+      LLM_BASE_URL: https://api.deepseek.com/v1
+      LLM_CHAT_MODEL: deepseek-chat
+      LLM_EMBEDDING_BASE_URL: https://api.siliconflow.cn/v1
+      LLM_EMBEDDING_TIMEOUT_MS: "10000"
+      LLM_EMBEDDING_ENABLED: "true"
+      LLM_EMBEDDING_MODEL: BAAI/bge-large-zh-v1.5
+      WORKER_CONCURRENCY: "2"
+      CORS_ORIGIN: http://localhost:3000
+      NEXT_PUBLIC_WORKSPACE_ID: ws_dev
+    command: ["pnpm", "--filter", "qiyun-api", "db:migrate"]
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile.prod
+    container_name: qiyun-api
+    restart: unless-stopped
+    volumes:
+      # Dev: widget build syncs to apps/api/assets — mount so embed sites pick up new launcher without image rebuild.
+      - ../apps/api/assets/widget.js:/workspace/apps/api/dist/assets/widget.js:ro
+      - ../apps/api/assets/widget.js:/workspace/apps/api/assets/widget.js:ro
+    env_file:
+      - ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_NAME: qiyun-ai
+      APP_URL: http://localhost:3000
+      API_PORT: 3001
+      API_RUNTIME_DRIVER: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qiyun_ai
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: qiyun-ai
+      MINIO_REGION: us-east-1
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION_NAME: qiyun_chunks
+      VECTOR_STORE_DRIVER: qdrant
+      DOCUMENT_QUEUE_DRIVER: redis
+      DOCUMENT_STORAGE_DRIVER: minio
+      # JWT_SECRET / JWT_REFRESH_SECRET / QDRANT_VECTOR_SIZE sourced from env_file (../.env)
+      LLM_PROVIDER: openai-compatible
+      LLM_BASE_URL: https://api.deepseek.com/v1
+      LLM_CHAT_MODEL: deepseek-chat
+      LLM_EMBEDDING_BASE_URL: https://api.siliconflow.cn/v1
+      LLM_EMBEDDING_TIMEOUT_MS: "10000"
+      LLM_EMBEDDING_ENABLED: "true"
+      LLM_EMBEDDING_MODEL: BAAI/bge-large-zh-v1.5
+      WORKER_CONCURRENCY: "2"
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3010
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-platform@qiyun.ai}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-Qiyun@2026}
+      PLATFORM_ADMIN_NAME: ${PLATFORM_ADMIN_NAME:-平台管理员}
+      NEXT_PUBLIC_WORKSPACE_ID: ws_dev
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile.prod
+    container_name: qiyun-worker
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_NAME: qiyun-ai
+      APP_URL: http://localhost:3000
+      API_PORT: 3001
+      API_RUNTIME_DRIVER: postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qiyun_ai
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: qiyun-ai
+      MINIO_REGION: us-east-1
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION_NAME: qiyun_chunks
+      VECTOR_STORE_DRIVER: qdrant
+      DOCUMENT_QUEUE_DRIVER: redis
+      DOCUMENT_STORAGE_DRIVER: minio
+      # JWT_SECRET / JWT_REFRESH_SECRET / QDRANT_VECTOR_SIZE sourced from env_file (../.env)
+      LLM_PROVIDER: openai-compatible
+      LLM_BASE_URL: https://api.deepseek.com/v1
+      LLM_CHAT_MODEL: deepseek-chat
+      LLM_EMBEDDING_BASE_URL: https://api.siliconflow.cn/v1
+      LLM_EMBEDDING_TIMEOUT_MS: "10000"
+      LLM_EMBEDDING_ENABLED: "true"
+      LLM_EMBEDDING_MODEL: BAAI/bge-large-zh-v1.5
+      WORKER_CONCURRENCY: "2"
+      CORS_ORIGIN: http://localhost:3000
+      NEXT_PUBLIC_WORKSPACE_ID: ws_dev
+    command: ["pnpm", "--filter", "qiyun-worker", "start"]
+
+  console:
+    build:
+      context: ..
+      dockerfile: infra/docker/console.Dockerfile.prod
+    container_name: qiyun-console
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # 本地全栈：Console 通过服务名 api 访问上游
+      API_BASE_URL: http://api:3001
+      NEXT_PUBLIC_WIDGET_URL: http://localhost:3001
+      APP_URL: http://localhost:3000
+      COOKIE_SECURE: "false"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  qdrant_data:

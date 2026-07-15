@@ -1,0 +1,24 @@
+# ============================================================================
+# qiyun-ai 数据库备份定时任务 (crontab 示例)
+# ============================================================================
+#
+# 安装方式（二选一）：
+#
+#   方式 A（整体安装，会覆盖当前用户的全部 crontab）：
+#     crontab /path/to/qiyun-ai/scripts/db-backup/db-backup.cron
+#
+#   方式 B（追加/手动编辑，推荐，不会覆盖已有任务）：
+#     crontab -e
+#     在打开的编辑器里粘贴下面这一行，保存退出即可。
+#
+# 说明：
+#   - 下面 PATH 行确保 cron 环境能找到 pg_dump / psql / node（cron 默认 PATH 很精简）。
+#   - 请将 /path/to/qiyun-ai 替换为本机实际仓库根目录的绝对路径。
+#   - 日志会追加写入 backups/backup.log，便于排查问题。
+#   - 备份文件权限为 600；如需异地/云端留存，请自行在备份后加一行 rsync/scp。
+#
+# ----------------------------------------------------------------------------
+
+PATH=/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin
+# 每天 03:30 执行全量备份
+30 3 * * * /usr/bin/env bash /path/to/qiyun-ai/scripts/db-backup/backup.sh >> /path/to/qiyun-ai/scripts/db-backup/backups/backup.log 2>&1

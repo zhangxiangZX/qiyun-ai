@@ -1,0 +1,213 @@
+# ECS 生产编排：中间件不暴露公网，API 仅绑定本机 3001，由宿主机 Nginx 反代。
+# 在仓库根目录执行：
+#   docker compose -f infra/docker-compose.ecs.yml --profile ops run --rm migrate
+#   docker compose -f infra/docker-compose.ecs.yml up -d --build
+
+name: qiyun-ai-ecs
+
+x-app-env: &app-env
+  NODE_ENV: production
+  APP_NAME: qiyun-ai
+  API_PORT: 3001
+  API_RUNTIME_DRIVER: postgres
+  DOCUMENT_STORAGE_DIR: /data/documents
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qiyun-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qiyun_ai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d qiyun_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - qiyun_internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: qiyun-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - qiyun_internal
+
+  minio:
+    image: minio/minio:latest
+    container_name: qiyun-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    networks:
+      - qiyun_internal
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qiyun-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "test -r /proc/1/status || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - qiyun_internal
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile.prod
+    container_name: qiyun-api-migrate
+    profiles: ["ops"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/qiyun_ai
+    command: ["pnpm", "--filter", "qiyun-api", "db:migrate"]
+    networks:
+      - qiyun_internal
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile.prod
+    container_name: qiyun-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/qiyun_ai
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - document_data:/data/documents
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - qiyun_internal
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.Dockerfile.prod
+    container_name: qiyun-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      api:
+        condition: service_started
+    env_file:
+      - ../.env
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/qiyun_ai
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      QDRANT_URL: http://qdrant:6333
+    command: ["pnpm", "--filter", "qiyun-worker", "start"]
+    volumes:
+      - document_data:/data/documents
+    networks:
+      - qiyun_internal
+
+  console:
+    build:
+      context: ..
+      dockerfile: infra/docker/console.Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_URL:-https://api.qiyuntu.cn}
+        NEXT_PUBLIC_WIDGET_URL: ${NEXT_PUBLIC_WIDGET_URL:-https://cdn.qiyuntu.cn}
+        NEXT_PUBLIC_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://www.qiyuntu.cn}
+        NEXT_PUBLIC_ENTRY_URL: ${PUBLIC_ENTRY_URL:-https://go.qiyuntu.cn}
+    container_name: qiyun-console
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_BASE_URL: http://api:3001
+      NEXT_PUBLIC_WIDGET_URL: ${NEXT_PUBLIC_WIDGET_URL:-https://cdn.qiyuntu.cn}
+      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_URL:-https://api.qiyuntu.cn}
+      NEXT_PUBLIC_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://www.qiyuntu.cn}
+      NEXT_PUBLIC_ENTRY_URL: ${PUBLIC_ENTRY_URL:-https://go.qiyuntu.cn}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      APP_URL: ${APP_URL:-https://console.qiyuntu.cn}
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - qiyun_internal
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  qdrant_data:
+  document_data:
+
+networks:
+  qiyun_internal:
+    driver: bridge
