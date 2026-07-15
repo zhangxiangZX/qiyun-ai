@@ -4,15 +4,25 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "pnpm exec next dev --port 3000",
+    "dev:3010": "pnpm exec next dev --port 3010",
     "build": "pnpm exec next build",
     "start": "pnpm exec next start",
-    "lint": "pnpm exec next lint",
-    "typecheck": "pnpm exec tsc --noEmit"
+    "lint": "pnpm exec eslint src --max-warnings=0",
+    "typecheck": "pnpm exec tsc --noEmit",
+    "test": "node ../../scripts/run-console-tests.mjs",
+    "test:e2e": "node ../../scripts/run-console-e2e.mjs",
+    "test:e2e:install": "npm install --no-package-lock --prefix e2e && node e2e/node_modules/playwright/cli.js install chromium",
+    "test:e2e:ui": "node ../../scripts/run-console-e2e.mjs --ui",
+    "test:e2e:headed": "node ../../scripts/run-console-e2e.mjs --headed",
+    "test:ui-quality": "node e2e/node_modules/playwright/cli.js test --config e2e/playwright.config.mjs e2e/auth.spec.ts e2e/accessibility.spec.ts e2e/layout-contract.spec.ts e2e/visual-regression.spec.ts",
+    "test:business-flow": "node e2e/run-business-flow.mjs",
+    "test:customer-journey": "node e2e/run-customer-journey.mjs",
+    "test:all": "pnpm test && pnpm test:e2e"
   },
   "dependencies": {
     "@qiyun/ui": "workspace:*",
-    "next": "^15.2.4",
     "lucide-react": "^0.487.0",
+    "next": "^15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

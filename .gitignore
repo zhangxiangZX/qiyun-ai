@@ -7,3 +7,19 @@ coverage
 *.tsbuildinfo
 .DS_Store
 *.log
+.env
+.env.local
+.env.*.local
+.env.production
+.data/
+.lighthouseci/
+apps/console/e2e/test-results/
+apps/console/e2e/playwright-report/
+apps/console/e2e/accessibility-results*.json
+apps/api/.data/
+apps/console/test-results/
+apps/api/tmp-test-out.txt
+
+# 数据库备份 / 导出产物（含敏感数据，勿提交）
+scripts/db-backup/backups/
+scripts/db-backup/exports/
