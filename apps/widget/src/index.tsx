@@ -1,5 +1,2 @@
-export const widgetName = "qiyun-widget";
-
-export function mountWidget(): string {
-  return "qiyun-widget skeleton is ready";
-}
+export { mountWidget } from "./mount";
+export { SDK_VERSION } from "./lib/types";

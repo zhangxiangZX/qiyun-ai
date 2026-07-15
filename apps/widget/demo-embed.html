@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>企云 Widget 本地联调页</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 720px;
+        margin: 48px auto;
+        padding: 0 16px;
+        line-height: 1.6;
+      }
+      code {
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Widget 联调演示页</h1>
+    <p>
+      把控制台「站点接入」里复制的完整脚本贴到本页底部。若看不到右下角客服按钮，请检查：
+    </p>
+    <ol>
+      <li>脚本包含 <code>data-site-key</code> 和 <code>data-bot-id</code></li>
+      <li>当前页面 Origin 已加入站点白名单（如 <code>localhost</code>、<code>127.0.0.1</code>）</li>
+      <li>API 地址可从本机访问（其他设备请用局域网 IP，不要用 localhost）</li>
+    </ol>
+    <p>用 VS Code Live Server 或 <code>npx serve .</code> 打开本文件，不要直接双击 file:// 打开。</p>
+
+    <!-- ↓↓↓ 将控制台复制的嵌入脚本粘贴到此处 ↓↓↓ -->
+    <!--
+    <script
+      src="http://localhost:3001/public/widget.js"
+      data-api-base="http://localhost:3001"
+      data-bot-id="bot_xxx"
+      data-site-key="pk_xxx"
+      async
+    ></script>
+    -->
+  </body>
+</html>

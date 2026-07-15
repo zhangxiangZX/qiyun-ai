@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Qiyun Widget Dev</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #f8fafc;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 48px 24px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+      p {
+        color: #52525b;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>工业官网 Widget 预览</h1>
+      <p>P0-1：悬浮入口、聊天面板、SSE 流式回复与来源引用。右下角为 AI 客服动画入口。</p>
+      <p>开发时 API 默认指向 <code>http://localhost:3001</code>，需启动 apps/api。</p>
+    </main>
+    <script
+      type="module"
+      src="/src/bootstrap.ts"
+      data-bot-id="bot_dev"
+      data-site-key="pk_dev"
+      data-api-base="http://localhost:3001"
+      data-title="企云 AI 客服"
+      data-welcome="您好，我可以帮您解答产品参数、选型与应用场景问题。"
+    ></script>
+  </body>
+</html>

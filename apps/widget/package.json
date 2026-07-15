@@ -1,12 +1,27 @@
 {
   "name": "qiyun-widget",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "echo \"Widget skeleton will be added here\"",
-    "build": "echo \"Build later\"",
-    "lint": "echo \"Lint later\"",
-    "typecheck": "echo \"Typecheck later\"",
-    "test": "echo \"Test later\""
+    "dev": "vite",
+  "build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/optimize-launcher-assets.ps1 && vite build && node scripts/sync-to-api.mjs",
+    "preview": "vite preview",
+    "lint": "pnpm typecheck",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/**/*.test.ts",
+    "test:e2e": "node e2e/run-browser-tests.mjs"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
   }
 }
