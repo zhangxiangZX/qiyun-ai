@@ -3,6 +3,7 @@ node_modules
 dist
 coverage
 .next
+.next-prod
 .vscode/
 *.tsbuildinfo
 .DS_Store
@@ -16,6 +17,14 @@ coverage
 apps/console/e2e/test-results/
 apps/console/e2e/playwright-report/
 apps/console/e2e/accessibility-results*.json
+apps/console/*-REPORT.json
+apps/console/e2e-acc-checklist.json
+tests/test-results/
+tests/visual/reports/
+.tmp-*
+.lighthouse-*.json
+build-log.txt
+nul
 apps/api/.data/
 apps/console/test-results/
 apps/api/tmp-test-out.txt
