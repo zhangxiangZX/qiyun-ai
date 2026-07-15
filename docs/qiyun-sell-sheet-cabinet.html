@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>企云 AI · 一页纸 Sell Sheet（电柜设备版）</title>
+<style>
+  :root{
+    --ink:#16263a; --blue:#1e3a5f; --blue2:#2c5282; --accent:#f5a623;
+    --accent-d:#d98e0a; --line:#d9e1ea; --soft:#f3f6fa; --muted:#5b6b7d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#e9edf2;font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;color:var(--ink);}
+  .page{
+    width:210mm; min-height:297mm; margin:14px auto; background:#fff;
+    padding:10mm 11mm; display:flex; flex-direction:column; gap:7px;
+    box-shadow:0 6px 24px rgba(0,0,0,.12); position:relative;
+  }
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--blue);padding-bottom:6px;}
+  .brand{display:flex;align-items:baseline;gap:8px;}
+  .brand .logo{font-size:24px;font-weight:800;color:var(--blue);letter-spacing:.5px;}
+  .brand .sub{font-size:11px;color:var(--muted);}
+  .tag{font-size:11px;color:#fff;background:var(--blue2);padding:3px 9px;border-radius:11px;font-weight:600;}
+  /* hero */
+  .hero{background:linear-gradient(120deg,var(--blue) 0%,var(--blue2) 100%);color:#fff;border-radius:8px;padding:12px 16px;}
+  .hero h1{font-size:21px;line-height:1.25;font-weight:800;}
+  .hero p{font-size:12px;margin-top:5px;color:#dbe6f3;}
+  .hero .pill{display:inline-block;margin-top:7px;background:var(--accent);color:#3a2a00;font-weight:700;font-size:11px;padding:3px 10px;border-radius:12px;}
+  /* two col */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .card{border:1px solid var(--line);border-radius:7px;padding:9px 11px;background:var(--soft);}
+  .card h3{font-size:12.5px;color:var(--blue);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+  .card ul{list-style:none;font-size:10.8px;line-height:1.55;}
+  .card ul li{padding-left:13px;position:relative;margin-bottom:3px;}
+  .card ul li:before{content:"›";position:absolute;left:2px;color:var(--accent-d);font-weight:800;}
+  /* loop */
+  .loop{border:1px dashed var(--blue2);border-radius:7px;padding:8px 10px;background:#fbfcfe;}
+  .loop h3{font-size:12px;color:var(--blue);margin-bottom:6px;}
+  .steps{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:10px;font-weight:600;}
+  .steps .s{background:var(--blue);color:#fff;padding:3px 7px;border-radius:5px;white-space:nowrap;}
+  .steps .ar{color:var(--accent-d);font-weight:800;}
+  /* case */
+  .case{border:2px solid var(--accent);border-radius:8px;padding:9px 12px;background:#fffaf0;}
+  .case .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .case .h b{font-size:13px;color:var(--accent-d);}
+  .case .h span{font-size:9.5px;color:var(--muted);}
+  .case .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .case .m{background:#fff;border:1px solid #f0dcae;border-radius:6px;padding:6px;text-align:center;}
+  .case .m .k{font-size:9px;color:var(--muted);}
+  .case .m .v{font-size:13px;font-weight:800;color:var(--blue);margin-top:2px;}
+  .ph{color:#c0392b;font-weight:700;}
+  /* pricing */
+  .price{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .ptier{border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+  .ptier .t{background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:5px 8px;}
+  .ptier .b{padding:6px 8px;font-size:10px;line-height:1.5;}
+  .ptier .b .p{font-size:14px;font-weight:800;color:var(--accent-d);}
+  .ptier .b .d{color:var(--muted);font-size:9px;margin-top:2px;}
+  /* cta */
+  .cta{margin-top:auto;background:var(--blue);color:#fff;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+  .cta .l b{font-size:13px;}
+  .cta .l div{font-size:10px;color:#cfe0f2;margin-top:2px;}
+  .cta .r{text-align:right;font-size:11px;}
+  .cta .r .ph{color:var(--accent);}
+  .foot{font-size:8.5px;color:#9aa7b4;text-align:center;margin-top:2px;}
+  @media print{
+    body{background:#fff;}
+    .page{margin:0;box-shadow:none;width:auto;min-height:auto;}
+  }
+  @page{size:A4;margin:0;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo">企云 AI</span>
+      <span class="sub">工业企业 · AI 询盘转报价助手</span>
+    </div>
+    <span class="tag">电柜设备厂家专项</span>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>把每一次电柜咨询，变成可报价的订单</h1>
+    <p>抖音 / 1688 / 展会二维码 / 微信 / 官网来的咨询，先由 AI 把尺寸、防护等级、散热、交期、图纸问清，再自动交销售报价跟进。</p>
+    <span class="pill">核心承诺：AI 只整理需求，报价永远由您确认</span>
+  </div>
+
+  <!-- TWO COLS -->
+  <div class="cols">
+    <div class="card">
+      <h3>🔧 做电柜的，这些痛点你熟吗？</h3>
+      <ul>
+        <li>客户问户外机柜：防护等级 IP 多少、散热怎么处理、尺寸能不能改——参数来回确认 5–8 轮</li>
+        <li>抖音 / 1688 / 展会 / 微信的咨询散在销售个人手机，一忙就漏</li>
+        <li>图纸发来一堆，谁在跟、报多少、到哪一步，老板看不见</li>
+        <li>高意向询盘因没及时跟，被同行抢走</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>⚡ 企云 AI 做三件事</h3>
+      <ul>
+        <li><b>全渠道统一</b>：抖音 / 1688 / 展会码 / 微信 / 官网咨询，全进一个询盘后台</li>
+        <li><b>AI 先问全</b>：尺寸·防护等级·散热·交期·图纸，自动追问补齐，再交销售</li>
+        <li><b>自动派单 + 跟进</b>：按渠道/产品分配销售，老板看得到 渠道→询盘→报价→成交</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- LOOP -->
+  <div class="loop">
+    <h3>📈 业务闭环（从第一次咨询到成交，全程可见）</h3>
+    <div class="steps">
+      <span class="s">多渠道咨询</span><span class="ar">→</span>
+      <span class="s">AI 问清参数/图纸</span><span class="ar">→</span>
+      <span class="s">结构化询盘</span><span class="ar">→</span>
+      <span class="s">自动派销售</span><span class="ar">→</span>
+      <span class="s">报价</span><span class="ar">→</span>
+      <span class="s">成交/复盘</span>
+    </div>
+  </div>
+
+  <!-- CASE (placeholders) -->
+  <div class="case">
+    <div class="h"><b>📊 试点案例（填你的真实数据，这就是最硬的销售证据）</b><span>示例数据，请替换</span></div>
+    <div class="grid">
+      <div class="m"><div class="k">客户</div><div class="v ph">【贵司名称】</div></div>
+      <div class="m"><div class="k">试点周期</div><div class="v ph">2 周</div></div>
+      <div class="m"><div class="k">接入渠道</div><div class="v ph">【___】</div></div>
+      <div class="m"><div class="k">沉淀询盘</div><div class="v ph">【__】条</div></div>
+      <div class="m"><div class="k">首次响应</div><div class="v ph">【__】h→即时</div></div>
+      <div class="m"><div class="k">转化报价</div><div class="v ph">【__】单</div></div>
+      <div class="m"><div class="k">成交</div><div class="v ph">【__】单</div></div>
+      <div class="m"><div class="k">漏单减少</div><div class="v ph">约【__】%</div></div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div class="price">
+    <div class="ptier">
+      <div class="t">试点版</div>
+      <div class="b"><div class="p">¥6,800–9,800</div><div class="d">1 产品线 / 1–2 渠道<br>AI 选型页 + 知识库 + 询盘 + 基础跟进</div></div>
+    </div>
+    <div class="ptier">
+      <div class="t">标准版</div>
+      <div class="b"><div class="p">¥19,800–49,800</div><div class="d">有官网/短视频/销售团队<br>官网 Widget + 多渠道 + 报价 + 数据</div></div>
+    </div>
+    <div class="ptier">
+      <div class="t">持续运营</div>
+      <div class="b"><div class="p">¥980–2,980 / 月</div><div class="d">上线后优化<br>知识库维护 + 渠道分析 + 月度复盘</div></div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta">
+    <div class="l">
+      <b>3 天上手 · 2 周见效 · 不满意全额退</b>
+      <div>先把您漏掉的询盘，变成看得见的订单。</div>
+    </div>
+    <div class="r">
+      联系人：<span class="ph">【姓名 / 电话】</span><br>
+      微信：<span class="ph">【微信号】</span>
+    </div>
+  </div>
+
+  <div class="foot">企云 AI · 工业企业 AI 询盘转报价助手 · 本页为销售一页纸，数据位请替换为真实试点结果</div>
+</div>
+</body>
+</html>

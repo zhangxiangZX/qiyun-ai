@@ -6,13 +6,17 @@
 
 1. **docs/AI云_项目核心需求护栏与开发防跑偏规则_V1.0.md**（最高，高于临时需求与扩展建议）
 2. **docs/AI云_第一版全部功能可用清单_MVP_V1.0.md**（V1.0 唯一开发边界；未列出功能 → BACKLOG）
-3. docs/AI云_工业官网获客系统_核心项目书_V1.0.docx
-3. docs/17-p0-collaboration-briefs.md
-4. docs/tasks/{Task-ID}.md（当前任务说明，缺则禁止编码）
-5. docs/02-prd-mvp.md
-6. docs/05-api-contract.md
-7. docs/07-design-system.md
-8. docs/09-ai-development-rules.md
+3. **docs/36-v1-product-structure-final.md**（V1 最终产品结构 · 7 个一级主类冻结）
+4. **docs/35-v1-usage-flow-guide.md**（V1 角色/流程培训说明）
+5. docs/AI云_工业官网获客系统_核心项目书_V1.0.docx
+6. docs/17-p0-collaboration-briefs.md
+7. docs/tasks/{Task-ID}.md（当前任务说明，缺则禁止编码）
+8. docs/02-prd-mvp.md
+9. docs/05-api-contract.md
+10. docs/07-design-system.md
+11. docs/09-ai-development-rules.md
+12. **docs/39-v1-ui-visual-test-standard.md**（V1 UI 视觉与交互全量测试规范）
+13. **docs/40-v1-ui-page-test-checklist.md**（V1 页面测试清单；视觉验收前先对清单）
 
 暂缓需求只写入 **docs/BACKLOG.md**，不得直接开发。
 

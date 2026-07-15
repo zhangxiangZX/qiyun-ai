@@ -13,18 +13,24 @@
 | POST | /workspaces/:id/activate | 切换当前工作区 |
 | POST | /knowledge-bases | 创建知识库 |
 | POST | /knowledge-bases/:id/documents | 上传文件 |
-| GET | /documents/:id | 文档状态 |
+| GET | /documents/:id | 文档状态（含 `errorCode` / `errorMessage`） |
+| DELETE | /documents/:id | 删除文档并清理索引 |
 | POST | /documents/:id/reindex | 重建索引 |
 | POST | /bots | 创建机器人 |
 | PATCH | /bots/:id | 更新机器人 |
 | PUT | /bots/:id/knowledge-bases | 设置机器人关联知识库 |
 | POST | /sites/:id/rotate-key | 轮换站点密钥 |
 | GET | /bots/:id/embed-code | 获取嵌入代码 |
-| GET | /conversations | 会话列表 |
+| GET | /conversations | 会话列表；支持 `limit`/`cursor`/`botId`/`status`/`hasLead`/`q` |
 | GET | /conversations/:id | 会话详情 |
 | GET | /leads | 线索列表 |
+| GET | /leads/:id | 线索详情（含 attachments、followUpRecords） |
+| GET | /leads/:id/attachments/:attachmentId | 下载线索附件 |
 | PATCH | /leads/:id | 更新线索状态/备注 |
-| GET | /analytics/overview | 看板聚合数据 |
+| GET | /notifications | 通知 feed（items、unreadCount） |
+| POST | /notifications/read | 标记已读 `{ ids?: string[]; all?: boolean }` |
+| GET | /dashboard | 看板聚合；查询参数 `from`/`to`/`botId`（YYYY-MM-DD） |
+| GET | /reports | 报表聚合；查询参数同 `/dashboard` |
 
 
 控制台 workspace 上下文由服务端维护，不直接信任请求体中的 `workspaceId`。前端切换工作区后，应通过 `/workspaces/:id/activate` 更新当前会话上下文，再发起后续请求。
@@ -56,7 +62,20 @@ event: citations
 data: {"items":[{"title":"产品手册.pdf","chunkId":"chunk_xxx","score":0.88}]}
 
 event: done
-data: {"needsLeadCapture":false,"messageId":"m_xxx"}
+data: {"needsLeadCapture":false,"messageId":"m_xxx","leadFields":["name","phone","email","company","requirement"]}
+
+event: error
+data: {"code":"PROVIDER_ERROR","message":"模型服务暂时不可用，已切换为基础回复。"}
+```
+
+`429` 响应体示例：
+
+```json
+{
+  "code": "RATE_LIMITED",
+  "message": "Too many public chat requests. Retry after 42 seconds.",
+  "retryAfterSec": 42
+}
 ```
 
 ### POST /public/leads
@@ -65,9 +84,25 @@ data: {"needsLeadCapture":false,"messageId":"m_xxx"}
   "botId":"bot_xxx",
   "siteKey":"pk_xxx",
   "conversationId":"c_xxx",
-  "fields":{"name":"张先生","phone":"138****0000","company":"某某设备"}
+  "fields":{"name":"张先生","phone":"138****0000","company":"某某设备","requirement":"冷水机报价"}
 }
 ```
+
+响应 `201` 含 `keyQuestion`、`summary`、`sourceSiteId`、`sourceSiteName`。
+
+**同会话去重（E-08）：** 同一 `conversationId` 二次提交时 **仍返回 `201`**，响应体为合并后的同一条线索（`id` 不变）；字段按「非空保留 + 新值覆盖」合并；附件按文件名/大小/校验和去重合并。不会创建第二条 lead 记录。
+
+### GET /notifications
+
+`items[].kind` 枚举：`lead` | `document` | `invite`。
+
+### GET /leads/:id 附件字段
+
+`attachments[]`：`id`, `fileName`, `mimeType`, `sizeBytes`, `uploadedAt`, `status`（`ready`/`pending`/`failed`）, `downloadUrl`, `errorMessage?`
+
+`followUpRecords[]`：`id`, `kind`（`system`/`status`/`assignee`/`note`）, `title`, `body?`, `actor?`, `createdAt` — PATCH 后追加持久化于 `follow_up_records`
+
+`PATCH /leads/:id` 会按状态/负责人/备注变更追加时间线条目。
 
 ## 3. 统一错误结构
 ```json

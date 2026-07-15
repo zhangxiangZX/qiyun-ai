@@ -19,3 +19,4 @@ AI云 · 工业官网获客系统
 - 编码前输出「不做什么」与文件清单；编码后只报告任务范围内改动
 - 偏离 P0/P1 闭环 → `docs/BACKLOG.md`，不直接实现
 - 遵循 `docs/07-design-system.md` 与 `docs/05-api-contract.md`
+- UI 视觉验收：先 `docs/40-v1-ui-page-test-checklist.md`，再按 `docs/39-v1-ui-visual-test-standard.md` / `.cursor/rules/ui-visual-test.mdc` 执行
