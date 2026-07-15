@@ -25,7 +25,7 @@ export interface DocumentStorage {
     fileName: string;
     contentBytes: Uint8Array;
   }): Promise<StoredDocument>;
-  read(storageKey: string): Promise<Uint8Array>;
+  read(storageKey: string, workspaceId: string): Promise<Uint8Array>;
   remove(
     storageKey: string,
     strategy?: "delete" | "archive",
@@ -47,6 +47,27 @@ function buildStorageKey(input: {
     sanitizePathSegment(input.knowledgeBaseId),
     `${Date.now()}-${sanitizePathSegment(input.fileName)}`,
   ].join("/");
+}
+
+function storageKeyWorkspacePrefix(storageKey: string): string | null {
+  const normalized = storageKey.replace(/\\/g, "/").replace(/^\/+/, "");
+  const firstSegment = normalized.split("/")[0] ?? "";
+  // Archived objects are not tenant-prefixed; only the live key carries the
+  // workspace segment, so internal archive reads bypass the check.
+  if (firstSegment === "archive") {
+    return null;
+  }
+  return firstSegment;
+}
+
+function assertStorageKeyWorkspace(storageKey: string, workspaceId: string): void {
+  const prefix = storageKeyWorkspacePrefix(storageKey);
+  if (prefix === null) {
+    return;
+  }
+  if (sanitizePathSegment(workspaceId) !== prefix) {
+    throw new Error("workspace mismatch");
+  }
 }
 
 function getStorageRoot(): string {
@@ -132,7 +153,8 @@ export class LocalDocumentStorage implements DocumentStorage {
     };
   }
 
-  async read(storageKey: string): Promise<Uint8Array> {
+  async read(storageKey: string, workspaceId: string): Promise<Uint8Array> {
+    assertStorageKeyWorkspace(storageKey, workspaceId);
     const fullPath = path.join(getStorageRoot(), storageKey);
     const content = await readFile(fullPath);
     return new Uint8Array(content);
@@ -245,7 +267,12 @@ export class MinioDocumentStorage implements DocumentStorage {
     };
   }
 
-  async read(storageKey: string): Promise<Uint8Array> {
+  async read(storageKey: string, workspaceId: string): Promise<Uint8Array> {
+    assertStorageKeyWorkspace(storageKey, workspaceId);
+    return this.readRaw(storageKey);
+  }
+
+  private async readRaw(storageKey: string): Promise<Uint8Array> {
     const response = await this.sendSignedRequest({
       method: "GET",
       pathname: `/${this.bucket}/${storageKey}`,
@@ -268,7 +295,7 @@ export class MinioDocumentStorage implements DocumentStorage {
   ): Promise<RemovedDocumentStorageObject> {
     if (strategy === "archive") {
       const archivedStorageKey = buildArchiveStorageKey(storageKey);
-      const bytes = await this.read(storageKey);
+      const bytes = await this.readRaw(storageKey);
       const archiveResponse = await this.sendSignedRequest({
         method: "PUT",
         pathname: `/${this.bucket}/${archivedStorageKey}`,

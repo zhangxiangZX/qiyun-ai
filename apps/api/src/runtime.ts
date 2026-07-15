@@ -23,6 +23,7 @@ import { ChatService } from "./chat/chat.service";
 import { getApiRuntimeDriver } from "./config/env";
 import { ensureMigrationsApplied } from "./db/migrate";
 import { query as pgQuery } from "./db/pg";
+import { runWithBypassRls, runWithTenant } from "./db/tenant-context";
 import { createLlmChatClient } from "./llm/llm-chat";
 import { createProcessingQueue } from "./documents/document-queue";
 import { DocumentApi } from "./documents/document.api";
@@ -64,6 +65,52 @@ import {
   type NotificationReadRepository,
 } from "./notifications/notification-read.repository";
 import { NotificationService } from "./notifications/notification.service";
+import { SalesApi } from "./sales/sales.api";
+import { PostgresSalesRepository } from "./sales/sales.postgres-repository";
+import {
+  InMemorySalesRepository,
+  type SalesRepository,
+} from "./sales/sales.repository";
+import { SalesService } from "./sales/sales.service";
+import { AuditApi } from "./audit/audit.api";
+import { AuditService } from "./audit/audit.service";
+import {
+  PostgresAuditRepository,
+  InMemoryAuditRepository,
+  type AuditRepository,
+} from "./audit/audit.repository";
+import { SalesLinksApi } from "./sales-links/sales-links.api";
+import { SalesLinksService } from "./sales-links/sales-links.service";
+import {
+  InMemorySalesLinksRepository,
+  type SalesLinksRepository,
+} from "./sales-links/sales-links.repository";
+import { PostgresSalesLinksRepository } from "./sales-links/sales-links.postgres-repository";
+import { SelectionPagesApi } from "./selection-pages/selection-pages.api";
+import { SelectionPagesService } from "./selection-pages/selection-pages.service";
+import { InMemorySelectionPagesRepository } from "./selection-pages/selection-pages.repository";
+import { PostgresSelectionPagesRepository } from "./selection-pages/selection-pages.postgres-repository";
+import type { SelectionPagesRepository } from "./selection-pages/selection-pages.repository";
+import { QuickEntryApi, QuickEntryService } from "./quick-entry/quick-entry.service";
+import { CalendarApi } from "./calendar/calendar.api";
+import {
+  InMemoryCalendarRepository,
+  type CalendarRepository,
+} from "./calendar/calendar.repository";
+import { PostgresCalendarRepository } from "./calendar/calendar.postgres-repository";
+import { FileVaultApi } from "./file-vault/file-vault.api";
+import {
+  InMemoryFileVaultRepository,
+  type FileVaultRepository,
+} from "./file-vault/file-vault.repository";
+import { GeoApi } from "./geo/geo.api";
+import { ChannelsApi } from "./channels/channels.api";
+import { ChannelsService } from "./channels/channels.service";
+import {
+  InMemoryChannelsRepository,
+  type ChannelsRepository,
+} from "./channels/channels.repository";
+import { PostgresChannelsRepository } from "./channels/channels.postgres-repository";
 
 export interface ApiRuntime {
   driver: "memory" | "postgres";
@@ -85,6 +132,19 @@ export interface ApiRuntime {
   publicChatApi: PublicChatApi;
   notificationReadRepository: NotificationReadRepository;
   notificationService: NotificationService;
+  salesRepository: SalesRepository;
+  salesService: SalesService;
+  salesApi: SalesApi;
+  auditApi: AuditApi;
+  salesLinksApi: SalesLinksApi;
+  selectionPagesApi: SelectionPagesApi;
+  quickEntryApi: QuickEntryApi;
+  calendarRepository: CalendarRepository;
+  calendarApi: CalendarApi;
+  fileVaultRepository: FileVaultRepository;
+  fileVaultApi: FileVaultApi;
+  geoApi: GeoApi;
+  channelsApi: ChannelsApi;
   healthCheck(): Promise<HealthSnapshot>;
   persist(): Promise<void>;
 }
@@ -192,7 +252,7 @@ function createEmbeddingProvider(): QueryEmbeddingProvider {
 function createVectorStore(ragRepository: RagRepository): VectorSearchStore {
   const driver = process.env.VECTOR_STORE_DRIVER?.trim().toLowerCase();
   const qdrantUrl = process.env.QDRANT_URL?.trim();
-  const fallback = new InMemoryQdrantStore(() => ragRepository.listChunks());
+  const fallback = new InMemoryQdrantStore(() => runWithBypassRls(() => ragRepository.listAllChunks()));
 
   if (process.env.NODE_ENV !== "test" && driver === "qdrant" && qdrantUrl) {
     return new DegradingVectorStore(
@@ -441,6 +501,28 @@ function createApiRuntime(): ApiRuntime {
   const embeddingProvider = createEmbeddingProvider();
   const chatRepository: ChatRepository =
     driver === "postgres" ? new PostgresChatRepository() : new InMemoryChatRepository();
+  const salesRepository: SalesRepository =
+    driver === "postgres" ? new PostgresSalesRepository() : new InMemorySalesRepository();
+  const auditRepository: AuditRepository =
+    driver === "postgres" ? new PostgresAuditRepository() : new InMemoryAuditRepository();
+  const auditService = new AuditService(auditRepository);
+  const auditApi = new AuditApi(auditService);
+  const salesLinksRepository: SalesLinksRepository =
+    driver === "postgres" ? new PostgresSalesLinksRepository() : new InMemorySalesLinksRepository();
+  const salesLinksService = new SalesLinksService(salesLinksRepository);
+  const salesLinksApi = new SalesLinksApi(salesLinksService);
+  const selectionPagesRepository: SelectionPagesRepository =
+    driver === "postgres" ? new PostgresSelectionPagesRepository() : new InMemorySelectionPagesRepository();
+  const calendarRepository: CalendarRepository =
+    driver === "postgres" ? new PostgresCalendarRepository() : new InMemoryCalendarRepository();
+  const calendarApi = new CalendarApi(calendarRepository);
+  const fileVaultRepository: FileVaultRepository = new InMemoryFileVaultRepository();
+  const fileVaultApi = new FileVaultApi(fileVaultRepository);
+  const geoApi = new GeoApi();
+  const channelsRepository: ChannelsRepository =
+    driver === "postgres" ? new PostgresChannelsRepository() : new InMemoryChannelsRepository();
+  const channelsService = new ChannelsService(channelsRepository);
+  const channelsApi = new ChannelsApi(channelsService);
   const notificationReadRepository: NotificationReadRepository =
     driver === "postgres"
       ? new PostgresNotificationReadRepository()
@@ -481,6 +563,16 @@ function createApiRuntime(): ApiRuntime {
     documentStorage,
     llmChat,
   );
+  const salesService = new SalesService(salesRepository, chatRepository, ragRepository);
+  const selectionPagesService = new SelectionPagesService(
+    selectionPagesRepository,
+    salesService,
+    calendarApi,
+    fileVaultRepository,
+  );
+  const selectionPagesApi = new SelectionPagesApi(selectionPagesService);
+  const quickEntryService = new QuickEntryService(salesService);
+  const quickEntryApi = new QuickEntryApi(quickEntryService);
   const authEnv = {
     APP_NAME: process.env.APP_NAME ?? "qiyun-ai",
     APP_URL: process.env.APP_URL ?? "http://localhost:3000",
@@ -497,6 +589,7 @@ function createApiRuntime(): ApiRuntime {
       invitationMailer,
       invitationAuditStore,
       emailLoginCodeMailer,
+      auditApi,
     ),
     invitationMailer,
     invitationAuditStore,
@@ -505,13 +598,26 @@ function createApiRuntime(): ApiRuntime {
     emailLoginCodeDebugMailer,
     documentRepository,
     documentStorage,
-    documentApi: new DocumentApi(documentService, ragService),
+    documentApi: new DocumentApi(documentService, ragService, auditApi),
     documentService,
     ragService,
     ragRepository,
     chatRepository,
     chatService,
     publicChatApi: new PublicChatApi(chatService, chatRepository, ragRepository),
+    salesRepository,
+    salesService,
+    salesApi: new SalesApi(salesService, auditApi),
+    auditApi,
+    salesLinksApi,
+    selectionPagesApi,
+    quickEntryApi,
+    calendarRepository,
+    calendarApi,
+    fileVaultRepository,
+    fileVaultApi,
+    geoApi,
+    channelsApi,
     notificationReadRepository,
     notificationService: null as unknown as NotificationService,
     async healthCheck() {
@@ -571,10 +677,15 @@ export async function getRuntime(): Promise<ApiRuntime> {
           const hasSeedData = await hasPreviewSeedData(runtime, DEFAULT_WORKSPACE_ID);
 
           if (previewSeedEnabled && !hasSeedData) {
-            await seedPreviewData(runtime, DEFAULT_WORKSPACE_ID);
+            // 预览种子只写入单一工作空间，注入租户上下文供 RLS 使用。
+            await runWithTenant(DEFAULT_WORKSPACE_ID, () =>
+              seedPreviewData(runtime, DEFAULT_WORKSPACE_ID),
+            );
           }
 
           await runtime.authApi.ensurePlatformAdmin();
+          // 开发工作空间引导：在租户创建前写入成员关系，需旁路。
+          await runWithBypassRls(() => runtime.authApi.ensureDevWorkspaceOwner());
 
           if (runtime.driver === "postgres") {
             const syncSnapshot = await runtime.ragService.syncStoredChunks();

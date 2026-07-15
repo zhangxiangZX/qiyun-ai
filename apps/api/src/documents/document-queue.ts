@@ -1,7 +1,6 @@
 import { executeDocumentJob } from "./document-job-runner";
 import {
   DOCUMENT_QUEUE_KEY,
-  moveDocumentJobToDeadLetter,
 } from "./document-dead-letter-queue";
 import type { DocumentService } from "./document.service";
 import type { DocumentStorage } from "./document-storage";
@@ -21,6 +20,14 @@ export function getDocumentQueueDriver(): "inline" | "redis" {
 export function getDocumentQueueMaxAttempts(): number {
   const parsed = Number.parseInt(process.env.DOCUMENT_QUEUE_MAX_ATTEMPTS ?? "3", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+}
+
+export function getDocumentQueueBlockTimeoutSeconds(): number {
+  const parsed = Number.parseInt(
+    process.env.DOCUMENT_QUEUE_BLOCK_TIMEOUT_SECONDS ?? "5",
+    10,
+  );
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : 5;
 }
 
 export function createProcessingQueue(input: {
@@ -90,13 +97,16 @@ function createRedisQueue(): QueueLike {
   };
 }
 
-export async function dequeueDocumentJobBlocking(): Promise<DocumentIndexJob> {
+export async function dequeueDocumentJobBlocking(): Promise<DocumentIndexJob | null> {
   const client = await getRedisClient();
-  const result = await client.brPop(DOCUMENT_QUEUE_KEY, 0);
+  const result = await client.brPop(
+    DOCUMENT_QUEUE_KEY,
+    getDocumentQueueBlockTimeoutSeconds(),
+  );
   const raw = Array.isArray(result) ? result[1] : result?.element;
 
   if (!raw) {
-    throw new Error("Redis queue returned no document job.");
+    return null;
   }
 
   return JSON.parse(raw) as DocumentIndexJob;

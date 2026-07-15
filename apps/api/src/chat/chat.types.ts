@@ -114,6 +114,10 @@ export interface LeadSubmissionRequest {
   conversationId: string;
   fields: Record<string, string>;
   attachments?: LeadAttachmentUpload[];
+  /** 预上传附件引用：先调用 POST /public/leads/attachments 拿到 id，再在此引用。与 attachments 二选一或并存。 */
+  pendingAttachmentIds?: string[];
+  /** 可信来源域名（由服务端从 Origin/Referer 头解析，回落到请求体）。用于 Widget 域名白名单校验。 */
+  origin?: string;
 }
 
 export interface LeadAttachmentUpload {
@@ -121,6 +125,33 @@ export interface LeadAttachmentUpload {
   fileType: string;
   sizeBytes: number;
   contentBytes: Uint8Array;
+}
+
+/**
+ * 预上传线索附件：Widget 先上传文件，后端暂存并返回 pendingId，
+ * 之后建线索时通过 pendingAttachmentIds 引用，避免大文件以 base64 直接塞进线索 POST。
+ * 字节存对象存储（documentStorage），本结构只描述元数据。
+ */
+export interface PendingLeadAttachment {
+  id: string;
+  workspaceId: string;
+  siteKey: string;
+  fileName: string;
+  fileType: string;
+  sizeBytes: number;
+  storageKey: string;
+  checksum?: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/** 预上传接口返回给 Widget 的引用信息（含公开下载地址）。 */
+export interface PendingLeadAttachmentRef {
+  id: string;
+  fileName: string;
+  fileType: string;
+  sizeBytes: number;
+  downloadUrl: string;
 }
 
 export interface ChatMetaEvent {

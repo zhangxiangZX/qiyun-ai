@@ -52,6 +52,20 @@ function normalizeDate(value: Date | string | null): string | null {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
+function parseJsonb(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) return {};
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof value === "object") return value as Record<string, unknown>;
+  return {};
+}
+
 function mapKnowledgeBase(row: QueryResultRow): KnowledgeBaseRecord {
   return {
     id: asString(row.id),
@@ -74,6 +88,7 @@ function mapUser(row: QueryResultRow): UserRecord {
     activeWorkspaceId: asNullableString(row.active_workspace_id),
     platformRole:
       asNullableString(row.platform_role) === "platform_admin" ? "platform_admin" : null,
+    accountProfile: parseJsonb(row.account_profile) as UserRecord["accountProfile"],
     createdAt: normalizeDate(row.created_at as Date | string)!,
     updatedAt: normalizeDate(row.updated_at as Date | string)!,
   };
@@ -154,6 +169,7 @@ function mapTrialRequest(row: QueryResultRow): TrialRequestRecord {
     phone: asNullableString(row.phone),
     website: asNullableString(row.website),
     requirement: asNullableString(row.requirement),
+    requestedPlan: asNullableString(row.requested_plan),
     status: asString(row.status) as TrialRequestRecord["status"],
     processedByUserId: asNullableString(row.processed_by_user_id),
     processedAt: normalizeDate((row.processed_at ?? null) as Date | string | null),
@@ -178,6 +194,7 @@ function mapDocument(row: QueryResultRow): DocumentRecord {
     chunkCount: (row.chunk_count as number | null) ?? null,
     errorCode: asNullableString(row.error_code) as DocumentRecord["errorCode"],
     errorMessage: asNullableString(row.error_message),
+    contentHash: asNullableString(row.content_hash),
     createdAt: normalizeDate(row.created_at as Date | string)!,
     updatedAt: normalizeDate(row.updated_at as Date | string)!,
     deletedAt: normalizeDate((row.deleted_at ?? null) as Date | string | null),
@@ -233,6 +250,11 @@ function mapChunk(row: QueryResultRow): ChunkRecord {
     documentId: asString(row.document_id),
     documentTitle: asString(row.document_title),
     content: asString(row.content),
+    sectionTitle: asNullableString(row.section_title),
+    chunkIndex:
+      row.chunk_index === null || row.chunk_index === undefined
+        ? null
+        : Number(row.chunk_index),
     embedding: asNumberArray(row.embedding),
   };
 }
@@ -392,8 +414,8 @@ export async function persistRepositoriesToPostgres(input: {
         for (const user of authSnapshot.users) {
           await client.query(
             `insert into users
-             (id, email, password_hash, name, status, active_workspace_id, platform_role, created_at, updated_at)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+             (id, email, password_hash, name, status, active_workspace_id, platform_role, account_profile, created_at, updated_at)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
              on conflict (id) do update set
                email = excluded.email,
                password_hash = excluded.password_hash,
@@ -401,6 +423,7 @@ export async function persistRepositoriesToPostgres(input: {
                status = excluded.status,
                active_workspace_id = excluded.active_workspace_id,
                platform_role = excluded.platform_role,
+               account_profile = excluded.account_profile,
                updated_at = excluded.updated_at`,
             [
               user.id,
@@ -410,6 +433,7 @@ export async function persistRepositoriesToPostgres(input: {
               user.status,
               user.activeWorkspaceId,
               user.platformRole,
+              JSON.stringify(user.accountProfile ?? {}),
               user.createdAt,
               user.updatedAt,
             ],
@@ -535,10 +559,10 @@ export async function persistRepositoriesToPostgres(input: {
         for (const request of authSnapshot.trialRequests) {
           await client.query(
             `insert into trial_requests
-             (id, company_name, contact_name, email, phone, website, requirement, status,
+             (id, company_name, contact_name, email, phone, website, requirement, requested_plan, status,
               processed_by_user_id, processed_at, review_notes, approved_workspace_id, approved_invitation_id,
               created_at, updated_at)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
              on conflict (id) do update set
                company_name = excluded.company_name,
                contact_name = excluded.contact_name,
@@ -546,6 +570,7 @@ export async function persistRepositoriesToPostgres(input: {
                phone = excluded.phone,
                website = excluded.website,
                requirement = excluded.requirement,
+               requested_plan = excluded.requested_plan,
                status = excluded.status,
                processed_by_user_id = excluded.processed_by_user_id,
                processed_at = excluded.processed_at,
@@ -561,6 +586,7 @@ export async function persistRepositoriesToPostgres(input: {
               request.phone,
               request.website,
               request.requirement,
+              request.requestedPlan,
               request.status,
               request.processedByUserId,
               request.processedAt,
@@ -592,8 +618,8 @@ export async function persistRepositoriesToPostgres(input: {
         for (const doc of documentSnapshot.documents) {
           await client.query(
             `insert into documents
-             (id, workspace_id, knowledge_base_id, file_name, file_type, storage_key, size_bytes, status, chunk_count, error_code, error_message, created_at, updated_at, deleted_at)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+             (id, workspace_id, knowledge_base_id, file_name, file_type, storage_key, size_bytes, status, chunk_count, error_code, error_message, content_hash, created_at, updated_at, deleted_at)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
              on conflict (id) do update set
                file_name = excluded.file_name,
                file_type = excluded.file_type,
@@ -603,6 +629,7 @@ export async function persistRepositoriesToPostgres(input: {
                chunk_count = excluded.chunk_count,
                error_code = excluded.error_code,
                error_message = excluded.error_message,
+               content_hash = excluded.content_hash,
                updated_at = excluded.updated_at,
                deleted_at = excluded.deleted_at`,
             [
@@ -617,6 +644,7 @@ export async function persistRepositoriesToPostgres(input: {
               doc.chunkCount,
               doc.errorCode,
               doc.errorMessage,
+              doc.contentHash,
               doc.createdAt,
               doc.updatedAt,
               doc.deletedAt,
@@ -675,14 +703,16 @@ export async function persistRepositoriesToPostgres(input: {
         for (const chunk of ragSnapshot.chunks) {
           await client.query(
             `insert into document_chunks
-             (id, workspace_id, knowledge_base_id, document_id, document_title, content, embedding)
-             values ($1,$2,$3,$4,$5,$6,$7::jsonb)
+             (id, workspace_id, knowledge_base_id, document_id, document_title, content, section_title, chunk_index, embedding)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
              on conflict (id) do update set
                workspace_id = excluded.workspace_id,
                knowledge_base_id = excluded.knowledge_base_id,
                document_id = excluded.document_id,
                document_title = excluded.document_title,
                content = excluded.content,
+               section_title = excluded.section_title,
+               chunk_index = excluded.chunk_index,
                embedding = excluded.embedding`,
             [
               chunk.id,
@@ -691,6 +721,8 @@ export async function persistRepositoriesToPostgres(input: {
               chunk.documentId,
               chunk.documentTitle,
               chunk.content,
+              chunk.sectionTitle,
+              chunk.chunkIndex,
               toJson(chunk.embedding),
             ],
           );

@@ -5,6 +5,7 @@ import { json, matchPath, type ApiResult } from "../../http/api-result";
 import { readJsonBody } from "../../http/request-body";
 import { BearerAuthGuard } from "./guards/bearer-auth.guard";
 import { API_RUNTIME } from "../runtime/runtime.tokens";
+import { runWithBypassRls } from "../../db/tenant-context";
 
 @Injectable()
 export class PlatformRouteService {
@@ -14,6 +15,8 @@ export class PlatformRouteService {
   ) {}
 
   async handle(request: Request, pathname: string, requestId?: string): Promise<ApiResult | null> {
+    // 平台级操作天然跨租户，整体以旁路执行（受控：仅平台路由）。
+    return runWithBypassRls(async () => {
     const method = request.method;
 
     if (pathname === "/platform/workspaces" && method === "GET") {
@@ -71,5 +74,6 @@ export class PlatformRouteService {
     }
 
     return null;
+    });
   }
 }

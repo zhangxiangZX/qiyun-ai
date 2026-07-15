@@ -21,6 +21,7 @@ import type {
   LeadStatus,
   LeadSubmissionRequest,
   MessageRecord,
+  PendingLeadAttachmentRef,
 } from "./chat.types";
 import { createLeadCreatedFollowUp, leadStatusLabel } from "./lead-follow-up";
 
@@ -400,8 +401,9 @@ async function mapConversationSummary(
   summary: Awaited<ReturnType<ChatService["listConversations"]>>["items"][number],
   chatRepository: ChatRepository,
   ragRepository: RagRepository,
+  workspaceId: string,
 ): Promise<ConversationListItem> {
-  const bot = await ragRepository.findBotById(summary.botId);
+  const bot = await ragRepository.findBotById(workspaceId, summary.botId);
   const messages = await chatRepository.listMessagesByConversation(summary.id);
   const lastMessage = messages.at(-1);
   const lead = await chatRepository.findLeadByConversation(summary.id);
@@ -426,8 +428,14 @@ async function mapConversationDetail(
   detail: Awaited<ReturnType<ChatService["getConversation"]>>,
   chatRepository: ChatRepository,
   ragRepository: RagRepository,
+  workspaceId: string,
 ): Promise<ConversationDetailPayload> {
-  const listItem = await mapConversationSummary(detail, chatRepository, ragRepository);
+  const listItem = await mapConversationSummary(
+    detail,
+    chatRepository,
+    ragRepository,
+    workspaceId,
+  );
   const meta = await chatRepository.getConversationMeta(detail.id);
   const lead = await chatRepository.findLeadByConversation(detail.id);
 
@@ -475,6 +483,10 @@ async function mapConversationDetail(
       createdAt: message.createdAt,
     })),
   };
+}
+
+function defaultFromDate(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 async function collectWorkspaceAnalytics(
@@ -582,11 +594,12 @@ async function buildFrequentQuestions(
   conversations: ConversationRecord[],
   messagesByConversation: Map<string, MessageRecord[]>,
   ragRepository: RagRepository,
+  workspaceId: string,
 ): Promise<InsightItemPayload[]> {
   const counts = new Map<string, { count: number; botName?: string }>();
 
   for (const conversation of conversations) {
-    const botName = (await ragRepository.findBotById(conversation.botId))?.name;
+    const botName = (await ragRepository.findBotById(workspaceId, conversation.botId))?.name;
 
     for (const message of messagesByConversation.get(conversation.id) ?? []) {
       if (message.role !== "user") {
@@ -622,6 +635,7 @@ async function buildUnresolvedQuestions(
   messagesByConversation: Map<string, MessageRecord[]>,
   conversationMeta: Map<string, Awaited<ReturnType<ChatRepository["getConversationMeta"]>>>,
   ragRepository: RagRepository,
+  workspaceId: string,
 ): Promise<UnresolvedItemPayload[]> {
   const items = await Promise.all(
     conversations.map(async (conversation) => {
@@ -643,7 +657,8 @@ async function buildUnresolvedQuestions(
         question: lastUserMessage.content,
         askedAt: lastUserMessage.createdAt,
         botName:
-          (await ragRepository.findBotById(conversation.botId))?.name ?? conversation.botId,
+          (await ragRepository.findBotById(workspaceId, conversation.botId))?.name ??
+          conversation.botId,
       };
     }),
   );
@@ -662,11 +677,7 @@ async function buildTopCitations(
     { title: string; excerpt: string; hitCount: number }
   >();
 
-  for (const chunk of await ragRepository.listChunks()) {
-    if (chunk.workspaceId !== workspaceId) {
-      continue;
-    }
-
+  for (const chunk of await ragRepository.listChunks(workspaceId)) {
     const current = grouped.get(chunk.documentId);
     if (current) {
       current.hitCount += 1;
@@ -732,7 +743,7 @@ export class PublicChatApi {
     const page = await this.service.listConversations(context.workspaceId, listQuery);
     const items = await Promise.all(
       page.items.map((summary) =>
-        mapConversationSummary(summary, this.chatRepository, this.ragRepository),
+        mapConversationSummary(summary, this.chatRepository, this.ragRepository, context.workspaceId),
       ),
     );
     return { items, nextCursor: page.nextCursor };
@@ -740,7 +751,7 @@ export class PublicChatApi {
 
   async getConversation(context: RequestContext, conversationId: string) {
     const detail = await this.service.getConversation(context.workspaceId, conversationId);
-    return mapConversationDetail(detail, this.chatRepository, this.ragRepository);
+    return mapConversationDetail(detail, this.chatRepository, this.ragRepository, context.workspaceId);
   }
 
   async updateConversation(
@@ -770,6 +781,19 @@ export class PublicChatApi {
     return items.map((item) => mapLeadListItem(item));
   }
 
+  async createLead(
+    context: RequestContext,
+    body: { name: string; contact?: string; sourceBot?: string; lastQuestion?: string },
+  ) {
+    const lead = await this.service.createLeadConsole(context.workspaceId, body);
+    return mapLeadListItem({
+      lead,
+      meta: null,
+      bot: null,
+      messages: [],
+    });
+  }
+
   async getLead(context: RequestContext, leadId: string) {
     const item = await this.service.getLead(context.workspaceId, leadId);
     return mapLeadListItem(item);
@@ -781,6 +805,24 @@ export class PublicChatApi {
     attachmentId: string,
   ) {
     return this.service.readLeadAttachment(context.workspaceId, leadId, attachmentId);
+  }
+
+  async uploadPendingLeadAttachment(input: {
+    botId: string;
+    siteKey: string;
+    fileName: string;
+    fileType: string;
+    contentBytes: Uint8Array;
+  }): Promise<PendingLeadAttachmentRef> {
+    return this.service.uploadPendingLeadAttachment(input);
+  }
+
+  async readPendingLeadAttachment(workspaceId: string, id: string) {
+    return this.service.readPendingLeadAttachmentFile(workspaceId, id);
+  }
+
+  async readPendingLeadAttachmentPublic(id: string) {
+    return this.service.readPendingLeadAttachmentPublic(id);
   }
 
   async updateLead(
@@ -800,6 +842,10 @@ export class PublicChatApi {
     return this.service.listSites(context.workspaceId);
   }
 
+  checkSiteInstall(context: RequestContext, siteId: string) {
+    return this.service.checkSiteInstall(context.workspaceId, siteId);
+  }
+
   async updateSite(
     context: RequestContext,
     siteId: string,
@@ -810,6 +856,10 @@ export class PublicChatApi {
     },
   ) {
     return this.service.updateSite(context.workspaceId, siteId, patch);
+  }
+
+  async deleteSite(context: RequestContext, siteId: string) {
+    return this.service.deleteSite(context.workspaceId, siteId);
   }
 
   async rotateSiteKey(context: RequestContext, siteId: string) {
@@ -828,11 +878,17 @@ export class PublicChatApi {
     context: RequestContext,
     query: AnalyticsQuery = {},
   ): Promise<DashboardSnapshotPayload> {
+    // Bound the default dashboard window to the last 30 days so the aggregation
+    // no longer scans the entire workspace history (all conversations, leads, and
+    // every message per conversation via N+1) on each request. The /reports
+    // endpoint keeps its own explicit range handling and is intentionally untouched.
+    const effectiveQuery: AnalyticsQuery =
+      query.from || query.to ? query : { ...query, from: defaultFromDate(30) };
     const analytics = await collectWorkspaceAnalytics(
       context.workspaceId,
       this.chatRepository,
       this.ragRepository,
-      query,
+      effectiveQuery,
     );
     const now = new Date();
 
@@ -952,15 +1008,21 @@ export class PublicChatApi {
         analytics.conversations,
         analytics.messagesByConversation,
         this.ragRepository,
+        context.workspaceId,
       ),
       unresolvedQuestions: await buildUnresolvedQuestions(
         analytics.conversations,
         analytics.messagesByConversation,
         analytics.conversationMeta,
         this.ragRepository,
+        context.workspaceId,
       ),
       channelDistribution: buildChannelDistribution(analytics.conversations),
-      recentLeads: (await this.listLeads(context)).slice(0, 5).map((lead) => ({
+      recentLeads: (await this.listLeads(context))
+        .slice()
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .slice(0, 5)
+        .map((lead) => ({
         id: lead.id,
         name: lead.name,
         contact: lead.contact,
@@ -1010,6 +1072,7 @@ export class PublicChatApi {
       analytics.messagesByConversation,
       analytics.conversationMeta,
       this.ragRepository,
+      context.workspaceId,
     );
     const unresolvedConversationIds = new Set(unresolvedQuestions.map((item) => item.id));
 
@@ -1075,6 +1138,7 @@ export class PublicChatApi {
         analytics.conversations,
         analytics.messagesByConversation,
         this.ragRepository,
+        context.workspaceId,
       ),
       unresolvedQuestions,
       topCitations: await buildTopCitations(context.workspaceId, this.ragRepository),

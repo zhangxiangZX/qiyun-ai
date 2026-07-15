@@ -13,18 +13,21 @@ import type {
 } from "./document.types";
 import type { DocumentRepository } from "./document.repository";
 import type { DocumentStorage } from "./document-storage";
+import { hashDocumentContent } from "./document-content-hash";
 
 export class DocumentAccessError extends Error {}
 export class DocumentValidationError extends Error {}
 
 const reindexAttempts = new Map<string, number>();
 const DOCUMENT_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
-const ALLOWED_DOCUMENT_EXTENSIONS = new Set([".pdf", ".docx", ".txt", ".md"]);
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set([".pdf", ".docx", ".txt", ".md", ".html", ".htm"]);
 const ALLOWED_DOCUMENT_TYPES = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "text/plain",
   "text/markdown",
+  "text/html",
+  "application/xhtml+xml",
   "application/octet-stream",
 ]);
 
@@ -110,11 +113,15 @@ export class DocumentService {
       }
     }
 
-    const updated = await this.repository.updateKnowledgeBase(knowledgeBaseId, {
-      name: nextName ?? current.name,
-      status: patch.status ?? current.status,
-      updatedAt: new Date().toISOString(),
-    });
+    const updated = await this.repository.updateKnowledgeBase(
+      workspaceId,
+      knowledgeBaseId,
+      {
+        name: nextName ?? current.name,
+        status: patch.status ?? current.status,
+        updatedAt: new Date().toISOString(),
+      },
+    );
 
     if (!updated) {
       throw new DocumentAccessError("Knowledge base not found in workspace.");
@@ -129,7 +136,7 @@ export class DocumentService {
   ): Promise<{ id: string; deletedAt: string; documentCount: number }> {
     await this.requireKnowledgeBase(workspaceId, knowledgeBaseId);
     const deletedAt = new Date().toISOString();
-    const updated = await this.repository.updateKnowledgeBase(knowledgeBaseId, {
+    const updated = await this.repository.updateKnowledgeBase(workspaceId, knowledgeBaseId, {
       deletedAt,
       updatedAt: deletedAt,
     });
@@ -163,8 +170,19 @@ export class DocumentService {
 
     for (const file of input.files) {
       this.validateUpload(file);
-      const now = new Date().toISOString();
       const contentBytes = file.contentBytes ?? new TextEncoder().encode(file.fileName);
+      const contentHash = hashDocumentContent(contentBytes);
+      const duplicate = await this.repository.findDocumentByContentHash(
+        input.knowledgeBaseId,
+        contentHash,
+      );
+      if (duplicate && duplicate.status !== "failed") {
+        throw new DocumentValidationError(
+          `Duplicate content already exists as "${duplicate.fileName}".`,
+        );
+      }
+
+      const now = new Date().toISOString();
       const stored = await this.storage.save({
         workspaceId: input.workspaceId,
         knowledgeBaseId: input.knowledgeBaseId,
@@ -183,6 +201,7 @@ export class DocumentService {
         chunkCount: null,
         errorCode: null,
         errorMessage: null,
+        contentHash,
         createdAt: now,
         updatedAt: now,
         deletedAt: null,
@@ -196,7 +215,7 @@ export class DocumentService {
   }
 
   async getDocument(workspaceId: string, documentId: string): Promise<DocumentRecord> {
-    const document = await this.repository.findDocumentById(documentId);
+    const document = await this.repository.findDocumentById(workspaceId, documentId);
     if (!document || document.workspaceId !== workspaceId || document.deletedAt !== null) {
       throw new DocumentAccessError("Document not found in workspace.");
     }
@@ -214,7 +233,7 @@ export class DocumentService {
 
   async reindexDocument(workspaceId: string, documentId: string): Promise<DocumentRecord> {
     await this.getDocument(workspaceId, documentId);
-    const updated = await this.repository.updateDocument(documentId, {
+    const updated = await this.repository.updateDocument(workspaceId, documentId, {
       status: "uploaded",
       chunkCount: null,
       errorCode: null,
@@ -240,7 +259,7 @@ export class DocumentService {
     const document = await this.getDocument(workspaceId, documentId);
     const storageRemoval = await this.storage.remove(document.storageKey);
     const deletedAt = new Date().toISOString();
-    const updated = await this.repository.updateDocument(document.id, {
+    const updated = await this.repository.updateDocument(workspaceId, document.id, {
       deletedAt,
       updatedAt: deletedAt,
     });
@@ -259,6 +278,43 @@ export class DocumentService {
     };
   }
 
+  async reparseDocument(workspaceId: string, documentId: string): Promise<DocumentRecord> {
+    return this.reindexDocument(workspaceId, documentId);
+  }
+
+  async updateDocumentTags(
+    workspaceId: string,
+    documentId: string,
+    tags: string[],
+  ): Promise<DocumentRecord> {
+    await this.getDocument(workspaceId, documentId);
+    const updated = await this.repository.updateDocument(workspaceId, documentId, {
+      tags,
+      updatedAt: new Date().toISOString(),
+    });
+    if (!updated) {
+      throw new DocumentAccessError("Document not found in workspace.");
+    }
+    return updated;
+  }
+
+  async moveDocument(
+    workspaceId: string,
+    documentId: string,
+    targetKnowledgeBaseId: string,
+  ): Promise<DocumentRecord> {
+    await this.getDocument(workspaceId, documentId);
+    await this.requireKnowledgeBase(workspaceId, targetKnowledgeBaseId);
+    const updated = await this.repository.updateDocument(workspaceId, documentId, {
+      knowledgeBaseId: targetKnowledgeBaseId,
+      updatedAt: new Date().toISOString(),
+    });
+    if (!updated) {
+      throw new DocumentAccessError("Document not found in workspace.");
+    }
+    return updated;
+  }
+
   async applyWorkerStatus(input: {
     workspaceId: string;
     documentId: string;
@@ -268,7 +324,7 @@ export class DocumentService {
     errorMessage?: string | null;
   }): Promise<DocumentRecord> {
     const current = await this.getDocument(input.workspaceId, input.documentId);
-    const updated = await this.repository.updateDocument(current.id, {
+    const updated = await this.repository.updateDocument(input.workspaceId, current.id, {
       status: input.status,
       chunkCount: input.chunkCount ?? current.chunkCount,
       errorCode:
@@ -292,7 +348,10 @@ export class DocumentService {
     workspaceId: string,
     knowledgeBaseId: string,
   ): Promise<KnowledgeBaseRecord> {
-    const knowledgeBase = await this.repository.findKnowledgeBaseById(knowledgeBaseId);
+    const knowledgeBase = await this.repository.findKnowledgeBaseById(
+      workspaceId,
+      knowledgeBaseId,
+    );
     if (
       !knowledgeBase ||
       knowledgeBase.workspaceId !== workspaceId ||

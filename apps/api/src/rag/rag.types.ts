@@ -26,7 +26,17 @@ export interface ChunkRecord {
   documentId: string;
   documentTitle: string;
   content: string;
+  sectionTitle: string | null;
+  chunkIndex: number | null;
   embedding: number[];
+}
+
+export interface DocumentChunkSummary {
+  id: string;
+  chunkIndex: number | null;
+  sectionTitle: string | null;
+  content: string;
+  tokenEstimate: number;
 }
 
 export interface RetrievedChunk {
@@ -35,6 +45,7 @@ export interface RetrievedChunk {
   knowledgeBaseId: string;
   documentId: string;
   documentTitle: string;
+  sectionTitle: string | null;
   content: string;
   score: number;
 }
@@ -44,6 +55,7 @@ export interface RagCitation {
   knowledgeBaseId: string;
   documentId: string;
   title: string;
+  sectionTitle: string | null;
   score: number;
   snippet: string;
 }
@@ -66,6 +78,7 @@ export interface EmbeddingProviderHealth {
 
 export interface QueryEmbeddingProvider {
   embedQuery(text: string): Promise<number[]>;
+  embedDocuments?(texts: string[]): Promise<number[][]>;
   healthCheck(): Promise<EmbeddingProviderHealth>;
 }
 

@@ -45,7 +45,7 @@ test("local document storage can save and read bytes", async () => {
     assert.ok(stored.storageKey.includes("ws_demo"));
     assert.equal(stored.sizeBytes, inputBytes.byteLength);
 
-    const outputBytes = await storage.read(stored.storageKey);
+    const outputBytes = await storage.read(stored.storageKey, "ws_demo");
     assert.equal(
       new TextDecoder().decode(outputBytes),
       "hello qiyun",
@@ -80,7 +80,7 @@ test("local document storage can archive stored files", async () => {
     assert.equal(removed.action, "archived");
     assert.ok(removed.archivedStorageKey);
 
-    const outputBytes = await storage.read(removed.archivedStorageKey!);
+    const outputBytes = await storage.read(removed.archivedStorageKey!, "ws_demo");
     assert.equal(new TextDecoder().decode(outputBytes), "archive me");
   } finally {
     if (previousRoot === undefined) {
@@ -119,17 +119,29 @@ test("local document storage healthCheck reports ok when root is writable", asyn
 });
 
 test("minio document storage healthCheck reports error when credentials are missing", async () => {
-  const storage = new MinioDocumentStorage({
-    endpoint: "http://localhost:9000",
-    accessKey: "",
-    secretKey: "",
-    bucket: "qiyun-ai",
-  });
+  const previousAccessKey = process.env.MINIO_ACCESS_KEY;
+  const previousSecretKey = process.env.MINIO_SECRET_KEY;
+  delete process.env.MINIO_ACCESS_KEY;
+  delete process.env.MINIO_SECRET_KEY;
 
-  const health = await storage.healthCheck();
-  assert.equal(health.status, "error");
-  assert.equal(health.driver, "minio");
-  assert.match(health.detail, /MINIO_ACCESS_KEY/);
+  try {
+    const storage = new MinioDocumentStorage({
+      endpoint: "http://localhost:9000",
+      accessKey: "",
+      secretKey: "",
+      bucket: "qiyun-ai",
+    });
+
+    const health = await storage.healthCheck();
+    assert.equal(health.status, "error");
+    assert.equal(health.driver, "minio");
+    assert.match(health.detail, /MINIO_ACCESS_KEY/);
+  } finally {
+    if (previousAccessKey === undefined) delete process.env.MINIO_ACCESS_KEY;
+    else process.env.MINIO_ACCESS_KEY = previousAccessKey;
+    if (previousSecretKey === undefined) delete process.env.MINIO_SECRET_KEY;
+    else process.env.MINIO_SECRET_KEY = previousSecretKey;
+  }
 });
 
 test("minio document storage healthCheck reports ok when bucket head succeeds", async () => {

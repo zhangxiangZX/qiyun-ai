@@ -5,6 +5,7 @@ import {
   createProcessingQueue,
   dequeueDocumentJobBlocking,
   DOCUMENT_QUEUE_KEY,
+  getDocumentQueueBlockTimeoutSeconds,
   requeueDocumentJob,
 } from "./document-queue";
 import type { DocumentIndexJob } from "./document.types";
@@ -148,6 +149,7 @@ test("redis queue helpers enqueue, list, dequeue, and requeue jobs", async () =>
     assert.equal(queued[0]?.documentId, "doc_1");
 
     const dequeued = await dequeueDocumentJobBlocking();
+    assert.ok(dequeued);
     assert.equal(dequeued.documentId, "doc_1");
 
     const retried = await requeueDocumentJob(dequeued);
@@ -166,5 +168,30 @@ test("redis queue helpers enqueue, list, dequeue, and requeue jobs", async () =>
     else process.env.DOCUMENT_QUEUE_DRIVER = previousDriver;
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousNodeEnv;
+  }
+});
+
+test("redis queue dequeue returns null after timeout when queue is empty", async () => {
+  const previousDriver = process.env.DOCUMENT_QUEUE_DRIVER;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousTimeout = process.env.DOCUMENT_QUEUE_BLOCK_TIMEOUT_SECONDS;
+  const client = new FakeRedisClient();
+  setRedisClientFactoryForTests(async () => client as never);
+  process.env.DOCUMENT_QUEUE_DRIVER = "redis";
+  process.env.NODE_ENV = "development";
+  process.env.DOCUMENT_QUEUE_BLOCK_TIMEOUT_SECONDS = "2";
+
+  try {
+    assert.equal(getDocumentQueueBlockTimeoutSeconds(), 2);
+    const dequeued = await dequeueDocumentJobBlocking();
+    assert.equal(dequeued, null);
+  } finally {
+    setRedisClientFactoryForTests(undefined);
+    if (previousDriver === undefined) delete process.env.DOCUMENT_QUEUE_DRIVER;
+    else process.env.DOCUMENT_QUEUE_DRIVER = previousDriver;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousTimeout === undefined) delete process.env.DOCUMENT_QUEUE_BLOCK_TIMEOUT_SECONDS;
+    else process.env.DOCUMENT_QUEUE_BLOCK_TIMEOUT_SECONDS = previousTimeout;
   }
 });

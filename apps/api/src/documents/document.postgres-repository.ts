@@ -55,6 +55,7 @@ function mapDocument(row: Record<string, unknown>): DocumentRecord {
         ? null
         : (asString(row.error_code) as DocumentErrorCode),
     errorMessage: asNullableString(row.error_message),
+    contentHash: asNullableString(row.content_hash),
     createdAt: normalizeDate(row.created_at),
     updatedAt: normalizeDate(row.updated_at),
     deletedAt: row.deleted_at ? normalizeDate(row.deleted_at) : null,
@@ -82,10 +83,13 @@ export class PostgresDocumentRepository implements DocumentRepository {
     return record;
   }
 
-  async findKnowledgeBaseById(id: string): Promise<KnowledgeBaseRecord | null> {
+  async findKnowledgeBaseById(
+    workspaceId: string,
+    id: string,
+  ): Promise<KnowledgeBaseRecord | null> {
     const rows = await this.runQuery(
-      `select * from knowledge_bases where id = $1 limit 1`,
-      [id],
+      `select * from knowledge_bases where workspace_id = $1 and id = $2 limit 1`,
+      [workspaceId, id],
     );
     return rows[0] ? mapKnowledgeBase(rows[0]) : null;
   }
@@ -117,10 +121,11 @@ export class PostgresDocumentRepository implements DocumentRepository {
   }
 
   async updateKnowledgeBase(
+    workspaceId: string,
     id: string,
     patch: Partial<KnowledgeBaseRecord>,
   ): Promise<KnowledgeBaseRecord | null> {
-    const current = await this.findKnowledgeBaseById(id);
+    const current = await this.findKnowledgeBaseById(workspaceId, id);
     if (!current) return null;
 
     const next = { ...current, ...patch };
@@ -132,11 +137,11 @@ export class PostgresDocumentRepository implements DocumentRepository {
            created_at = $5,
            updated_at = $6,
            deleted_at = $7
-       where id = $1
+       where id = $1 and workspace_id = $2
        returning *`,
       [
         id,
-        next.workspaceId,
+        workspaceId,
         next.name,
         next.status,
         next.createdAt,
@@ -150,8 +155,8 @@ export class PostgresDocumentRepository implements DocumentRepository {
   async createDocument(record: DocumentRecord): Promise<DocumentRecord> {
     await this.runQuery(
       `insert into documents
-       (id, workspace_id, knowledge_base_id, file_name, file_type, storage_key, size_bytes, status, chunk_count, error_code, error_message, created_at, updated_at, deleted_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+       (id, workspace_id, knowledge_base_id, file_name, file_type, storage_key, size_bytes, status, chunk_count, error_code, error_message, content_hash, created_at, updated_at, deleted_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [
         record.id,
         record.workspaceId,
@@ -164,6 +169,7 @@ export class PostgresDocumentRepository implements DocumentRepository {
         record.chunkCount,
         record.errorCode,
         record.errorMessage,
+        record.contentHash,
         record.createdAt,
         record.updatedAt,
         record.deletedAt,
@@ -173,10 +179,11 @@ export class PostgresDocumentRepository implements DocumentRepository {
   }
 
   async updateDocument(
+    workspaceId: string,
     id: string,
     patch: Partial<DocumentRecord>,
   ): Promise<DocumentRecord | null> {
-    const current = await this.findDocumentById(id);
+    const current = await this.findDocumentById(workspaceId, id);
     if (!current) return null;
 
     const next = { ...current, ...patch };
@@ -192,14 +199,15 @@ export class PostgresDocumentRepository implements DocumentRepository {
            chunk_count = $9,
            error_code = $10,
            error_message = $11,
-           created_at = $12,
-           updated_at = $13,
-           deleted_at = $14
-       where id = $1
+           content_hash = $12,
+           created_at = $13,
+           updated_at = $14,
+           deleted_at = $15
+       where id = $1 and workspace_id = $2
        returning *`,
       [
         id,
-        next.workspaceId,
+        workspaceId,
         next.knowledgeBaseId,
         next.fileName,
         next.fileType,
@@ -209,6 +217,7 @@ export class PostgresDocumentRepository implements DocumentRepository {
         next.chunkCount,
         next.errorCode,
         next.errorMessage,
+        next.contentHash,
         next.createdAt,
         next.updatedAt,
         next.deletedAt,
@@ -217,10 +226,28 @@ export class PostgresDocumentRepository implements DocumentRepository {
     return rows[0] ? mapDocument(rows[0]) : null;
   }
 
-  async findDocumentById(id: string): Promise<DocumentRecord | null> {
+  async findDocumentById(
+    workspaceId: string,
+    id: string,
+  ): Promise<DocumentRecord | null> {
     const rows = await this.runQuery(
-      `select * from documents where id = $1 limit 1`,
-      [id],
+      `select * from documents where workspace_id = $1 and id = $2 limit 1`,
+      [workspaceId, id],
+    );
+    return rows[0] ? mapDocument(rows[0]) : null;
+  }
+
+  async findDocumentByContentHash(
+    knowledgeBaseId: string,
+    contentHash: string,
+  ): Promise<DocumentRecord | null> {
+    const rows = await this.runQuery(
+      `select * from documents
+       where knowledge_base_id = $1
+         and content_hash = $2
+         and deleted_at is null
+       limit 1`,
+      [knowledgeBaseId, contentHash],
     );
     return rows[0] ? mapDocument(rows[0]) : null;
   }

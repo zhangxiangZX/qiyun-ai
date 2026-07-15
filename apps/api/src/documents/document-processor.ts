@@ -63,7 +63,7 @@ export async function processDocumentJob(
     };
   }
 
-  const contentBytes = await storage.read(job.storageKey);
+  const contentBytes = await storage.read(job.storageKey, job.workspaceId);
   let chunks;
 
   try {

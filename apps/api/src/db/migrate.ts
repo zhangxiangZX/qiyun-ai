@@ -56,6 +56,8 @@ export async function ensureMigrationsApplied(): Promise<number> {
 
       const sql = await readFile(path.join(getMigrationDir(), file), "utf8");
       await client.query("begin");
+      // 迁移为受信任的系统操作：FORCE RLS 下以旁路执行，避免数据类迁移被行级策略拦截。
+      await client.query("SET LOCAL app.bypass_rls = 'true'");
 
       try {
         await client.query(sql);

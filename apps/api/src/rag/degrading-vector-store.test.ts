@@ -11,6 +11,8 @@ function createChunk(input: Partial<ChunkRecord> & Pick<ChunkRecord, "id" | "wor
     documentId: "doc_1",
     documentTitle: "Doc 1",
     content: "workspace scoped content",
+    sectionTitle: null,
+    chunkIndex: null,
     embedding: [0.9, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ...input,
   };

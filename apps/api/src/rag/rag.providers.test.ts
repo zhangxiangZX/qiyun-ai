@@ -20,6 +20,8 @@ test("qdrant reconcileChunks deletes stale points and upserts current chunks", a
       documentId: "doc_1",
       documentTitle: "Doc 1",
       content: "hello world",
+      sectionTitle: null,
+      chunkIndex: null,
       embedding: [0.1, 0.2],
     },
   ];
@@ -290,6 +292,37 @@ test("simple embedding provider keeps signal for Chinese queries", async () => {
   const vector = await provider.embedQuery("机柜系列怎么选型");
 
   assert.ok(vector.some((value) => value !== 0));
+});
+
+test("openai-compatible embedding provider batch embedDocuments returns all vectors", async () => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async (_url, init) => {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { input?: string[] };
+    assert.deepEqual(body.input, ["alpha", "beta"]);
+    return new Response(
+      JSON.stringify({
+        data: [{ embedding: [0.1, 0.2] }, { embedding: [0.3, 0.4] }],
+      }),
+      { status: 200 },
+    );
+  }) as typeof fetch;
+
+  try {
+    const provider = new OpenAICompatibleEmbeddingProvider({
+      baseUrl: "https://embeddings.example.com/v1",
+      apiKey: "test-key",
+      model: "text-embedding-3-small",
+      expectedDimensions: 2,
+    });
+
+    const vectors = await provider.embedDocuments(["alpha", "beta"]);
+    assert.deepEqual(vectors, [
+      [0.1, 0.2],
+      [0.3, 0.4],
+    ]);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
 });
 
 test("keywordOverlapScore matches Chinese content by sub-token overlap", () => {

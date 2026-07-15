@@ -11,7 +11,7 @@ test("sanitizeVisitorFacingReply removes reference source sections", () => {
     "库滋玛提供机柜、机箱、操作台等产品。",
     "",
     "参考来源：",
-    "- 《05_资料下载与来源索引.md》",
+    "- [05_资料下载与来源索引.md]",
     "- About54a8.html",
   ].join("\n");
 
@@ -23,7 +23,7 @@ test("sanitizeVisitorFacingReply removes reference source sections", () => {
 
 test("sanitizeVisitorFacingReply replaces internal old-site wording", () => {
   const output = sanitizeVisitorFacingReply(
-    "旧站资料下载页列示了机柜选型手册，旧站下载链接未在离线包中成功抓取。",
+    "旧站资料下载页列出了机柜选型手册，旧站下载链接未在离线包中成功抓取。",
   );
 
   assert.doesNotMatch(output, /旧站/);
@@ -55,4 +55,15 @@ test("sanitizeContextBlock cleans retrieval snippets before prompting", () => {
 
   assert.doesNotMatch(output, /旧站/);
   assert.doesNotMatch(output, /About54a8/);
+});
+
+test("sanitizeVisitorFacingReply softens salt-spray guarantee language", () => {
+  const output = sanitizeVisitorFacingReply(
+    "这类项目我们一般可以保证盐雾1000小时，但具体是否能达到1000小时还要看材料和表面处理。",
+  );
+
+  assert.doesNotMatch(output, /可以保证/);
+  assert.doesNotMatch(output, /1000小时/);
+  assert.match(output, /是否能达到|工程师确认/);
+  assert.match(output, /目标耐盐雾时长/);
 });

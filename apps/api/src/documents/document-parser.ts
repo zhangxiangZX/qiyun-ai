@@ -1,70 +1,36 @@
 import { inflateRawSync } from "node:zlib";
 
+import {
+  chunkStructuredText,
+  normalizeWhitespace,
+  stripHtmlToText,
+} from "./document-chunking";
 import type { ParsedDocumentChunk } from "./document.types";
 
 export class DocumentParseError extends Error {}
 export class UnsupportedDocumentTypeError extends DocumentParseError {}
 export class NoExtractableTextError extends DocumentParseError {}
 
-function normalizeWhitespace(input: string): string {
-  return input
-    .replace(/\r\n/g, "\n")
-    .split("\0")
-    .join("")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
 function toUtf8(input: Uint8Array): string {
   return new TextDecoder("utf-8", { fatal: false }).decode(input);
 }
 
-function splitIntoChunks(text: string): ParsedDocumentChunk[] {
-  const blocks = text
-    .split(/\n\s*\n/g)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (blocks.length === 0) {
-    return [];
-  }
-
-  const chunks: ParsedDocumentChunk[] = [];
-  let current = "";
-
-  for (const block of blocks) {
-    if (!current) {
-      current = block;
-      continue;
-    }
-
-    if ((current + "\n\n" + block).length <= 900) {
-      current = `${current}\n\n${block}`;
-      continue;
-    }
-
-    chunks.push({ content: current });
-    current = block;
-  }
-
-  if (current) {
-    chunks.push({ content: current });
-  }
-
-  return chunks;
+function hasSupportedTextExtension(fileName: string): boolean {
+  const lower = fileName.toLowerCase();
+  return lower.endsWith(".md") || lower.endsWith(".txt") || lower.endsWith(".markdown");
 }
 
-function hasSupportedTextExtension(fileName: string): boolean {
-  return fileName.endsWith(".md") || fileName.endsWith(".txt");
+function hasSupportedHtmlExtension(fileName: string): boolean {
+  const lower = fileName.toLowerCase();
+  return lower.endsWith(".html") || lower.endsWith(".htm");
 }
 
 function hasSupportedPdfExtension(fileName: string): boolean {
-  return fileName.endsWith(".pdf");
+  return fileName.toLowerCase().endsWith(".pdf");
 }
 
 function hasSupportedDocxExtension(fileName: string): boolean {
-  return fileName.endsWith(".docx");
+  return fileName.toLowerCase().endsWith(".docx");
 }
 
 function decodePdfEscapes(value: string): string {
@@ -340,6 +306,13 @@ function extractDocxText(contentBytes: Uint8Array): string {
   return normalizeWhitespace(plainMatches.join("\n"));
 }
 
+function assignChunkIndexes(chunks: ParsedDocumentChunk[]): ParsedDocumentChunk[] {
+  return chunks.map((chunk, index) => ({
+    ...chunk,
+    chunkIndex: index,
+  }));
+}
+
 export function parseDocumentContent(input: {
   fileName: string;
   fileType: string;
@@ -352,6 +325,10 @@ export function parseDocumentContent(input: {
     hasSupportedTextExtension(fileName) ||
     fileType === "text/plain" ||
     fileType === "text/markdown";
+  const isHtml =
+    hasSupportedHtmlExtension(fileName) ||
+    fileType === "text/html" ||
+    fileType === "application/xhtml+xml";
   const isPdf = hasSupportedPdfExtension(fileName) || fileType === "application/pdf";
   const isDocx =
     hasSupportedDocxExtension(fileName) ||
@@ -362,6 +339,8 @@ export function parseDocumentContent(input: {
 
   if (isTextLike) {
     rawText = normalizeWhitespace(toUtf8(input.contentBytes));
+  } else if (isHtml) {
+    rawText = stripHtmlToText(toUtf8(input.contentBytes));
   } else if (isPdf) {
     rawText = extractPdfText(input.contentBytes);
   } else if (isDocx) {
@@ -378,6 +357,10 @@ export function parseDocumentContent(input: {
     );
   }
 
-  const chunks = splitIntoChunks(rawText);
-  return chunks.length > 0 ? chunks : [{ content: rawText }];
+  const chunks = chunkStructuredText({
+    text: rawText,
+    fileName: input.fileName,
+  });
+
+  return assignChunkIndexes(chunks.length > 0 ? chunks : [{ content: rawText, sectionTitle: null }]);
 }

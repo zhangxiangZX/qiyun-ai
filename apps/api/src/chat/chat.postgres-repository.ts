@@ -20,6 +20,7 @@ import type {
   LeadMetaRecord,
   LeadRecord,
   MessageRecord,
+  PendingLeadAttachment,
   SiteRecord,
   SiteKeyAuditRecord,
 } from "./chat.types";
@@ -28,6 +29,15 @@ type QueryFn = <T extends Record<string, unknown> = Record<string, unknown>>(
   text: string,
   values?: unknown[],
 ) => Promise<T[]>;
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value : String(value ?? "");
+}
+
+function asNumber(value: unknown): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 function createClientQuery(client: PoolClient): QueryFn {
   return async <T extends Record<string, unknown> = Record<string, unknown>>(
@@ -134,6 +144,20 @@ export class PostgresChatRepository implements TransactionalChatRepository {
     return mapSite(rows[0]);
   }
 
+  async deleteSite(workspaceId: string, siteId: string): Promise<boolean> {
+    const rowCount = await this.runQuery(
+      `with deleted as (
+         delete from site_key_audits
+         where site_id = $2 and workspace_id = $1
+       )
+       delete from sites
+       where id = $2 and workspace_id = $1
+       returning id`,
+      [workspaceId, siteId],
+    );
+    return rowCount.length > 0;
+  }
+
   async createSiteKeyAudit(record: SiteKeyAuditRecord): Promise<void> {
     await this.runQuery(
       `insert into site_key_audits
@@ -175,10 +199,13 @@ export class PostgresChatRepository implements TransactionalChatRepository {
     return record;
   }
 
-  async findConversationById(id: string): Promise<ConversationRecord | null> {
+  async findConversationById(
+    workspaceId: string,
+    id: string,
+  ): Promise<ConversationRecord | null> {
     const rows = await this.runQuery(
-      `select * from conversations where id = $1 limit 1`,
-      [id],
+      `select * from conversations where workspace_id = $1 and id = $2 limit 1`,
+      [workspaceId, id],
     );
     return rows[0] ? mapConversation(rows[0]) : null;
   }
@@ -453,14 +480,17 @@ export class PostgresChatRepository implements TransactionalChatRepository {
     return rows[0] ? mapLead(rows[0]) : null;
   }
 
-  async findLeadById(id: string): Promise<LeadRecord | null> {
+  async findLeadById(
+    workspaceId: string,
+    id: string,
+  ): Promise<LeadRecord | null> {
     const rows = await this.runQuery(
       `select id, workspace_id, bot_id, conversation_id, site_key, fields, attachments, created_at,
               key_question, summary, source_site_id, source_site_name
        from leads
-       where id = $1
+       where workspace_id = $1 and id = $2
        limit 1`,
-      [id],
+      [workspaceId, id],
     );
     return rows[0] ? mapLead(rows[0]) : null;
   }
@@ -496,6 +526,85 @@ export class PostgresChatRepository implements TransactionalChatRepository {
       throw new Error("Lead not found.");
     }
     return mapLeadMeta(rows[0]);
+  }
+
+  async createPendingLeadAttachment(record: PendingLeadAttachment): Promise<void> {
+    await this.runQuery(
+      `insert into pending_lead_attachments
+       (id, workspace_id, site_key, file_name, file_type, size_bytes, storage_key, checksum, created_at, expires_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        record.id,
+        record.workspaceId,
+        record.siteKey,
+        record.fileName,
+        record.fileType,
+        record.sizeBytes,
+        record.storageKey,
+        record.checksum ?? null,
+        record.createdAt,
+        record.expiresAt,
+      ],
+    );
+  }
+
+  async findPendingLeadAttachment(workspaceId: string, id: string): Promise<PendingLeadAttachment | null> {
+    const rows = await this.runQuery(
+      `select id, workspace_id, site_key, file_name, file_type, size_bytes, storage_key, checksum, created_at, expires_at
+       from pending_lead_attachments
+       where workspace_id = $1 and id = $2
+       limit 1`,
+      [workspaceId, id],
+    );
+    if (!rows[0]) {
+      return null;
+    }
+    const row = rows[0];
+    return {
+      id: asString(row.id),
+      workspaceId: asString(row.workspace_id),
+      siteKey: asString(row.site_key),
+      fileName: asString(row.file_name),
+      fileType: asString(row.file_type),
+      sizeBytes: asNumber(row.size_bytes),
+      storageKey: asString(row.storage_key),
+      checksum: row.checksum == null ? undefined : asString(row.checksum),
+      createdAt: asString(row.created_at),
+      expiresAt: asString(row.expires_at),
+    };
+  }
+
+  async findPendingLeadAttachmentById(id: string): Promise<PendingLeadAttachment | null> {
+    const rows = await this.runQuery(
+      `select id, workspace_id, site_key, file_name, file_type, size_bytes, storage_key, checksum, created_at, expires_at
+       from pending_lead_attachments
+       where id = $1
+       limit 1`,
+      [id],
+    );
+    if (!rows[0]) {
+      return null;
+    }
+    const row = rows[0];
+    return {
+      id: asString(row.id),
+      workspaceId: asString(row.workspace_id),
+      siteKey: asString(row.site_key),
+      fileName: asString(row.file_name),
+      fileType: asString(row.file_type),
+      sizeBytes: asNumber(row.size_bytes),
+      storageKey: asString(row.storage_key),
+      checksum: row.checksum == null ? undefined : asString(row.checksum),
+      createdAt: asString(row.created_at),
+      expiresAt: asString(row.expires_at),
+    };
+  }
+
+  async deletePendingLeadAttachment(id: string): Promise<void> {
+    await this.runQuery(
+      `delete from pending_lead_attachments where id = $1`,
+      [id],
+    );
   }
 
   async withTransaction<T>(fn: (repository: ChatRepository) => Promise<T>): Promise<T> {

@@ -1,13 +1,23 @@
-import type { BotRecord, ChunkRecord } from "./rag.types";
+import type { BotRecord, ChunkRecord, RetrievedChunk } from "./rag.types";
 import { normalizeBotRecord } from "./bot-defaults";
+import { keywordOverlapScore } from "./rag.providers";
 
 export interface RagRepository {
   upsertBot(record: BotRecord): Promise<BotRecord>;
-  findBotById(id: string): Promise<BotRecord | null>;
+  findBotById(workspaceId: string, id: string): Promise<BotRecord | null>;
   listBotsByWorkspace(workspaceId: string): Promise<BotRecord[]>;
+  deleteBot(workspaceId: string, id: string): Promise<{ id: string }>;
   createChunk(record: ChunkRecord): Promise<ChunkRecord>;
-  deleteChunksByDocument(documentId: string): Promise<number>;
-  listChunks(): Promise<ChunkRecord[]>;
+  deleteChunksByDocument(workspaceId: string, documentId: string): Promise<number>;
+  listChunks(workspaceId: string): Promise<ChunkRecord[]>;
+  listAllChunks(): Promise<ChunkRecord[]>;
+  listChunksByDocument(documentId: string): Promise<ChunkRecord[]>;
+  searchChunksByKeyword(input: {
+    workspaceId: string;
+    knowledgeBaseIds: string[];
+    query: string;
+    topK: number;
+  }): Promise<RetrievedChunk[]>;
 }
 
 export class InMemoryRagRepository implements RagRepository {
@@ -40,12 +50,25 @@ export class InMemoryRagRepository implements RagRepository {
     return normalized;
   }
 
-  async findBotById(id: string): Promise<BotRecord | null> {
-    return this.bots.get(id) ?? null;
+  async findBotById(workspaceId: string, id: string): Promise<BotRecord | null> {
+    const bot = this.bots.get(id);
+    if (!bot || bot.workspaceId !== workspaceId) {
+      return null;
+    }
+    return bot;
   }
 
   async listBotsByWorkspace(workspaceId: string): Promise<BotRecord[]> {
     return [...this.bots.values()].filter((bot) => bot.workspaceId === workspaceId);
+  }
+
+  async deleteBot(workspaceId: string, id: string): Promise<{ id: string }> {
+    const bot = this.bots.get(id);
+    if (!bot || bot.workspaceId !== workspaceId) {
+      throw new Error("Bot not found in workspace.");
+    }
+    this.bots.delete(id);
+    return { id };
   }
 
   async createChunk(record: ChunkRecord): Promise<ChunkRecord> {
@@ -53,11 +76,14 @@ export class InMemoryRagRepository implements RagRepository {
     return record;
   }
 
-  async deleteChunksByDocument(documentId: string): Promise<number> {
+  async deleteChunksByDocument(
+    workspaceId: string,
+    documentId: string,
+  ): Promise<number> {
     let removed = 0;
 
     for (const [chunkId, chunk] of this.chunks.entries()) {
-      if (chunk.documentId !== documentId) {
+      if (chunk.documentId !== documentId || chunk.workspaceId !== workspaceId) {
         continue;
       }
 
@@ -68,7 +94,45 @@ export class InMemoryRagRepository implements RagRepository {
     return removed;
   }
 
-  async listChunks(): Promise<ChunkRecord[]> {
+  async listChunks(workspaceId: string): Promise<ChunkRecord[]> {
+    return [...this.chunks.values()].filter((chunk) => chunk.workspaceId === workspaceId);
+  }
+
+  async listAllChunks(): Promise<ChunkRecord[]> {
     return [...this.chunks.values()];
+  }
+
+  async listChunksByDocument(documentId: string): Promise<ChunkRecord[]> {
+    return [...this.chunks.values()]
+      .filter((chunk) => chunk.documentId === documentId)
+      .sort((left, right) => (left.chunkIndex ?? 0) - (right.chunkIndex ?? 0));
+  }
+
+  async searchChunksByKeyword(input: {
+    workspaceId: string;
+    knowledgeBaseIds: string[];
+    query: string;
+    topK: number;
+  }): Promise<RetrievedChunk[]> {
+    const allowed = new Set(input.knowledgeBaseIds);
+
+    return [...this.chunks.values()]
+      .filter(
+        (chunk) =>
+          chunk.workspaceId === input.workspaceId && allowed.has(chunk.knowledgeBaseId),
+      )
+      .map((chunk) => ({
+        chunkId: chunk.id,
+        workspaceId: chunk.workspaceId,
+        knowledgeBaseId: chunk.knowledgeBaseId,
+        documentId: chunk.documentId,
+        documentTitle: chunk.documentTitle,
+        sectionTitle: chunk.sectionTitle,
+        content: chunk.content,
+        score: keywordOverlapScore(input.query, `${chunk.sectionTitle ?? ""} ${chunk.content}`),
+      }))
+      .filter((chunk) => chunk.score > 0)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, input.topK);
   }
 }

@@ -1,7 +1,8 @@
 import { query } from "../db/pg";
 import { normalizeBotRecord } from "./bot-defaults";
 import type { RagRepository } from "./rag.repository";
-import type { BotRecord, ChunkRecord } from "./rag.types";
+import type { BotRecord, ChunkRecord, RetrievedChunk } from "./rag.types";
+import { keywordOverlapScore } from "./rag.providers";
 
 type QueryFn = <T extends Record<string, unknown> = Record<string, unknown>>(
   text: string,
@@ -10,6 +11,14 @@ type QueryFn = <T extends Record<string, unknown> = Record<string, unknown>>(
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value : String(value ?? "");
+}
+
+function asNullableString(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const text = asString(value).trim();
+  return text.length > 0 ? text : null;
 }
 
 function asStringArray(value: unknown): string[] {
@@ -74,6 +83,11 @@ function mapChunk(row: Record<string, unknown>): ChunkRecord {
     knowledgeBaseId: asString(row.knowledge_base_id),
     documentId: asString(row.document_id),
     documentTitle: asString(row.document_title),
+    sectionTitle: asNullableString(row.section_title),
+    chunkIndex:
+      row.chunk_index === null || row.chunk_index === undefined
+        ? null
+        : Number(row.chunk_index),
     content: asString(row.content),
     embedding: asNumberArray(row.embedding),
   };
@@ -132,8 +146,14 @@ export class PostgresRagRepository implements RagRepository {
     return mapBot(rows[0]!);
   }
 
-  async findBotById(id: string): Promise<BotRecord | null> {
-    const rows = await this.runQuery(`select * from bots where id = $1 limit 1`, [id]);
+  async findBotById(
+    workspaceId: string,
+    id: string,
+  ): Promise<BotRecord | null> {
+    const rows = await this.runQuery(
+      `select * from bots where workspace_id = $1 and id = $2 limit 1`,
+      [workspaceId, id],
+    );
     return rows[0] ? mapBot(rows[0]) : null;
   }
 
@@ -145,17 +165,27 @@ export class PostgresRagRepository implements RagRepository {
     return rows.map(mapBot);
   }
 
+  async deleteBot(workspaceId: string, id: string): Promise<{ id: string }> {
+    await this.runQuery(
+      `delete from bots where id = $1 and workspace_id = $2`,
+      [id, workspaceId],
+    );
+    return { id };
+  }
+
   async createChunk(record: ChunkRecord): Promise<ChunkRecord> {
     await this.runQuery(
       `insert into document_chunks
-       (id, workspace_id, knowledge_base_id, document_id, document_title, content, embedding)
-       values ($1,$2,$3,$4,$5,$6,$7::jsonb)`,
+       (id, workspace_id, knowledge_base_id, document_id, document_title, section_title, chunk_index, content, embedding)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)`,
       [
         record.id,
         record.workspaceId,
         record.knowledgeBaseId,
         record.documentId,
         record.documentTitle,
+        record.sectionTitle,
+        record.chunkIndex,
         record.content,
         toJson(record.embedding),
       ],
@@ -163,18 +193,73 @@ export class PostgresRagRepository implements RagRepository {
     return record;
   }
 
-  async deleteChunksByDocument(documentId: string): Promise<number> {
+  async deleteChunksByDocument(
+    workspaceId: string,
+    documentId: string,
+  ): Promise<number> {
     const rows = await this.runQuery(
-      `delete from document_chunks where document_id = $1 returning id`,
-      [documentId],
+      `delete from document_chunks where workspace_id = $1 and document_id = $2 returning id`,
+      [workspaceId, documentId],
     );
     return rows.length;
   }
 
-  async listChunks(): Promise<ChunkRecord[]> {
+  async listChunks(workspaceId: string): Promise<ChunkRecord[]> {
     const rows = await this.runQuery(
-      `select * from document_chunks order by document_id asc, id asc`,
+      `select * from document_chunks
+       where workspace_id = $1
+       order by document_id asc, chunk_index asc nulls last, id asc`,
+      [workspaceId],
     );
     return rows.map(mapChunk);
+  }
+
+  async listAllChunks(): Promise<ChunkRecord[]> {
+    const rows = await this.runQuery(
+      `select * from document_chunks
+       order by document_id asc, chunk_index asc nulls last, id asc`,
+      [],
+    );
+    return rows.map(mapChunk);
+  }
+
+  async listChunksByDocument(documentId: string): Promise<ChunkRecord[]> {
+    const rows = await this.runQuery(
+      `select * from document_chunks
+       where document_id = $1
+       order by chunk_index asc nulls last, id asc`,
+      [documentId],
+    );
+    return rows.map(mapChunk);
+  }
+
+  async searchChunksByKeyword(input: {
+    workspaceId: string;
+    knowledgeBaseIds: string[];
+    query: string;
+    topK: number;
+  }): Promise<RetrievedChunk[]> {
+    const rows = await this.runQuery(
+      `select * from document_chunks
+       where workspace_id = $1
+         and knowledge_base_id = any($2::text[])`,
+      [input.workspaceId, input.knowledgeBaseIds],
+    );
+
+    return rows
+      .map(mapChunk)
+      .map((chunk) => ({
+        chunkId: chunk.id,
+        workspaceId: chunk.workspaceId,
+        knowledgeBaseId: chunk.knowledgeBaseId,
+        documentId: chunk.documentId,
+        documentTitle: chunk.documentTitle,
+        sectionTitle: chunk.sectionTitle,
+        content: chunk.content,
+        score: keywordOverlapScore(input.query, `${chunk.sectionTitle ?? ""} ${chunk.content}`),
+      }))
+      .filter((chunk) => chunk.score > 0)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, input.topK);
   }
 }

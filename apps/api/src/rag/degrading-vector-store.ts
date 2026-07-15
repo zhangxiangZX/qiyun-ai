@@ -8,7 +8,6 @@ import {
   getVectorReconcileMaxAttempts,
   getVectorReconcileRetryDelayMs,
   retryAsync,
-  toDegradedReconcileResult,
 } from "./vector-reconcile";
 
 export class DegradingVectorStore implements VectorSearchStore {

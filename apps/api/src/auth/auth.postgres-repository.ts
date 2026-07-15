@@ -27,6 +27,37 @@ function normalizeDate(value: unknown): string {
   return value instanceof Date ? value.toISOString() : new Date(asString(value)).toISOString();
 }
 
+function parseJsonb(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) return {};
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof value === "object") return value as Record<string, unknown>;
+  return {};
+}
+
+function asJsonb(value: unknown): string {
+  if (typeof value === "string") {
+    try {
+      JSON.parse(value);
+      return value;
+    } catch {
+      return "{}";
+    }
+  }
+  if (value === null || value === undefined) return "{}";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "{}";
+  }
+}
+
 function mapUser(row: Record<string, unknown>): UserRecord {
   return {
     id: asString(row.id),
@@ -37,6 +68,9 @@ function mapUser(row: Record<string, unknown>): UserRecord {
     activeWorkspaceId: asNullableString(row.active_workspace_id),
     platformRole:
       asNullableString(row.platform_role) === "platform_admin" ? "platform_admin" : null,
+    mustChangePassword:
+      row.must_change_password === true || row.must_change_password === "t" || row.must_change_password === 1,
+    accountProfile: parseJsonb(row.account_profile) as UserRecord["accountProfile"],
     createdAt: normalizeDate(row.created_at),
     updatedAt: normalizeDate(row.updated_at),
   };
@@ -54,6 +88,7 @@ function mapWorkspace(row: Record<string, unknown>): WorkspaceRecord {
     contactEmail: asNullableString(row.contact_email),
     contactPhone: asNullableString(row.contact_phone),
     provisionedByUserId: asNullableString(row.provisioned_by_user_id),
+    companyProfile: parseJsonb(row.company_profile),
     createdAt: normalizeDate(row.created_at),
     updatedAt: normalizeDate(row.updated_at),
   };
@@ -117,6 +152,7 @@ function mapTrialRequest(row: Record<string, unknown>): TrialRequestRecord {
     phone: asNullableString(row.phone),
     website: asNullableString(row.website),
     requirement: asNullableString(row.requirement),
+    requestedPlan: asNullableString(row.requested_plan),
     status: asString(row.status) as TrialRequestRecord["status"],
     processedByUserId: asNullableString(row.processed_by_user_id),
     processedAt: row.processed_at ? normalizeDate(row.processed_at) : null,
@@ -134,8 +170,8 @@ export class PostgresAuthRepository implements AuthRepository {
   async createUser(record: UserRecord): Promise<UserRecord> {
     await this.runQuery(
       `insert into users
-       (id, email, password_hash, name, status, active_workspace_id, platform_role, created_at, updated_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+       (id, email, password_hash, name, status, active_workspace_id, platform_role, must_change_password, account_profile, created_at, updated_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         record.id,
         record.email,
@@ -144,6 +180,8 @@ export class PostgresAuthRepository implements AuthRepository {
         record.status,
         record.activeWorkspaceId,
         record.platformRole,
+        record.mustChangePassword ?? false,
+        asJsonb(record.accountProfile ?? {}),
         record.createdAt,
         record.updatedAt,
       ],
@@ -163,8 +201,10 @@ export class PostgresAuthRepository implements AuthRepository {
            status = $5,
            active_workspace_id = $6,
            platform_role = $7,
-           created_at = $8,
-           updated_at = $9
+           must_change_password = $8,
+           account_profile = $9,
+           created_at = $10,
+           updated_at = $11
        where id = $1
        returning *`,
       [
@@ -175,6 +215,8 @@ export class PostgresAuthRepository implements AuthRepository {
         next.status,
         next.activeWorkspaceId,
         next.platformRole,
+        next.mustChangePassword ?? false,
+        asJsonb(next.accountProfile ?? {}),
         next.createdAt,
         next.updatedAt,
       ],
@@ -230,8 +272,9 @@ export class PostgresAuthRepository implements AuthRepository {
            contact_email = $8,
            contact_phone = $9,
            provisioned_by_user_id = $10,
-           created_at = $11,
-           updated_at = $12
+           company_profile = $11,
+           created_at = $12,
+           updated_at = $13
        where id = $1
        returning *`,
       [
@@ -245,6 +288,7 @@ export class PostgresAuthRepository implements AuthRepository {
         next.contactEmail,
         next.contactPhone,
         next.provisionedByUserId,
+        asJsonb(next.companyProfile),
         next.createdAt,
         next.updatedAt,
       ],
@@ -498,10 +542,10 @@ export class PostgresAuthRepository implements AuthRepository {
   async createTrialRequest(record: TrialRequestRecord): Promise<TrialRequestRecord> {
     await this.runQuery(
       `insert into trial_requests
-       (id, company_name, contact_name, email, phone, website, requirement, status,
+       (id, company_name, contact_name, email, phone, website, requirement, requested_plan, status,
         processed_by_user_id, processed_at, review_notes, approved_workspace_id, approved_invitation_id,
         created_at, updated_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
         record.id,
         record.companyName,
@@ -510,6 +554,7 @@ export class PostgresAuthRepository implements AuthRepository {
         record.phone,
         record.website,
         record.requirement,
+        record.requestedPlan,
         record.status,
         record.processedByUserId,
         record.processedAt,
@@ -535,14 +580,15 @@ export class PostgresAuthRepository implements AuthRepository {
            phone = $5,
            website = $6,
            requirement = $7,
-           status = $8,
-           processed_by_user_id = $9,
-           processed_at = $10,
-           review_notes = $11,
-           approved_workspace_id = $12,
-           approved_invitation_id = $13,
-           created_at = $14,
-           updated_at = $15
+           requested_plan = $8,
+           status = $9,
+           processed_by_user_id = $10,
+           processed_at = $11,
+           review_notes = $12,
+           approved_workspace_id = $13,
+           approved_invitation_id = $14,
+           created_at = $15,
+           updated_at = $16
        where id = $1
        returning *`,
       [
@@ -553,6 +599,7 @@ export class PostgresAuthRepository implements AuthRepository {
         next.phone,
         next.website,
         next.requirement,
+        next.requestedPlan,
         next.status,
         next.processedByUserId,
         next.processedAt,

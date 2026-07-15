@@ -6,22 +6,34 @@ import type {
 
 export interface DocumentRepository {
   createKnowledgeBase(record: KnowledgeBaseRecord): Promise<KnowledgeBaseRecord>;
-  findKnowledgeBaseById(id: string): Promise<KnowledgeBaseRecord | null>;
+  findKnowledgeBaseById(
+    workspaceId: string,
+    id: string,
+  ): Promise<KnowledgeBaseRecord | null>;
   findKnowledgeBaseByName(
     workspaceId: string,
     name: string,
   ): Promise<KnowledgeBaseRecord | null>;
   listKnowledgeBases(workspaceId: string): Promise<KnowledgeBaseRecord[]>;
   updateKnowledgeBase(
+    workspaceId: string,
     id: string,
     patch: Partial<KnowledgeBaseRecord>,
   ): Promise<KnowledgeBaseRecord | null>;
   createDocument(record: DocumentRecord): Promise<DocumentRecord>;
   updateDocument(
+    workspaceId: string,
     id: string,
     patch: Partial<DocumentRecord>,
   ): Promise<DocumentRecord | null>;
-  findDocumentById(id: string): Promise<DocumentRecord | null>;
+  findDocumentById(
+    workspaceId: string,
+    id: string,
+  ): Promise<DocumentRecord | null>;
+  findDocumentByContentHash(
+    knowledgeBaseId: string,
+    contentHash: string,
+  ): Promise<DocumentRecord | null>;
   listDocumentsByKnowledgeBase(knowledgeBaseId: string): Promise<DocumentRecord[]>;
   softDeleteDocumentsByKnowledgeBase(
     knowledgeBaseId: string,
@@ -70,8 +82,15 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     return record;
   }
 
-  async findKnowledgeBaseById(id: string): Promise<KnowledgeBaseRecord | null> {
-    return this.knowledgeBases.get(id) ?? null;
+  async findKnowledgeBaseById(
+    workspaceId: string,
+    id: string,
+  ): Promise<KnowledgeBaseRecord | null> {
+    const record = this.knowledgeBases.get(id);
+    if (!record || record.workspaceId !== workspaceId) {
+      return null;
+    }
+    return record;
   }
 
   async findKnowledgeBaseByName(
@@ -95,10 +114,11 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   }
 
   async updateKnowledgeBase(
+    workspaceId: string,
     id: string,
     patch: Partial<KnowledgeBaseRecord>,
   ): Promise<KnowledgeBaseRecord | null> {
-    const current = this.knowledgeBases.get(id);
+    const current = await this.findKnowledgeBaseById(workspaceId, id);
     if (!current) {
       return null;
     }
@@ -114,10 +134,11 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   }
 
   async updateDocument(
+    workspaceId: string,
     id: string,
     patch: Partial<DocumentRecord>,
   ): Promise<DocumentRecord | null> {
-    const current = this.documents.get(id);
+    const current = await this.findDocumentById(workspaceId, id);
     if (!current) {
       return null;
     }
@@ -127,8 +148,29 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     return next;
   }
 
-  async findDocumentById(id: string): Promise<DocumentRecord | null> {
-    return this.documents.get(id) ?? null;
+  async findDocumentById(
+    workspaceId: string,
+    id: string,
+  ): Promise<DocumentRecord | null> {
+    const record = this.documents.get(id);
+    if (!record || record.workspaceId !== workspaceId) {
+      return null;
+    }
+    return record;
+  }
+
+  async findDocumentByContentHash(
+    knowledgeBaseId: string,
+    contentHash: string,
+  ): Promise<DocumentRecord | null> {
+    return (
+      [...this.documents.values()].find(
+        (item) =>
+          item.knowledgeBaseId === knowledgeBaseId
+          && item.contentHash === contentHash
+          && item.deletedAt === null,
+      ) ?? null
+    );
   }
 
   async listDocumentsByKnowledgeBase(knowledgeBaseId: string): Promise<DocumentRecord[]> {

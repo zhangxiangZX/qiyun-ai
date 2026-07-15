@@ -51,7 +51,7 @@ function createChatService() {
   );
   const ragService = new RagService(
     ragRepository,
-    new InMemoryQdrantStore(() => ragRepository.listChunks()),
+    new InMemoryQdrantStore(() => ragRepository.listAllChunks()),
     documentService,
     new SimpleEmbeddingProvider(),
   );

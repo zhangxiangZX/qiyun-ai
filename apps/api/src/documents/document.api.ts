@@ -1,5 +1,8 @@
 import type { RequestContext } from "../workspace";
+import { writeWorkspaceAudit } from "../audit/audit-write";
+import type { AuditApi } from "../audit/audit.api";
 import { RagAccessError, RagService, RagValidationError } from "../rag/rag.service";
+import { SelectionPagesAccessError } from "../selection-pages/selection-pages.repository";
 import {
   DocumentDeadLetterNotFoundError,
   DocumentDeadLetterUnavailableError,
@@ -26,13 +29,21 @@ export class DocumentApi {
   constructor(
     private readonly service: DocumentService,
     private readonly ragService: RagService,
+    private readonly auditApi?: AuditApi,
   ) {}
 
-  createKnowledgeBase(context: RequestContext, body: { name: string }) {
-    return this.service.createKnowledgeBase({
+  async createKnowledgeBase(context: RequestContext, body: { name: string }) {
+    const result = await this.service.createKnowledgeBase({
       workspaceId: context.workspaceId,
       name: body.name,
     });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "knowledge",
+      action: "create",
+      targetId: result.id,
+      detail: { name: result.name },
+    });
+    return result;
   }
 
   listKnowledgeBases(context: RequestContext) {
@@ -43,32 +54,55 @@ export class DocumentApi {
     return this.service.getKnowledgeBase(context.workspaceId, knowledgeBaseId);
   }
 
-  updateKnowledgeBase(
+  async updateKnowledgeBase(
     context: RequestContext,
     knowledgeBaseId: string,
     body: { name?: string; status?: "active" | "disabled" },
   ) {
-    return this.service.updateKnowledgeBase(
+    const result = await this.service.updateKnowledgeBase(
       context.workspaceId,
       knowledgeBaseId,
       body,
     );
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "knowledge",
+      action: "update",
+      targetId: knowledgeBaseId,
+      detail: body,
+    });
+    return result;
   }
 
-  deleteKnowledgeBase(context: RequestContext, knowledgeBaseId: string) {
-    return this.service.deleteKnowledgeBase(context.workspaceId, knowledgeBaseId);
+  async deleteKnowledgeBase(context: RequestContext, knowledgeBaseId: string) {
+    const result = await this.service.deleteKnowledgeBase(context.workspaceId, knowledgeBaseId);
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "knowledge",
+      action: "delete",
+      targetId: knowledgeBaseId,
+    });
+    return result;
   }
 
-  uploadDocuments(
+  async uploadDocuments(
     context: RequestContext,
     knowledgeBaseId: string,
     files: UploadDocumentInput[],
   ) {
-    return this.service.uploadDocuments({
+    const result = await this.service.uploadDocuments({
       workspaceId: context.workspaceId,
       knowledgeBaseId,
       files,
     });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "document",
+      action: "upload",
+      targetId: knowledgeBaseId,
+      detail: {
+        fileName: files.map((file) => file.fileName).join("、"),
+        count: files.length,
+      },
+    });
+    return result;
   }
 
   listKnowledgeBaseDocuments(
@@ -89,12 +123,53 @@ export class DocumentApi {
     return this.service.reindexDocument(context.workspaceId, documentId);
   }
 
+  async reparseDocument(context: RequestContext, documentId: string) {
+    const result = await this.service.reparseDocument(context.workspaceId, documentId);
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "document",
+      action: "update",
+      targetId: documentId,
+      detail: { action: "reparse" },
+    });
+    return result;
+  }
+
+  updateDocumentTags(
+    context: RequestContext,
+    documentId: string,
+    tags: string[],
+  ) {
+    return this.service.updateDocumentTags(context.workspaceId, documentId, tags);
+  }
+
+  moveDocument(
+    context: RequestContext,
+    documentId: string,
+    targetKnowledgeBaseId: string,
+  ) {
+    return this.service.moveDocument(context.workspaceId, documentId, targetKnowledgeBaseId);
+  }
+
   async deleteDocument(context: RequestContext, documentId: string) {
     const { removedChunkCount } = await this.ragService.deleteDocumentChunks(
       context.workspaceId,
       documentId,
     );
-    return this.service.deleteDocument(context.workspaceId, documentId, removedChunkCount);
+    const result = await this.service.deleteDocument(
+      context.workspaceId,
+      documentId,
+      removedChunkCount,
+    );
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "document",
+      action: "delete",
+      targetId: documentId,
+    });
+    return result;
+  }
+
+  listDocumentChunks(context: RequestContext, documentId: string) {
+    return this.ragService.listDocumentChunks(context.workspaceId, documentId);
   }
 
   listDeadLetterJobs(context: RequestContext) {
@@ -151,6 +226,15 @@ export function toHttpError(error: unknown): {
 
   if (error instanceof DocumentDeadLetterNotFoundError) {
     return { statusCode: 404, code: "NOT_FOUND", message: error.message };
+  }
+
+  if (error instanceof SelectionPagesAccessError) {
+    const isSlugConflict = /slug/i.test(error.message);
+    return {
+      statusCode: isSlugConflict ? 400 : 404,
+      code: isSlugConflict ? "VALIDATION_ERROR" : "NOT_FOUND",
+      message: error.message,
+    };
   }
 
   return {

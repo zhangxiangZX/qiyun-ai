@@ -81,6 +81,7 @@ test("reindexDocument waits for queue enqueue before resolving", async () => {
     chunkCount: 3,
     errorCode: "processing_failed",
     errorMessage: "old failure",
+    contentHash: null,
     createdAt: "2026-07-04T00:00:00.000Z",
     updatedAt: "2026-07-04T00:00:00.000Z",
     deletedAt: null,
@@ -104,7 +105,7 @@ test("reindexDocument waits for queue enqueue before resolving", async () => {
   assert.equal(completed, true);
   assert.equal(enqueueResolved, true);
 
-  const updated = await repository.findDocumentById("doc_1");
+  const updated = await repository.findDocumentById("ws_1", "doc_1");
   assert.equal(updated?.status, "uploaded");
   assert.equal(updated?.chunkCount, null);
   assert.equal(updated?.errorCode, null);

@@ -46,6 +46,7 @@ const baseRetrieval: RagSearchResult = {
       knowledgeBaseId: "kb1",
       documentId: "d1",
       title: "机柜温控手册",
+      sectionTitle: null,
       score: 0.9,
       snippet: "机柜温控方案需要结合发热量、柜体尺寸和环境温度综合选型。",
     },

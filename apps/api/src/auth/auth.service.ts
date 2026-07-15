@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 
 import type { ApiEnv } from "../config/env";
 import type {
@@ -21,17 +21,23 @@ import {
 import type {
   AuthTokens,
   AuthUserPayload,
+  AccountSettingsPayload,
   CustomerWorkspaceSummary,
   RefreshSessionRecord,
   TrialRequestRecord,
   TrialRequestSummary,
+  UserAccountProfile,
+  UserRecord,
   WorkspaceInvitationLookup,
   WorkspaceInvitationRole,
   WorkspaceInvitationSummary,
   WorkspaceMemberRole,
   WorkspaceMemberSummary,
+  WorkspaceProfilePatch,
+  WorkspaceRecord,
   WorkspaceSummary,
 } from "./auth.types";
+import { DEFAULT_WORKSPACE_PLAN, isValidWorkspacePlan } from "./workspace-plans";
 
 export class AuthAccessError extends Error {
   constructor(message: string) {
@@ -65,8 +71,19 @@ function isValidEmail(value: string): boolean {
 }
 
 function shouldExposeDebugCode(): boolean {
-  return process.env.NODE_ENV === "test"
-    || (process.env.NODE_ENV !== "production" && process.env.AUTH_SHOW_DEBUG_CODES === "true");
+  if (process.env.NODE_ENV === "test") {
+    return true;
+  }
+  if (process.env.AUTH_SHOW_DEBUG_CODES !== "true") {
+    return false;
+  }
+  const provider = (process.env.EMAIL_PROVIDER ?? "memory").toLowerCase();
+  return provider === "memory" || provider === "console";
+}
+
+function getEmailDeliveryMode(): "simulated" | "email" {
+  const provider = (process.env.EMAIL_PROVIDER ?? "memory").toLowerCase();
+  return provider === "resend" ? "email" : "simulated";
 }
 
 function deriveWorkspaceNameFromEmail(email: string): string {
@@ -225,7 +242,7 @@ export class AuthService {
 
   async requestEmailLoginCode(input: {
     email: string;
-  }): Promise<{ sent: true; expiresAt: string; debugCode?: string }> {
+  }): Promise<{ sent: true; expiresAt: string; deliveryMode: "simulated" | "email"; debugCode?: string }> {
     return this.issueOneTimeCode({
       email: input.email,
       purpose: "login",
@@ -234,15 +251,20 @@ export class AuthService {
 
   async requestPasswordResetCode(input: {
     email: string;
-  }): Promise<{ sent: true; expiresAt: string; debugCode?: string }> {
+  }): Promise<{ sent: true; expiresAt: string; deliveryMode: "simulated" | "email"; debugCode?: string }> {
     const email = input.email.trim().toLowerCase();
     if (!email || !isValidEmail(email)) {
       throw new AuthValidationError("A valid email is required.");
     }
 
+    // 防账号枚举：无论账号是否存在都返回成功态，仅对存在的账号实际发码。
     const user = await this.repository.findUserByEmail(email);
     if (!user) {
-      throw new AuthAccessError("No account exists for this email.");
+      return {
+        sent: true,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 10).toISOString(),
+        deliveryMode: "simulated",
+      };
     }
 
     return this.issueOneTimeCode({
@@ -270,14 +292,15 @@ export class AuthService {
       throw new AuthValidationError("Password must be at least 6 characters.");
     }
 
-    const user = await this.repository.findUserByEmail(email);
-    if (!user) {
-      throw new AuthAccessError("No account exists for this email.");
+    const latestCode = await this.requireLatestUsableCode(email, "password_reset");
+    if (!this.constantTimeCodeEquals(latestCode.codeHash, hashOneTimeCode(code))) {
+      throw new AuthAccessError("Verification code is incorrect or has expired.");
     }
 
-    const latestCode = await this.requireLatestUsableCode(email, "password_reset");
-    if (latestCode.codeHash !== hashOneTimeCode(code)) {
-      throw new AuthAccessError("Verification code is incorrect.");
+    const user = await this.repository.findUserByEmail(email);
+    if (!user) {
+      // 防账号枚举：验证码校验通过但账号不存在时，返回与「验证码错误」一致的泛型错误。
+      throw new AuthAccessError("Verification code is incorrect or has expired.");
     }
 
     const now = new Date().toISOString();
@@ -304,7 +327,7 @@ export class AuthService {
     }
 
     const latestCode = await this.requireLatestUsableCode(email, "login");
-    if (latestCode.codeHash !== hashOneTimeCode(code)) {
+    if (!this.constantTimeCodeEquals(latestCode.codeHash, hashOneTimeCode(code))) {
       throw new AuthAccessError("Verification code is incorrect.");
     }
 
@@ -321,6 +344,7 @@ export class AuthService {
         status: "active",
         activeWorkspaceId: null,
         platformRole: null,
+        mustChangePassword: true,
         createdAt: now,
         updatedAt: now,
       });
@@ -399,6 +423,40 @@ export class AuthService {
     return this.toUserPayload(user);
   }
 
+  async changePassword(
+    userId: string,
+    newPassword: string,
+  ): Promise<{ user: AuthUserPayload; workspaces: WorkspaceSummary[]; tokens: AuthTokens }> {
+    const password = newPassword.trim();
+    if (password.length < 8) {
+      throw new AuthValidationError("密码至少需 8 位。");
+    }
+    if (!/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+      throw new AuthValidationError("密码需同时包含数字和字母。");
+    }
+
+    const user = await this.repository.findUserById(userId);
+    if (!user || user.status !== "active") {
+      throw new AuthAccessError("User account is unavailable.");
+    }
+
+    const now = new Date().toISOString();
+    const updated = await this.repository.updateUser(user.id, {
+      passwordHash: hashPassword(password),
+      mustChangePassword: false,
+      updatedAt: now,
+    });
+    if (!updated) {
+      throw new AuthAccessError("User account is unavailable.");
+    }
+
+    return {
+      user: this.toUserPayload(updated),
+      workspaces: await this.listWorkspaces(updated.id),
+      tokens: await this.issueTokens(updated),
+    };
+  }
+
   async ensurePlatformAdmin(): Promise<void> {
     const email = (
       process.env.PLATFORM_ADMIN_EMAIL ??
@@ -436,6 +494,78 @@ export class AuthService {
     if (existing.platformRole !== "platform_admin") {
       await this.repository.updateUser(existing.id, {
         platformRole: "platform_admin",
+        updatedAt: now,
+      });
+    }
+  }
+
+  async ensureDevWorkspaceOwner(): Promise<void> {
+    if (process.env.NODE_ENV !== "development") {
+      return;
+    }
+
+    const email = (process.env.DEV_OWNER_EMAIL ?? "owner@qiyun.ai").trim().toLowerCase();
+    const password = (
+      process.env.DEV_OWNER_PASSWORD ??
+      process.env.PLATFORM_ADMIN_PASSWORD ??
+      "Qiyun@2026"
+    ).trim();
+    const name = (process.env.DEV_OWNER_NAME ?? "企业管理员").trim();
+    const workspaceName = (process.env.DEV_WORKSPACE_NAME ?? "企云科技有限公司").trim();
+    const workspaceId = (process.env.NEXT_PUBLIC_WORKSPACE_ID ?? "ws_dev").trim();
+
+    if (!email || !password) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    let user = await this.repository.findUserByEmail(email);
+
+    if (!user) {
+      user = await this.repository.createUser({
+        id: `user_${randomUUID()}`,
+        email,
+        passwordHash: hashPassword(password),
+        name,
+        status: "active",
+        activeWorkspaceId: null,
+        platformRole: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    let workspace = await this.repository.findWorkspaceById(workspaceId);
+    if (!workspace) {
+      workspace = await this.repository.createWorkspace({
+        id: workspaceId,
+        name: workspaceName,
+        slug: "qiyun-dev",
+        ownerId: user.id,
+        website: null,
+        plan: "enterprise",
+        contactName: name,
+        contactEmail: email,
+        contactPhone: null,
+        provisionedByUserId: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    const membership = await this.repository.findWorkspaceMember(workspace.id, user.id);
+    if (!membership) {
+      await this.repository.upsertWorkspaceMember({
+        workspaceId: workspace.id,
+        userId: user.id,
+        role: "owner",
+        createdAt: now,
+      });
+    }
+
+    if (user.activeWorkspaceId !== workspace.id) {
+      await this.repository.updateUser(user.id, {
+        activeWorkspaceId: workspace.id,
         updatedAt: now,
       });
     }
@@ -528,6 +658,7 @@ export class AuthService {
     phone?: string;
     website?: string;
     requirement?: string;
+    requestedPlan?: string;
   }): Promise<TrialRequestSummary> {
     const companyName = input.companyName.trim();
     const contactName = input.contactName.trim();
@@ -535,6 +666,11 @@ export class AuthService {
     const phone = input.phone?.trim() || null;
     const website = input.website?.trim() || null;
     const requirement = input.requirement?.trim() || null;
+    const requestedPlanInput = input.requestedPlan?.trim() || DEFAULT_WORKSPACE_PLAN;
+    if (!isValidWorkspacePlan(requestedPlanInput)) {
+      throw new AuthValidationError("A valid trial plan is required.");
+    }
+    const requestedPlan = requestedPlanInput;
 
     if (!companyName || !contactName || !email) {
       throw new AuthValidationError("Company name, contact name, and email are required.");
@@ -558,6 +694,7 @@ export class AuthService {
       phone,
       website,
       requirement,
+      requestedPlan,
       status: "pending",
       processedByUserId: null,
       processedAt: null,
@@ -607,7 +744,7 @@ export class AuthService {
       return this.toTrialRequestSummary(updated ?? record);
     }
 
-    const plan = input.plan?.trim() || "professional";
+    const plan = input.plan?.trim() || record.requestedPlan || DEFAULT_WORKSPACE_PLAN;
     const adminEmail = input.adminEmail?.trim().toLowerCase() || record.email;
     if (!isValidEmail(adminEmail)) {
       throw new AuthValidationError("A valid admin email is required to approve a trial request.");
@@ -671,6 +808,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: membership.role,
+        status: user.status,
         joinedAt: membership.createdAt,
         isCurrentUser: user.id === userId,
       });
@@ -908,7 +1046,8 @@ export class AuthService {
     userId: string;
     workspaceId: string;
     targetUserId: string;
-    role: "admin" | "member" | "sales_member" | "viewer" | "workspace_admin";
+    role?: "admin" | "member" | "sales_member" | "viewer" | "workspace_admin";
+    status?: UserRecord["status"];
   }): Promise<WorkspaceMemberSummary> {
     const actor = await this.requireWorkspaceManager(input.userId, input.workspaceId);
     const membership = await this.repository.findWorkspaceMember(input.workspaceId, input.targetUserId);
@@ -917,20 +1056,41 @@ export class AuthService {
     }
 
     if (membership.role === "owner") {
-      throw new AuthValidationError("Owner role cannot be changed.");
+      if (input.role !== undefined) {
+        throw new AuthValidationError("Owner role cannot be changed.");
+      }
+      if (input.status === "disabled") {
+        throw new AuthValidationError("Owner account cannot be disabled.");
+      }
     }
 
-    if (actor.role === "admin" && membership.role === "admin" && input.targetUserId !== input.userId) {
-      throw new AuthAccessError("Admins cannot change another admin.");
+    if (input.role !== undefined) {
+      if (actor.role === "admin" && membership.role === "admin" && input.targetUserId !== input.userId) {
+        throw new AuthAccessError("Admins cannot change another admin.");
+      }
+      const nextRole = normalizeWorkspaceRole(input.role);
+      await this.repository.upsertWorkspaceMember({
+        ...membership,
+        role: nextRole,
+      });
     }
-    const nextRole = normalizeWorkspaceRole(input.role);
 
-    const updated = await this.repository.upsertWorkspaceMember({
-      ...membership,
-      role: nextRole,
-    });
+    if (input.status !== undefined) {
+      const user = await this.repository.findUserById(input.targetUserId);
+      if (!user) {
+        throw new AuthAccessError("Workspace member not found.");
+      }
+      await this.repository.updateUser(user.id, {
+        status: input.status,
+        updatedAt: new Date().toISOString(),
+      });
+    }
 
-    return this.requireWorkspaceMemberSummary(input.workspaceId, updated.userId, input.userId);
+    if (input.role === undefined && input.status === undefined) {
+      throw new AuthValidationError("No member changes were provided.");
+    }
+
+    return this.requireWorkspaceMemberSummary(input.workspaceId, input.targetUserId, input.userId);
   }
 
   async removeWorkspaceMember(input: {
@@ -1095,6 +1255,55 @@ export class AuthService {
     return (await this.requireMembership(userId, workspaceId)).role;
   }
 
+  async getWorkspaceById(userId: string, workspaceId: string): Promise<WorkspaceRecord> {
+    await this.assertWorkspaceAccess(userId, workspaceId);
+    const workspace = await this.repository.findWorkspaceById(workspaceId);
+    if (!workspace) {
+      throw new AuthAccessError("Workspace not found.");
+    }
+    return workspace;
+  }
+
+  async updateWorkspace(input: {
+    userId: string;
+    workspaceId: string;
+    patch: WorkspaceProfilePatch;
+  }): Promise<WorkspaceRecord> {
+    await this.requireWorkspaceManager(input.userId, input.workspaceId);
+    const current = await this.repository.findWorkspaceById(input.workspaceId);
+    if (!current) {
+      throw new AuthAccessError("Workspace not found.");
+    }
+
+    const baseProfile =
+      current.companyProfile && typeof current.companyProfile === "object"
+        ? current.companyProfile
+        : {};
+    const mergedProfile: Record<string, unknown> = {
+      ...baseProfile,
+      ...this.sanitizeProfilePatch(input.patch),
+    };
+
+    const updated = await this.repository.updateWorkspace(current.id, {
+      companyProfile: mergedProfile,
+      updatedAt: new Date().toISOString(),
+    });
+    if (!updated) {
+      throw new AuthAccessError("Workspace not found.");
+    }
+    return updated;
+  }
+
+  private sanitizeProfilePatch(patch: WorkspaceProfilePatch): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(patch)) {
+      if (value !== undefined) {
+        out[key] = value;
+      }
+    }
+    return out;
+  }
+
   private async createWorkspaceForUser(userId: string, workspaceName: string, now: string) {
     const baseSlug = toSlug(workspaceName) || "workspace";
     let slug = baseSlug;
@@ -1132,7 +1341,7 @@ export class AuthService {
   private async issueOneTimeCode(input: {
     email: string;
     purpose: "login" | "password_reset";
-  }): Promise<{ sent: true; expiresAt: string; debugCode?: string }> {
+  }): Promise<{ sent: true; expiresAt: string; deliveryMode: "simulated" | "email"; debugCode?: string }> {
     const email = input.email.trim().toLowerCase();
     if (!email || !isValidEmail(email)) {
       throw new AuthValidationError("A valid email is required.");
@@ -1163,6 +1372,7 @@ export class AuthService {
     return {
       sent: true,
       expiresAt,
+      deliveryMode: getEmailDeliveryMode(),
       debugCode: shouldExposeDebugCode() ? code : undefined,
     };
   }
@@ -1182,6 +1392,12 @@ export class AuthService {
       throw new AuthAccessError("Verification code is invalid or has expired.");
     }
     return latestCode;
+  }
+
+  private constantTimeCodeEquals(stored: string, provided: string): boolean {
+    const a = Buffer.from(stored);
+    const b = Buffer.from(provided);
+    return a.length === b.length && timingSafeEqual(a, b);
   }
 
   private async issueTokens(user: { id: string; email: string; activeWorkspaceId: string | null }): Promise<AuthTokens> {
@@ -1270,6 +1486,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: membership.role,
+      status: user.status,
       joinedAt: membership.createdAt,
       isCurrentUser: user.id === currentUserId,
     };
@@ -1446,6 +1663,7 @@ export class AuthService {
       phone: record.phone,
       website: record.website,
       requirement: record.requirement,
+      requestedPlan: record.requestedPlan,
       status: record.status,
       submittedAt: record.createdAt,
       reviewedAt: record.processedAt,
@@ -1474,6 +1692,7 @@ export class AuthService {
     name: string;
     activeWorkspaceId: string | null;
     platformRole?: "platform_admin" | null;
+    mustChangePassword?: boolean;
   }): AuthUserPayload {
     return {
       id: user.id,
@@ -1481,6 +1700,107 @@ export class AuthService {
       name: user.name,
       activeWorkspaceId: user.activeWorkspaceId,
       platformRole: user.platformRole ?? null,
+      mustChangePassword: user.mustChangePassword ?? false,
     };
+  }
+
+  private roleLabel(role: WorkspaceMemberRole): string {
+    if (role === "owner") return "所有者";
+    if (role === "admin") return "管理员";
+    if (role === "member") return "成员";
+    return "只读成员";
+  }
+
+  private defaultNotificationPrefs() {
+    return {
+      system: true,
+      leads: true,
+      quoteStatus: true,
+      marketing: false,
+    };
+  }
+
+  async getAccountSettings(input: {
+    userId: string;
+    workspaceId: string;
+    role: WorkspaceMemberRole;
+  }): Promise<AccountSettingsPayload> {
+    const user = await this.repository.findUserById(input.userId);
+    if (!user) {
+      throw new AuthAccessError("User not found.");
+    }
+    const profile = user.accountProfile ?? {};
+    const prefs = {
+      ...this.defaultNotificationPrefs(),
+      ...(profile.notificationPrefs ?? {}),
+    };
+    return {
+      id: user.id,
+      nickname: user.name,
+      phone: profile.phone ?? "",
+      email: user.email,
+      jobTitle: profile.jobTitle ?? "",
+      bio: profile.bio ?? "",
+      department: profile.department ?? "",
+      role: this.roleLabel(input.role),
+      lastLogin: new Date(user.updatedAt).toLocaleString("zh-CN"),
+      loginIp: "—",
+      avatarUrl: "",
+      notificationPrefs: prefs,
+      language: profile.language ?? "zh",
+    };
+  }
+
+  async updateAccountSettings(input: {
+    userId: string;
+    workspaceId: string;
+    role: WorkspaceMemberRole;
+    patch: {
+      nickname?: string;
+      phone?: string;
+      email?: string;
+      jobTitle?: string;
+      bio?: string;
+      department?: string;
+      notificationPrefs?: UserAccountProfile["notificationPrefs"];
+      language?: "zh" | "en";
+    };
+  }): Promise<AccountSettingsPayload> {
+    const user = await this.repository.findUserById(input.userId);
+    if (!user) {
+      throw new AuthAccessError("User not found.");
+    }
+
+    const currentProfile = user.accountProfile ?? {};
+    const nextProfile: UserAccountProfile = {
+      ...currentProfile,
+      phone: input.patch.phone ?? currentProfile.phone,
+      jobTitle: input.patch.jobTitle ?? currentProfile.jobTitle,
+      bio: input.patch.bio ?? currentProfile.bio,
+      department: input.patch.department ?? currentProfile.department,
+      language: input.patch.language ?? currentProfile.language ?? "zh",
+      notificationPrefs: {
+        ...this.defaultNotificationPrefs(),
+        ...(currentProfile.notificationPrefs ?? {}),
+        ...(input.patch.notificationPrefs ?? {}),
+      },
+    };
+
+    const nextName = input.patch.nickname?.trim() || user.name;
+    if (input.patch.email && input.patch.email.trim() && input.patch.email !== user.email) {
+      throw new AuthValidationError("邮箱修改请通过安全设置流程处理。");
+    }
+
+    await this.repository.updateUser(user.id, {
+      name: nextName,
+      accountProfile: nextProfile,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return this.getAccountSettings({
+      userId: input.userId,
+      workspaceId: input.workspaceId,
+      role: input.role,
+    });
   }
 }

@@ -16,6 +16,8 @@ function chunk(input: Partial<ChunkRecord> & Pick<ChunkRecord, "id" | "workspace
     documentId: "doc_1",
     documentTitle: "Doc",
     content: "sample",
+    sectionTitle: null,
+    chunkIndex: null,
     embedding: [0.1],
     ...input,
   };

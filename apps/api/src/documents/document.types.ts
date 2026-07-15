@@ -45,6 +45,8 @@ export interface DocumentRecord {
   chunkCount: number | null;
   errorCode: DocumentErrorCode | null;
   errorMessage: string | null;
+  contentHash: string | null;
+  tags?: string[] | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -86,6 +88,8 @@ export interface DocumentDeadLetterJob extends DocumentIndexJob {
 
 export interface ParsedDocumentChunk {
   content: string;
+  sectionTitle?: string | null;
+  chunkIndex?: number;
 }
 
 export interface QueueLike {

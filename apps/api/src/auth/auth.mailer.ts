@@ -1,4 +1,6 @@
 import type { WorkspaceInvitationRole } from "./auth.types";
+import { createLogger } from "../logging/logger";
+import { redactSensitive } from "../logging/redact";
 
 function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -113,16 +115,23 @@ export class ConsoleWorkspaceInvitationMailer
   implements WorkspaceInvitationMailer
 {
   async sendInvitation(email: WorkspaceInvitationEmail): Promise<void> {
-    console.info(
-      `[workspace-invite] to=${email.recipientEmail} workspace="${email.workspaceName}" role=${email.role} url=${email.inviteUrl}`,
+    const logger = createLogger({ workspaceId: email.workspaceId });
+    logger.info(
+      redactSensitive(
+        `[workspace-invite] sent invitation to=${email.recipientEmail} workspace="${email.workspaceName}" role=${email.role}`,
+      ),
     );
   }
 }
 
 export class ConsoleEmailLoginCodeMailer implements EmailLoginCodeMailer {
   async sendCode(email: EmailLoginCodeEmail): Promise<void> {
-    console.info(
-      `[auth-code] to=${email.recipientEmail} code=${email.code} expiresAt=${email.expiresAt}`,
+    const logger = createLogger();
+    // Never log the verification code in plaintext.
+    logger.info(
+      redactSensitive(
+        `[auth-code] sent login verification code to=${email.recipientEmail}`,
+      ),
     );
   }
 }

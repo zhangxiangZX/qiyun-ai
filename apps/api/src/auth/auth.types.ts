@@ -5,6 +5,41 @@
 export type WorkspaceMemberRole = "owner" | "admin" | "member" | "viewer";
 export type WorkspaceInvitationRole = "admin" | "member" | "viewer";
 
+export interface UserAccountProfile {
+  phone?: string;
+  jobTitle?: string;
+  bio?: string;
+  department?: string;
+  language?: "zh" | "en";
+  notificationPrefs?: {
+    system?: boolean;
+    leads?: boolean;
+    quoteStatus?: boolean;
+    marketing?: boolean;
+  };
+}
+
+export interface AccountSettingsPayload {
+  id: string;
+  nickname: string;
+  phone: string;
+  email: string;
+  jobTitle: string;
+  bio: string;
+  department: string;
+  role: string;
+  lastLogin: string;
+  loginIp: string;
+  avatarUrl: string;
+  notificationPrefs: {
+    system: boolean;
+    leads: boolean;
+    quoteStatus: boolean;
+    marketing: boolean;
+  };
+  language: "zh" | "en";
+}
+
 export interface UserRecord {
   id: string;
   email: string;
@@ -13,6 +48,9 @@ export interface UserRecord {
   status: "active" | "disabled";
   activeWorkspaceId: string | null;
   platformRole: "platform_admin" | null;
+  /** 强制改密标记：为 true 时用户首次登录后必须修改密码才能进入控制台 */
+  mustChangePassword?: boolean;
+  accountProfile?: UserAccountProfile;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,8 +66,38 @@ export interface WorkspaceRecord {
   contactEmail: string | null;
   contactPhone: string | null;
   provisionedByUserId: string | null;
+  companyProfile?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * 企业资料可写字段（对应前端 company-profile 表单）。
+ * 仅这些字段会被合并进 workspaces.company_profile JSONB。
+ */
+export interface WorkspaceProfilePatch {
+  companyName?: string;
+  shortName?: string;
+  industry?: string;
+  website?: string;
+  hotline?: string;
+  supportEmail?: string;
+  creditCode?: string;
+  contactName?: string;
+  mobile?: string;
+  city?: string;
+  district?: string;
+  subDistrict?: string;
+  address?: string;
+  intro?: string;
+  slogan?: string;
+  siteTitle?: string;
+  siteDescription?: string;
+  invoiceTitle?: string;
+  taxId?: string;
+  bankName?: string;
+  bankAccount?: string;
+  tags?: string[];
 }
 
 export interface WorkspaceMemberRecord {
@@ -81,6 +149,7 @@ export interface TrialRequestRecord {
   phone: string | null;
   website: string | null;
   requirement: string | null;
+  requestedPlan: string | null;
   status: "pending" | "approved" | "rejected";
   processedByUserId: string | null;
   processedAt: string | null;
@@ -103,6 +172,8 @@ export interface AuthUserPayload {
   name: string;
   activeWorkspaceId: string | null;
   platformRole: "platform_admin" | null;
+  /** 强制改密标记：为 true 时前端登录后跳转至改密页 */
+  mustChangePassword?: boolean;
 }
 
 export interface CustomerWorkspaceSummary {
@@ -138,6 +209,7 @@ export interface WorkspaceMemberSummary {
   email: string;
   name: string;
   role: WorkspaceMemberRecord["role"];
+  status: UserRecord["status"];
   joinedAt: string;
   isCurrentUser: boolean;
 }
@@ -181,6 +253,7 @@ export interface TrialRequestSummary {
   phone: string | null;
   website: string | null;
   requirement: string | null;
+  requestedPlan: string | null;
   status: TrialRequestRecord["status"];
   submittedAt: string;
   reviewedAt: string | null;

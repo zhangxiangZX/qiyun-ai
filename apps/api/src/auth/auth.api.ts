@@ -1,5 +1,7 @@
 import type { ApiEnv } from "../config/env";
 import type { RequestContext } from "../workspace";
+import { writeWorkspaceAudit } from "../audit/audit-write";
+import type { AuditApi } from "../audit/audit.api";
 import type {
   EmailLoginCodeMailer,
   WorkspaceInvitationDeliveryAuditStore,
@@ -10,6 +12,7 @@ import type {
   TrialRequestSummary,
   WorkspaceInvitationRole,
   WorkspaceMemberRole,
+  WorkspaceProfilePatch,
 } from "./auth.types";
 import { AuthAccessError, AuthService, AuthValidationError } from "./auth.service";
 
@@ -24,6 +27,7 @@ export class AuthApi {
     mailer: WorkspaceInvitationMailer,
     invitationAuditStore: WorkspaceInvitationDeliveryAuditStore,
     emailLoginCodeMailer: EmailLoginCodeMailer,
+    private readonly auditApi?: AuditApi,
   ) {
     this.service = new AuthService(
       repository,
@@ -84,6 +88,10 @@ export class AuthApi {
     });
   }
 
+  changePassword(userId: string, body: { newPassword?: string }) {
+    return this.service.changePassword(userId, body.newPassword ?? "");
+  }
+
   refresh(body: { refreshToken?: string }) {
     return this.service.refresh(body.refreshToken ?? "");
   }
@@ -98,6 +106,10 @@ export class AuthApi {
 
   ensurePlatformAdmin() {
     return this.service.ensurePlatformAdmin();
+  }
+
+  ensureDevWorkspaceOwner() {
+    return this.service.ensureDevWorkspaceOwner();
   }
 
   listCustomerWorkspaces(userId: string) {
@@ -126,6 +138,7 @@ export class AuthApi {
     phone?: string;
     website?: string;
     requirement?: string;
+    requestedPlan?: string;
   }): Promise<TrialRequestSummary> {
     return this.service.submitTrialRequest({
       companyName: body.companyName ?? "",
@@ -134,6 +147,7 @@ export class AuthApi {
       phone: body.phone,
       website: body.website,
       requirement: body.requirement,
+      requestedPlan: body.requestedPlan,
     });
   }
 
@@ -167,6 +181,21 @@ export class AuthApi {
     return this.service.getCurrentWorkspace(context.userId);
   }
 
+  getWorkspaceById(userId: string, workspaceId: string) {
+    return this.service.getWorkspaceById(userId, workspaceId);
+  }
+
+  async updateWorkspace(userId: string, workspaceId: string, body: WorkspaceProfilePatch) {
+    const result = await this.service.updateWorkspace({ userId, workspaceId, patch: body });
+    writeWorkspaceAudit(this.auditApi, { workspaceId, userId }, {
+      module: "workspace",
+      action: "update",
+      targetId: workspaceId,
+      detail: body as Record<string, unknown>,
+    });
+    return result;
+  }
+
   activateWorkspace(context: RequestContext, workspaceId: string) {
     return this.service.activateWorkspace(context.userId, workspaceId);
   }
@@ -190,19 +219,26 @@ export class AuthApi {
     );
   }
 
-  inviteWorkspaceMember(
+  async inviteWorkspaceMember(
     context: RequestContext,
     body: {
       email?: string;
       role?: WorkspaceInvitationRole | "sales_member" | "workspace_admin";
     },
   ) {
-    return this.service.inviteWorkspaceMember({
+    const result = await this.service.inviteWorkspaceMember({
       userId: context.userId,
       workspaceId: context.workspaceId,
       email: body.email ?? "",
       role: body.role ?? "member",
     });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "member",
+      action: "invite",
+      targetId: result.id,
+      detail: { email: body.email, role: body.role ?? "member" },
+    });
+    return result;
   }
 
   acceptWorkspaceInvitation(context: RequestContext, invitationId: string) {
@@ -229,39 +265,105 @@ export class AuthApi {
     );
   }
 
-  updateWorkspaceMemberRole(
+  async updateWorkspaceMemberRole(
     context: RequestContext,
     targetUserId: string,
     body: {
       role?: Exclude<WorkspaceMemberRole, "owner"> | "sales_member" | "workspace_admin";
+      status?: "active" | "disabled";
     },
   ) {
-    return this.service.updateWorkspaceMemberRole({
+    const result = await this.service.updateWorkspaceMemberRole({
       userId: context.userId,
       workspaceId: context.workspaceId,
       targetUserId,
-      role: body.role ?? "member",
+      role: body.role,
+      status: body.status,
     });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "member",
+      action: body.role ? "change_role" : "update",
+      targetId: targetUserId,
+      detail: {
+        ...(body.role ? { role: body.role } : {}),
+        ...(body.status ? { status: body.status } : {}),
+      },
+    });
+    return result;
   }
 
-  removeWorkspaceMember(context: RequestContext, targetUserId: string) {
-    return this.service.removeWorkspaceMember({
+  async removeWorkspaceMember(context: RequestContext, targetUserId: string) {
+    const result = await this.service.removeWorkspaceMember({
       userId: context.userId,
       workspaceId: context.workspaceId,
       targetUserId,
     });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "member",
+      action: "remove",
+      targetId: targetUserId,
+    });
+    return result;
   }
 
-  transferWorkspaceOwnership(context: RequestContext, targetUserId: string) {
-    return this.service.transferWorkspaceOwnership({
+  async transferWorkspaceOwnership(context: RequestContext, targetUserId: string) {
+    const result = await this.service.transferWorkspaceOwnership({
       userId: context.userId,
       workspaceId: context.workspaceId,
       targetUserId,
     });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "member",
+      action: "change_role",
+      targetId: targetUserId,
+      detail: { role: "owner", action: "transfer_ownership" },
+    });
+    return result;
   }
 
   assertWorkspaceAccess(userId: string, workspaceId: string) {
     return this.service.assertWorkspaceAccess(userId, workspaceId);
+  }
+
+  getAccountSettings(context: RequestContext) {
+    return this.service.getAccountSettings({
+      userId: context.userId,
+      workspaceId: context.workspaceId,
+      role: context.role,
+    });
+  }
+
+  async updateAccountSettings(
+    context: RequestContext,
+    patch: {
+      nickname?: string;
+      phone?: string;
+      email?: string;
+      jobTitle?: string;
+      bio?: string;
+      department?: string;
+      notificationPrefs?: {
+        system?: boolean;
+        leads?: boolean;
+        quoteStatus?: boolean;
+        marketing?: boolean;
+      };
+      language?: "zh" | "en";
+    },
+  ) {
+    const result = await this.service.updateAccountSettings({
+      userId: context.userId,
+      workspaceId: context.workspaceId,
+      role: context.role,
+      patch,
+    });
+    writeWorkspaceAudit(this.auditApi, context, {
+      module: "account",
+      action: "update",
+      targetId: context.userId,
+      detail: { fields: Object.keys(patch) },
+    });
+    return result;
   }
 }
 

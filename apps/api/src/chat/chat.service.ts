@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { enterWithTenant } from "../db/tenant-context";
 import {
   generateSiteKey,
   hashSiteKey,
@@ -12,7 +13,6 @@ import type { DocumentStorage } from "../documents/document-storage";
 import {
   appendLeadFollowUpRecords,
   buildLeadMetaFollowUpChanges,
-  createLeadCreatedFollowUp,
   createInitialLeadFollowUpRecords,
 } from "./lead-follow-up";
 import {
@@ -62,6 +62,8 @@ import type {
   LeadStatus,
   LeadSubmissionRequest,
   MessageRecord,
+  PendingLeadAttachment,
+  PendingLeadAttachmentRef,
   PublicWidgetConfig,
   SiteRecord,
   SiteSecretRecord,
@@ -183,6 +185,8 @@ function buildChatMetaEvent(
   };
 }
 
+// Legacy fallback kept for compatibility while production replies use the LLM path.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function buildAssistantReply(
   citations: Array<{ title: string; snippet: string }>,
   needsLeadCapture: boolean,
@@ -195,6 +199,7 @@ function buildAssistantReply(
   return `${primary?.snippet ?? "我这边查到一些相关信息。"}您要是还需要报价或定制方案，留个联系方式，我们工程师好跟您对接。`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function buildAssistantGuidedReply(
   citations: Array<{ title: string; snippet: string }>,
   needsLeadCapture: boolean,
@@ -476,7 +481,16 @@ export class ChatService {
     actorUserId?: string | null;
     siteKey?: string;
   }): Promise<SiteSecretRecord> {
-    const bot = await this.requireBot(input.workspaceId, input.botId);
+    let botId = input.botId;
+    if (!botId) {
+      const bots = await this.ragRepository.listBotsByWorkspace(input.workspaceId);
+      const activeBot = bots.find((b) => b.status === "active");
+      if (!activeBot) {
+        throw new ChatAccessError("No active bot found in workspace.", "BOT_DISABLED");
+      }
+      botId = activeBot.id;
+    }
+    const bot = await this.requireBot(input.workspaceId, botId);
     const revealedSiteKey = input.siteKey ?? generateSiteKey();
     const site: SiteRecord = {
       id: `site_${randomUUID()}`,
@@ -509,6 +523,28 @@ export class ChatService {
 
   async listSites(workspaceId: string): Promise<SiteRecord[]> {
     return this.repository.listSitesByWorkspace(workspaceId);
+  }
+
+  async checkSiteInstall(workspaceId: string, siteId: string) {
+    const site = (await this.repository.listSitesByWorkspace(workspaceId)).find((item) => item.id === siteId);
+    if (!site) throw new ChatAccessError("Site not found in workspace.");
+    const conversations = await this.repository.listConversationsByWorkspace(workspaceId);
+    const matching = conversations.filter((conversation) => {
+      if (conversation.botId !== site.botId) return false;
+      try {
+        const host = new URL(conversation.origin).hostname.toLowerCase();
+        return site.allowedDomains.some((domain) => host === domain.toLowerCase() || host.endsWith(`.${domain.toLowerCase()}`));
+      } catch { return false; }
+    }).sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+    return {
+      siteId: site.id,
+      status: site.status,
+      installed: matching.length > 0,
+      verifiedBy: matching.length > 0 ? "widget_request" : "none",
+      lastSeenAt: matching[0]?.createdAt ?? null,
+      allowedDomains: site.allowedDomains,
+      siteKeyPrefix: site.siteKeyPrefix,
+    };
   }
 
   async rotateSiteKey(
@@ -618,6 +654,15 @@ export class ChatService {
     });
   }
 
+  async deleteSite(workspaceId: string, siteId: string): Promise<boolean> {
+    const sites = await this.repository.listSitesByWorkspace(workspaceId);
+    const site = sites.find((item) => item.id === siteId);
+    if (!site) {
+      throw new ChatAccessError("Site not found in workspace.");
+    }
+    return this.repository.deleteSite(workspaceId, siteId);
+  }
+
   async getPreviewSite(
     workspaceId: string,
     botId: string,
@@ -631,7 +676,9 @@ export class ChatService {
     origin: string;
   }): Promise<PublicWidgetConfig> {
     const site = await this.requireSite(input.siteKey);
-    const bot = await this.ragRepository.findBotById(input.botId);
+    // 公开读路径不经 WorkspaceAuthGuard，需在此显式注入租户上下文供 RLS 使用。
+    enterWithTenant(site.workspaceId);
+    const bot = await this.ragRepository.findBotById(site.workspaceId, input.botId);
 
     if (!bot || bot.workspaceId !== site.workspaceId || site.botId !== bot.id) {
       throw new ChatAccessError("Bot not found or inactive.", "UNAUTHORIZED");
@@ -842,6 +889,8 @@ export class ChatService {
 
   async *streamLive(request: ChatStreamRequest): AsyncGenerator<ChatStreamEvent> {
     const site = await this.requireSite(request.siteKey);
+    // 公开写路径不经 WorkspaceAuthGuard，需在此显式注入租户上下文供 RLS 使用。
+    enterWithTenant(site.workspaceId);
     const bot = await this.requireBot(site.workspaceId, request.botId);
 
     if (site.botId !== bot.id) {
@@ -1020,13 +1069,25 @@ export class ChatService {
 
   async submitLead(request: LeadSubmissionRequest): Promise<LeadRecord> {
     const site = await this.requireSite(request.siteKey);
+    // 公开写路径不经 WorkspaceAuthGuard，需在此显式注入租户上下文供 RLS 使用。
+    enterWithTenant(site.workspaceId);
     const bot = await this.requireBot(site.workspaceId, request.botId);
 
     if (site.botId !== bot.id) {
       throw new ChatAccessError("Site does not belong to bot.");
     }
 
+    const requestOrigin = request.origin ?? "";
+    if (
+      requestOrigin &&
+      site.allowedDomains.length > 0 &&
+      !originAllowed(requestOrigin, site.allowedDomains)
+    ) {
+      throw new ChatAccessError("当前域名未授权。", "DOMAIN_NOT_ALLOWED");
+    }
+
     const conversation = await this.repository.findConversationById(
+      site.workspaceId,
       request.conversationId,
     );
     if (
@@ -1060,6 +1121,11 @@ export class ChatService {
       conversation.id,
       request.attachments ?? [],
     );
+    const pendingAttachments = await this.resolvePendingAttachments(
+      site.workspaceId,
+      request.pendingAttachmentIds ?? [],
+    );
+    const allAttachments = [...attachments, ...pendingAttachments];
 
     return this.withRepositoryTransaction(async (repository) => {
       const currentLead = existingLead ?? (await repository.findLeadByConversation(conversation.id));
@@ -1069,7 +1135,7 @@ export class ChatService {
           fields: mergeLeadFields(currentLead.fields, fields),
           attachments: mergeLeadAttachments(
             currentLead.attachments,
-            attachments.map((attachment) => ({
+            allAttachments.map((attachment) => ({
               ...attachment,
               leadId: currentLead.id,
             })),
@@ -1092,7 +1158,7 @@ export class ChatService {
         siteKey: request.siteKey,
         fields,
         createdAt: new Date().toISOString(),
-        attachments: attachments.map((attachment) => ({
+        attachments: allAttachments.map((attachment) => ({
           ...attachment,
           leadId,
         })),
@@ -1116,6 +1182,61 @@ export class ChatService {
 
       return lead;
     });
+  }
+
+  /**
+   * Console-side lead creation (manual entry, no conversation/site required).
+   */
+  async createLeadConsole(
+    workspaceId: string,
+    input: { name: string; contact?: string; sourceBot?: string; lastQuestion?: string },
+  ): Promise<LeadRecord> {
+    const bots = await this.ragRepository.listBotsByWorkspace(workspaceId);
+    const bot = bots[0];
+    if (!bot) {
+      throw new ChatValidationError("请先创建至少一个 AI 助手，再手动添加线索。");
+    }
+
+    const leadId = `lead_${randomUUID()}`;
+    const conversationId = `manual_${randomUUID()}`;
+    const now = new Date().toISOString();
+    const fields: Record<string, string> = { name: input.name };
+    if (input.contact) fields.contact = input.contact;
+    if (input.sourceBot) fields.sourceBot = input.sourceBot;
+
+    await this.repository.createConversation({
+      id: conversationId,
+      workspaceId,
+      botId: bot.id,
+      visitorId: `manual_visitor_${leadId}`,
+      origin: "console_manual",
+      createdAt: now,
+    });
+
+    const lead: LeadRecord = {
+      id: leadId,
+      workspaceId,
+      botId: bot.id,
+      conversationId,
+      siteKey: "manual",
+      fields,
+      createdAt: now,
+      attachments: [],
+      keyQuestion: input.lastQuestion ?? null,
+      summary: null,
+      sourceSiteId: null,
+      sourceSiteName: "手动创建",
+    };
+    const created = await this.repository.createLead(lead);
+    await this.repository.upsertLeadMeta({
+      leadId: created.id,
+      status: "new",
+      assignee: null,
+      notes: "",
+      updatedAt: now,
+      followUpRecords: createInitialLeadFollowUpRecords(created.id, now),
+    });
+    return created;
   }
 
   async listConversations(
@@ -1154,7 +1275,10 @@ export class ChatService {
     workspaceId: string,
     conversationId: string,
   ): Promise<ConversationDetail> {
-    const conversation = await this.repository.findConversationById(conversationId);
+    const conversation = await this.repository.findConversationById(
+      workspaceId,
+      conversationId,
+    );
 
     if (!conversation || conversation.workspaceId !== workspaceId) {
       throw new ChatAccessError("Conversation not found in workspace.");
@@ -1191,6 +1315,7 @@ export class ChatService {
 
     for (const lead of leads) {
       const conversation = await this.repository.findConversationById(
+        workspaceId,
         lead.conversationId,
       );
       const messages = await this.repository.listMessagesByConversation(
@@ -1201,7 +1326,7 @@ export class ChatService {
         lead,
         meta: await this.repository.getLeadMeta(lead.id),
         conversation,
-        bot: await this.ragRepository.findBotById(lead.botId),
+        bot: await this.ragRepository.findBotById(workspaceId, lead.botId),
         messages,
       });
     }
@@ -1219,19 +1344,22 @@ export class ChatService {
     bot: BotRecord | null;
     messages: MessageRecord[];
   }> {
-    const lead = await this.repository.findLeadById(leadId);
+    const lead = await this.repository.findLeadById(workspaceId, leadId);
     if (!lead || lead.workspaceId !== workspaceId) {
       throw new ChatAccessError("Lead not found in workspace.");
     }
 
-    const conversation = await this.repository.findConversationById(lead.conversationId);
+    const conversation = await this.repository.findConversationById(
+      workspaceId,
+      lead.conversationId,
+    );
     const messages = await this.repository.listMessagesByConversation(lead.conversationId);
 
     return {
       lead,
       meta: await this.repository.getLeadMeta(lead.id),
       conversation,
-      bot: await this.ragRepository.findBotById(lead.botId),
+      bot: await this.ragRepository.findBotById(workspaceId, lead.botId),
       messages,
     };
   }
@@ -1246,7 +1374,7 @@ export class ChatService {
     },
     actorUserId?: string | null,
   ): Promise<LeadMetaRecord> {
-    const lead = await this.repository.findLeadById(leadId);
+    const lead = await this.repository.findLeadById(workspaceId, leadId);
     if (!lead || lead.workspaceId !== workspaceId) {
       throw new ChatAccessError("Lead not found in workspace.");
     }
@@ -1291,7 +1419,7 @@ export class ChatService {
     attachment: LeadAttachmentRecord;
     contentBytes: Uint8Array;
   }> {
-    const lead = await this.repository.findLeadById(leadId);
+    const lead = await this.repository.findLeadById(workspaceId, leadId);
     if (!lead || lead.workspaceId !== workspaceId) {
       throw new ChatAccessError("Lead not found in workspace.");
     }
@@ -1309,7 +1437,7 @@ export class ChatService {
 
     return {
       attachment,
-      contentBytes: await this.documentStorage.read(attachment.storageKey),
+      contentBytes: await this.documentStorage.read(attachment.storageKey, workspaceId),
     };
   }
 
@@ -1321,6 +1449,7 @@ export class ChatService {
   ): Promise<ConversationRecord> {
     if (request.conversationId) {
       const existing = await repository.findConversationById(
+        workspaceId,
         request.conversationId,
       );
       if (
@@ -1356,7 +1485,7 @@ export class ChatService {
   }
 
   private async requireBot(workspaceId: string, botId: string): Promise<BotRecord> {
-    const bot = await this.ragRepository.findBotById(botId);
+    const bot = await this.ragRepository.findBotById(workspaceId, botId);
 
     if (!bot || bot.workspaceId !== workspaceId || bot.status !== "active") {
       throw new ChatAccessError("Bot not found or inactive.", "BOT_DISABLED");
@@ -1417,5 +1546,127 @@ export class ChatService {
     }
 
     return attachments;
+  }
+
+  /**
+   * Widget 预上传线索附件：先存对象存储，再在 pending 表暂存元数据，返回可引用的 id 与公开下载地址。
+   * 建线索时通过 LeadSubmissionRequest.pendingAttachmentIds 引用，随后被消费删除。
+   */
+  async uploadPendingLeadAttachment(input: {
+    botId: string;
+    siteKey: string;
+    fileName: string;
+    fileType: string;
+    contentBytes: Uint8Array;
+    expiresInMs?: number;
+  }  ): Promise<PendingLeadAttachmentRef> {
+    const site = await this.requireSite(input.siteKey);
+    // 公开写路径不经 WorkspaceAuthGuard，需在此显式注入租户上下文供 RLS 使用。
+    enterWithTenant(site.workspaceId);
+    const bot = await this.requireBot(site.workspaceId, input.botId);
+    if (site.botId !== bot.id) {
+      throw new ChatAccessError("Site does not belong to bot.");
+    }
+
+    const createdAt = new Date().toISOString();
+    const expiresAt = new Date(
+      Date.now() + (input.expiresInMs ?? 24 * 60 * 60 * 1000),
+    ).toISOString();
+    const checksum = createHash("sha256").update(input.contentBytes).digest("hex");
+
+    const stored = await this.documentStorage.save({
+      workspaceId: site.workspaceId,
+      knowledgeBaseId: "pending-lead-attachments",
+      fileName: input.fileName,
+      contentBytes: input.contentBytes,
+    });
+
+    const id = `plead_att_${randomUUID()}`;
+    const record: PendingLeadAttachment = {
+      id,
+      workspaceId: site.workspaceId,
+      siteKey: input.siteKey,
+      fileName: input.fileName,
+      fileType: input.fileType || "application/octet-stream",
+      sizeBytes: stored.sizeBytes,
+      storageKey: stored.storageKey,
+      checksum,
+      createdAt,
+      expiresAt,
+    };
+    await this.repository.createPendingLeadAttachment(record);
+
+    return {
+      id,
+      fileName: record.fileName,
+      fileType: record.fileType,
+      sizeBytes: record.sizeBytes,
+      downloadUrl: `/public/leads/attachments/${id}`,
+    };
+  }
+
+  /** 将预上传附件引用解析为正式线索附件，并消费（删除）pending 记录；过期或不存在的会被跳过/清理。 */
+  async resolvePendingAttachments(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<LeadAttachmentRecord[]> {
+    const resolved: LeadAttachmentRecord[] = [];
+    for (const id of ids) {
+      const pending = await this.repository.findPendingLeadAttachment(workspaceId, id);
+      if (!pending) continue;
+      if (new Date(pending.expiresAt).getTime() < Date.now()) {
+        await this.repository.deletePendingLeadAttachment(id);
+        continue;
+      }
+      resolved.push({
+        id: `lead_attachment_${randomUUID()}`,
+        leadId: "",
+        fileName: pending.fileName,
+        fileType: pending.fileType,
+        sizeBytes: pending.sizeBytes,
+        storageKey: pending.storageKey,
+        checksum: pending.checksum,
+        createdAt: pending.createdAt,
+        status: "ready",
+      });
+      await this.repository.deletePendingLeadAttachment(id);
+    }
+    return resolved;
+  }
+
+  async readPendingLeadAttachmentFile(
+    workspaceId: string,
+    id: string,
+  ): Promise<{ attachment: PendingLeadAttachment; contentBytes: Uint8Array }> {
+    const pending = await this.repository.findPendingLeadAttachment(workspaceId, id);
+    if (!pending) {
+      throw new ChatAccessError("Pending lead attachment not found.");
+    }
+    if (new Date(pending.expiresAt).getTime() < Date.now()) {
+      await this.repository.deletePendingLeadAttachment(id);
+      throw new ChatAccessError("Pending lead attachment expired.");
+    }
+    return {
+      attachment: pending,
+      contentBytes: await this.documentStorage.read(pending.storageKey, workspaceId),
+    };
+  }
+
+  /** 公开下载预上传附件：pending id 为不可猜测的 UUID，作为安全边界，无需鉴权。 */
+  async readPendingLeadAttachmentPublic(
+    id: string,
+  ): Promise<{ attachment: PendingLeadAttachment; contentBytes: Uint8Array }> {
+    const pending = await this.repository.findPendingLeadAttachmentById(id);
+    if (!pending) {
+      throw new ChatAccessError("Pending lead attachment not found.");
+    }
+    if (new Date(pending.expiresAt).getTime() < Date.now()) {
+      await this.repository.deletePendingLeadAttachment(id);
+      throw new ChatAccessError("Pending lead attachment expired.");
+    }
+    return {
+      attachment: pending,
+      contentBytes: await this.documentStorage.read(pending.storageKey, pending.workspaceId),
+    };
   }
 }

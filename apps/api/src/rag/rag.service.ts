@@ -1,16 +1,20 @@
 import { randomUUID } from "node:crypto";
 
 import type { DocumentService } from "../documents/document.service";
+import { estimateTokenCount } from "../documents/document-chunking";
 import { normalizeBotRecord } from "./bot-defaults";
 import { normalizeRecommendedQuestions } from "./recommended-questions";
 import {
   keywordOverlapScore,
   SimpleEmbeddingProvider,
 } from "./rag.providers";
+import { embedTexts, expandRetrievalQuery, fuseHybridScores } from "./rag-retrieval";
 import type { RagRepository } from "./rag.repository";
+import { runWithBypassRls } from "../db/tenant-context";
 import type {
   BotRecord,
   ChunkRecord,
+  DocumentChunkSummary,
   QueryEmbeddingProvider,
   RagCitation,
   RagSearchResult,
@@ -105,7 +109,7 @@ export class RagService {
     allowedDomains?: string[];
     leadFields?: string[];
   }): Promise<BotRecord> {
-    const existing = await this.repository.findBotById(input.id);
+    const existing = await this.repository.findBotById(input.workspaceId, input.id);
     const knowledgeBaseIds = input.knowledgeBaseIds ?? existing?.knowledgeBaseIds ?? [];
 
     for (const knowledgeBaseId of knowledgeBaseIds) {
@@ -140,7 +144,7 @@ export class RagService {
       Omit<BotRecord, "id" | "workspaceId" | "updatedAt">
     >;
   }): Promise<BotRecord> {
-    const existing = await this.repository.findBotById(input.id);
+    const existing = await this.repository.findBotById(input.workspaceId, input.id);
     if (!existing || existing.workspaceId !== input.workspaceId) {
       throw new RagAccessError("Bot not found in workspace.");
     }
@@ -177,6 +181,9 @@ export class RagService {
     documentId: string;
     documentTitle: string;
     content: string;
+    sectionTitle?: string | null;
+    chunkIndex?: number | null;
+    embedding?: number[];
   }): Promise<ChunkRecord> {
     const content = input.content.trim();
     if (!content) {
@@ -186,7 +193,7 @@ export class RagService {
     await this.documents.getKnowledgeBase(input.workspaceId, input.knowledgeBaseId);
     await this.documents.getDocument(input.workspaceId, input.documentId);
 
-    const embedding = await this.embeddingProvider.embedQuery(content);
+    const embedding = input.embedding ?? (await this.embeddingProvider.embedQuery(content));
 
     const chunk = await this.repository.createChunk({
       id: `chunk_${randomUUID()}`,
@@ -194,6 +201,8 @@ export class RagService {
       knowledgeBaseId: input.knowledgeBaseId,
       documentId: input.documentId,
       documentTitle: input.documentTitle,
+      sectionTitle: input.sectionTitle ?? null,
+      chunkIndex: input.chunkIndex ?? null,
       content,
       embedding,
     });
@@ -206,28 +215,67 @@ export class RagService {
     knowledgeBaseId: string;
     documentId: string;
     documentTitle: string;
-    chunks: Array<{ content: string }>;
+    chunks: Array<{
+      content: string;
+      sectionTitle?: string | null;
+      chunkIndex?: number;
+    }>;
   }): Promise<ChunkRecord[]> {
     await this.documents.getKnowledgeBase(input.workspaceId, input.knowledgeBaseId);
     await this.documents.getDocument(input.workspaceId, input.documentId);
-    await this.repository.deleteChunksByDocument(input.documentId);
+    await this.repository.deleteChunksByDocument(input.workspaceId, input.documentId);
     await this.vectorStore.deleteChunksByDocument(input.documentId);
 
-    const created: ChunkRecord[] = [];
+    const normalized = input.chunks
+      .map((chunk) => ({
+        content: chunk.content.trim(),
+        sectionTitle: chunk.sectionTitle ?? null,
+        chunkIndex: chunk.chunkIndex ?? null,
+      }))
+      .filter((chunk) => chunk.content);
 
-    for (const content of input.chunks.map((chunk) => chunk.content.trim()).filter(Boolean)) {
+    if (normalized.length === 0) {
+      return [];
+    }
+
+    const embeddings = await embedTexts(
+      this.embeddingProvider,
+      normalized.map((chunk) => chunk.content),
+    );
+
+    const created: ChunkRecord[] = [];
+    for (const [index, chunk] of normalized.entries()) {
       created.push(
         await this.indexChunk({
           workspaceId: input.workspaceId,
           knowledgeBaseId: input.knowledgeBaseId,
           documentId: input.documentId,
           documentTitle: input.documentTitle,
-          content,
+          content: chunk.content,
+          sectionTitle: chunk.sectionTitle,
+          chunkIndex: chunk.chunkIndex ?? index,
+          embedding: embeddings[index],
         }),
       );
     }
 
     return created;
+  }
+
+  async listDocumentChunks(
+    workspaceId: string,
+    documentId: string,
+  ): Promise<DocumentChunkSummary[]> {
+    await this.documents.getDocument(workspaceId, documentId);
+    const chunks = await this.repository.listChunksByDocument(documentId);
+
+    return chunks.map((chunk) => ({
+      id: chunk.id,
+      chunkIndex: chunk.chunkIndex,
+      sectionTitle: chunk.sectionTitle,
+      content: chunk.content,
+      tokenEstimate: estimateTokenCount(chunk.content),
+    }));
   }
 
   async deleteDocumentChunks(
@@ -236,7 +284,10 @@ export class RagService {
   ): Promise<{ removedChunkCount: number }> {
     const document = await this.documents.getDocument(workspaceId, documentId);
     await this.documents.getKnowledgeBase(workspaceId, document.knowledgeBaseId);
-    const removedChunkCount = await this.repository.deleteChunksByDocument(documentId);
+    const removedChunkCount = await this.repository.deleteChunksByDocument(
+      workspaceId,
+      documentId,
+    );
     await this.vectorStore.deleteChunksByDocument(documentId);
     return { removedChunkCount };
   }
@@ -268,14 +319,47 @@ export class RagService {
     }
 
     await this.vectorStore.ensureReady();
-    const queryVector = await this.embeddingProvider.embedQuery(query);
+    const queryVariants = expandRetrievalQuery(query);
+    const primaryQuery = queryVariants[0] ?? query;
+    const queryVector = await this.embeddingProvider.embedQuery(primaryQuery);
     const retrievalTopK = Math.max((input.topK ?? 6) * 4, 12);
-    const retrieved = await this.vectorStore.search({
+    const vectorResults = await this.vectorStore.search({
       workspaceId: input.workspaceId,
       knowledgeBaseIds: bot.knowledgeBaseIds,
       queryVector,
       topK: retrievalTopK,
     });
+    const keywordResults = await this.repository.searchChunksByKeyword({
+      workspaceId: input.workspaceId,
+      knowledgeBaseIds: bot.knowledgeBaseIds,
+      query: primaryQuery,
+      topK: retrievalTopK,
+    });
+
+    const merged = new Map<string, RetrievedChunk>();
+    for (const chunk of vectorResults) {
+      const keywordScore =
+        keywordResults.find((item) => item.chunkId === chunk.chunkId)?.score ?? 0;
+      merged.set(chunk.chunkId, {
+        ...chunk,
+        score: fuseHybridScores({
+          vectorScore: chunk.score,
+          keywordScore,
+        }),
+      });
+    }
+
+    for (const chunk of keywordResults) {
+      if (merged.has(chunk.chunkId)) {
+        continue;
+      }
+      merged.set(chunk.chunkId, {
+        ...chunk,
+        score: fuseHybridScores({ vectorScore: 0, keywordScore: chunk.score }),
+      });
+    }
+
+    const retrieved = [...merged.values()].sort((left, right) => right.score - left.score);
 
     if (retrieved.length === 0) {
       return this.emptyResult(input.workspaceId, bot.id, query);
@@ -314,7 +398,8 @@ export class RagService {
       query,
       citations,
       contextBlocks: reranked.map(
-        (chunk) => `[${chunk.documentTitle}#${chunk.chunkId}] ${chunk.content}`,
+        (chunk) =>
+          `[${chunk.documentTitle}${chunk.sectionTitle ? ` · ${chunk.sectionTitle}` : ""}#${chunk.chunkId}] ${chunk.content}`,
       ),
       needsLeadCapture: false,
       retrievalScore: bestScore,
@@ -325,9 +410,59 @@ export class RagService {
     return this.repository.listBotsByWorkspace(workspaceId);
   }
 
+  async copyBot(workspaceId: string, botId: string): Promise<BotRecord> {
+    const existing = await this.requireBot(workspaceId, botId);
+    return this.createBot({
+      workspaceId,
+      name: `${existing.name} (副本)`,
+      status: "draft",
+      knowledgeBaseIds: [...existing.knowledgeBaseIds],
+    });
+  }
+
+  async deleteBot(workspaceId: string, botId: string): Promise<{ id: string }> {
+    await this.requireBot(workspaceId, botId);
+    await this.repository.deleteBot(workspaceId, botId);
+    return { id: botId };
+  }
+
+  async publishBot(workspaceId: string, botId: string): Promise<BotRecord> {
+    const existing = await this.requireBot(workspaceId, botId);
+    if (existing.knowledgeBaseIds.length === 0) {
+      throw new RagValidationError("发布前请先绑定至少一个知识库。");
+    }
+    return this.upsertBot({
+      id: botId,
+      workspaceId,
+      status: "active",
+    });
+  }
+
+  async testChatBot(
+    workspaceId: string,
+    botId: string,
+    message: string,
+  ): Promise<{ reply: string }> {
+    const bot = await this.requireBot(workspaceId, botId);
+    let context: string;
+    try {
+      const result = await this.search({
+        workspaceId,
+        botId,
+        query: message,
+        topK: 3,
+      });
+      context = result.contextBlocks.join("\n\n");
+    } catch {
+      context = "(知识库未激活或为空)";
+    }
+    const reply = `[测试回复 - ${bot.name}]\n已检索到相关上下文：\n${context.slice(0, 500)}`;
+    return { reply };
+  }
+
   async syncStoredChunks(): Promise<VectorIndexSyncSnapshot> {
     await this.vectorStore.ensureReady();
-    const chunks = await this.repository.listChunks();
+    const chunks = await runWithBypassRls(() => this.repository.listAllChunks());
     const vectorHealth = await this.vectorStore.healthCheck();
     const reconcile = await this.vectorStore.reconcileChunks(chunks);
 
@@ -370,13 +505,14 @@ export class RagService {
       knowledgeBaseId: chunk.knowledgeBaseId,
       documentId: chunk.documentId,
       title: chunk.documentTitle,
+      sectionTitle: chunk.sectionTitle,
       score: chunk.score,
       snippet: toSnippet(chunk.content),
     };
   }
 
   private async requireBot(workspaceId: string, botId: string): Promise<BotRecord> {
-    const bot = await this.repository.findBotById(botId);
+    const bot = await this.repository.findBotById(workspaceId, botId);
 
     if (!bot || bot.workspaceId !== workspaceId) {
       throw new RagAccessError("Bot not found in workspace.");

@@ -54,7 +54,7 @@ export function sanitizeVisitorFacingReply(text: string): string {
   result = result.replace(/以上联系方式[^。！？\n]*[。！？]?/g, "");
   result = result.replace(/建议您在联系前确认其仍有效[。！？]?/g, "");
   result = result.replace(/联系方式[^。！？\n]*(?:来自|源于)(?:官网|产品)资料[^。！？\n]*[。！？]?/g, "");
-  result = result.replace(/^[\-*•]\s*《[^》]+》.*$/gm, "");
+  result = result.replace(/^[-*•]\s*《[^》]+》.*$/gm, "");
   result = result.replace(/根据《[^》]+》[:：]?\s*/g, "");
   result = result.replace(INTERNAL_HTML_PATTERN, "");
   result = result.replace(/\[[^\]]+\.html[^\]]*\]/gi, "");
@@ -65,6 +65,16 @@ export function sanitizeVisitorFacingReply(text: string): string {
 
   for (const [pattern, replacement] of STIFF_PHRASE_REPLACEMENTS) {
     result = result.replace(pattern, replacement);
+  }
+
+  if (/盐雾/u.test(result)) {
+    result = result
+      .replace(/可以保证/gu, "是否能达到")
+      .replace(/盐雾\s*\d+\s*小时/gu, "目标耐盐雾时长")
+      .replace(/\d+\s*小时/gu, "目标时长")
+      .replace(/能不能到\s*\d+\s*小时/gu, "是否能达到目标时长")
+      .replace(/保证\s*\d+\s*小时/gu, "达到目标时长需要工程师确认")
+      .replace(/达到\s*\d+\s*小时/gu, "达到目标时长");
   }
 
   result = result

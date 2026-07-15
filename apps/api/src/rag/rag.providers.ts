@@ -12,6 +12,7 @@ import {
   retryAsync,
   toDegradedReconcileResult,
 } from "./vector-reconcile";
+import { embedTexts } from "./rag-retrieval";
 
 function normalizeToken(token: string): string {
   return token.trim().toLowerCase();
@@ -105,6 +106,15 @@ export class SimpleEmbeddingProvider implements QueryEmbeddingProvider {
   ) {}
 
   async embedQuery(text: string): Promise<number[]> {
+    const vectors = await this.embedDocuments([text]);
+    return vectors[0] ?? Array.from({ length: this.dimensions }, () => 0);
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    return texts.map((text) => this.embedSingle(text));
+  }
+
+  private embedSingle(text: string): number[] {
     const vector = Array.from({ length: this.dimensions }, () => 0);
     const tokens = tokenize(text);
 
@@ -151,7 +161,16 @@ export class OpenAICompatibleEmbeddingProvider implements QueryEmbeddingProvider
   ) {}
 
   async embedQuery(text: string): Promise<number[]> {
-    const response = await this.fetchEmbeddings(text);
+    const vectors = await this.embedDocuments([text]);
+    return vectors[0] ?? [];
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) {
+      return [];
+    }
+
+    const response = await this.fetchEmbeddings(texts);
 
     if (!response.ok) {
       const detail = await response.text();
@@ -163,28 +182,38 @@ export class OpenAICompatibleEmbeddingProvider implements QueryEmbeddingProvider
     const payload = (await response.json()) as {
       data?: Array<{ embedding?: number[] }>;
     };
-    const embedding = payload.data?.[0]?.embedding;
+    const rows = payload.data ?? [];
 
-    if (!embedding || !Array.isArray(embedding)) {
-      this.lastError = "Embedding provider returned no embedding vector.";
-      throw new Error(this.lastError);
-    }
-
-    const vector = embedding.map((value) => Number(value) || 0);
-
-    if (
-      this.options.expectedDimensions &&
-      vector.length !== this.options.expectedDimensions
-    ) {
+    if (rows.length !== texts.length) {
       this.lastError =
-        `Embedding vector dimension mismatch: expected ${this.options.expectedDimensions}, `
-        + `received ${vector.length}.`;
+        `Embedding provider returned ${rows.length} vectors for ${texts.length} inputs.`;
       throw new Error(this.lastError);
     }
+
+    const vectors = rows.map((row, index) => {
+      const embedding = row.embedding;
+      if (!embedding || !Array.isArray(embedding)) {
+        this.lastError = `Embedding provider returned no vector at index ${index}.`;
+        throw new Error(this.lastError);
+      }
+
+      const vector = embedding.map((value) => Number(value) || 0);
+      if (
+        this.options.expectedDimensions &&
+        vector.length !== this.options.expectedDimensions
+      ) {
+        this.lastError =
+          `Embedding vector dimension mismatch: expected ${this.options.expectedDimensions}, `
+          + `received ${vector.length}.`;
+        throw new Error(this.lastError);
+      }
+
+      return vector;
+    });
 
     this.lastError = null;
     this.lastVerifiedAt = Date.now();
-    return vector;
+    return vectors;
   }
 
   async healthCheck(): Promise<EmbeddingProviderHealth> {
@@ -217,7 +246,7 @@ export class OpenAICompatibleEmbeddingProvider implements QueryEmbeddingProvider
     };
   }
 
-  private async fetchEmbeddings(text: string): Promise<Response> {
+  private async fetchEmbeddings(input: string | string[]): Promise<Response> {
     const controller = new AbortController();
     const timeoutMs = Math.max(1000, this.options.timeoutMs ?? 10000);
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -231,7 +260,7 @@ export class OpenAICompatibleEmbeddingProvider implements QueryEmbeddingProvider
         },
         body: JSON.stringify({
           model: this.options.model,
-          input: text,
+          input,
         }),
         signal: controller.signal,
       });
@@ -272,6 +301,23 @@ export class DegradingEmbeddingProvider implements QueryEmbeddingProvider {
       this.degraded = true;
       this.lastError = error instanceof Error ? error.message : String(error);
       return this.fallback.embedQuery(text);
+    }
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    if (this.degraded) {
+      return embedTexts(this.fallback, texts);
+    }
+
+    try {
+      const vectors = await embedTexts(this.primary, texts);
+      this.degraded = false;
+      this.lastError = null;
+      return vectors;
+    } catch (error) {
+      this.degraded = true;
+      this.lastError = error instanceof Error ? error.message : String(error);
+      return embedTexts(this.fallback, texts);
     }
   }
 
@@ -350,6 +396,7 @@ export class InMemoryQdrantStore implements VectorSearchStore {
         knowledgeBaseId: chunk.knowledgeBaseId,
         documentId: chunk.documentId,
         documentTitle: chunk.documentTitle,
+        sectionTitle: chunk.sectionTitle,
         content: chunk.content,
         score: cosineSimilarity(input.queryVector, chunk.embedding),
       }))
@@ -396,6 +443,7 @@ export class QdrantVectorStore implements VectorSearchStore {
               knowledgeBaseId: chunk.knowledgeBaseId,
               documentId: chunk.documentId,
               documentTitle: chunk.documentTitle,
+              sectionTitle: chunk.sectionTitle,
               content: chunk.content,
             },
           },
@@ -485,6 +533,10 @@ export class QdrantVectorStore implements VectorSearchStore {
           knowledgeBaseId: String(data.knowledgeBaseId ?? ""),
           documentId: String(data.documentId ?? ""),
           documentTitle: String(data.documentTitle ?? ""),
+          sectionTitle:
+            data.sectionTitle === null || data.sectionTitle === undefined
+              ? null
+              : String(data.sectionTitle),
           content: String(data.content ?? ""),
           score: Number(item.score ?? 0),
         };
