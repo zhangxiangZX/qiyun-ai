@@ -8,7 +8,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { Badge } from "@qiyun/ui";
+import { Badge, Button } from "@qiyun/ui";
 
 import {
   DOCUMENT_STATUS_LABELS,
@@ -40,26 +40,30 @@ export function DocumentStatusBadgeWithRetry({
   status,
   errorMessage,
   onRetry,
+  showInlineError = true,
 }: {
   status: DocumentStatus;
-  errorMessage: string | null;
+  errorMessage?: string | null;
   onRetry?: () => void;
+  showInlineError?: boolean;
 }) {
   return (
     <div className="space-y-1">
       <DocumentStatusBadge status={status} />
-      {status === "failed" && errorMessage ? (
+      {showInlineError && status === "failed" && errorMessage ? (
         <p className="max-w-64 text-xs text-destructive">{errorMessage}</p>
       ) : null}
       {status === "failed" && onRetry ? (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-11 gap-1.5"
           onClick={onRetry}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
-          <RefreshCw className="h-3 w-3" aria-hidden />
-          Retry
-        </button>
+          <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+          重试索引
+        </Button>
       ) : null}
     </div>
   );

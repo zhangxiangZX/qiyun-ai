@@ -12,36 +12,36 @@ export interface PlaceholderPageProps {
 
 const fallbackContent: Record<string, { title: string; description: string }> = {
   bots: {
-    title: "Bots",
-    description: "Manage the assistant configuration, prompts, and connected knowledge bases.",
+    title: "机器人",
+    description: "管理助手配置、提示词和已连接的知识库。",
   },
   conversations: {
-    title: "Conversations",
-    description: "Review live and historical customer chats in one place.",
+    title: "对话",
+    description: "在同一位置查看实时和历史客户聊天。",
   },
   knowledge: {
-    title: "Knowledge",
-    description: "Organize source documents and track ingestion progress.",
+    title: "知识库",
+    description: "管理源文档并跟踪导入进度。",
   },
   leads: {
-    title: "Leads",
-    description: "Capture qualified leads and follow up with context.",
+    title: "线索",
+    description: "捕获合格线索并跟进上下文。",
   },
   sites: {
-    title: "Sites",
-    description: "Configure widgets, domains, and embed settings.",
+    title: "站点",
+    description: "配置挂件、域名和嵌入设置。",
   },
 };
 
 export function PlaceholderPage({ title, description, segment, icon, action }: PlaceholderPageProps) {
   const fallback = segment ? fallbackContent[segment] : undefined;
-  const resolvedTitle = title ?? fallback?.title ?? "Coming Soon";
+  const resolvedTitle = title ?? fallback?.title ?? "敬请期待";
   const resolvedDescription =
-    description ?? fallback?.description ?? "This section is being prepared for the next release.";
+    description ?? fallback?.description ?? "该模块正在建设中，敬请期待。";
 
   return (
     <div className="space-y-6">
-      <PageHeader title={resolvedTitle} description={resolvedDescription} />
+      <PageHeader variant="compact" title={resolvedTitle} description={resolvedDescription} />
       <div>
         <EmptyState title={resolvedTitle} description={resolvedDescription} icon={icon} action={action} />
       </div>

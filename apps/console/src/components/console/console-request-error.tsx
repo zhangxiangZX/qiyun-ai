@@ -37,7 +37,11 @@ export function ConsoleRequestError({
 
   return (
     <div className="space-y-3">
-      <Alert variant={variant} title={TITLES[kind]}>
+      <Alert
+        variant={variant}
+        title={TITLES[kind]}
+        className={variant === "error" ? "text-red-800" : undefined}
+      >
         {message}
         {kind === "rateLimit" ? (
           <p className="mt-2 text-xs text-muted-foreground">

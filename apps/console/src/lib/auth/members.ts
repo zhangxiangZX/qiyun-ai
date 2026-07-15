@@ -1,10 +1,13 @@
 "use client";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
+
 export interface WorkspaceMemberSummary {
   userId: string;
   email: string;
   name: string;
-  role: "owner" | "admin" | "member";
+  role: "owner" | "admin" | "member" | "viewer";
+  status: "active" | "disabled";
   joinedAt: string;
   isCurrentUser: boolean;
 }
@@ -37,26 +40,33 @@ export async function loadWorkspaceMembers(): Promise<WorkspaceMemberSummary[]> 
     throw new Error(await parseMessage(response, "Unable to load workspace members."));
   }
 
-  return (await response.json()) as WorkspaceMemberSummary[];
+  return unwrapEnvelope<WorkspaceMemberSummary[]>(await response.json());
 }
 
-export async function updateWorkspaceMemberRole(
+export async function updateWorkspaceMember(
   userId: string,
-  role: "admin" | "member",
+  patch: { role?: "admin" | "member" | "viewer"; status?: "active" | "disabled" },
 ): Promise<WorkspaceMemberSummary> {
   const response = await fetch(`/api/auth/workspace-members/${encodeURIComponent(userId)}`, {
     method: "PATCH",
     headers: {
       "content-type": "application/json",
     },
-    body: JSON.stringify({ role }),
+    body: JSON.stringify(patch),
   });
 
   if (!response.ok) {
-    throw new Error(await parseMessage(response, "Unable to update member role."));
+    throw new Error(await parseMessage(response, "Unable to update workspace member."));
   }
 
-  return (await response.json()) as WorkspaceMemberSummary;
+  return unwrapEnvelope<WorkspaceMemberSummary>(await response.json());
+}
+
+export async function updateWorkspaceMemberRole(
+  userId: string,
+  role: "admin" | "member",
+): Promise<WorkspaceMemberSummary> {
+  return updateWorkspaceMember(userId, { role });
 }
 
 export async function removeWorkspaceMember(userId: string): Promise<{ removedUserId: string }> {
@@ -68,7 +78,7 @@ export async function removeWorkspaceMember(userId: string): Promise<{ removedUs
     throw new Error(await parseMessage(response, "Unable to remove workspace member."));
   }
 
-  return (await response.json()) as { removedUserId: string };
+  return unwrapEnvelope<{ removedUserId: string }>(await response.json());
 }
 
 export async function transferWorkspaceOwnership(
@@ -90,12 +100,12 @@ export async function transferWorkspaceOwnership(
     throw new Error(await parseMessage(response, "Unable to transfer workspace ownership."));
   }
 
-  return (await response.json()) as TransferOwnershipResult;
+  return unwrapEnvelope<TransferOwnershipResult>(await response.json());
 }
 
 export async function createWorkspaceInvitation(input: {
   email: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "viewer";
 }) {
   const response = await fetch("/api/auth/workspace-invitations", {
     method: "POST",
@@ -109,12 +119,12 @@ export async function createWorkspaceInvitation(input: {
     throw new Error(await parseMessage(response, "Unable to send workspace invitation."));
   }
 
-  return (await response.json()) as {
+  return unwrapEnvelope<{
     id: string;
     email: string;
-    role: "admin" | "member";
+    role: "admin" | "member" | "viewer";
     inviteUrl: string;
     token: string;
     status: string;
-  };
+  }>(await response.json());
 }

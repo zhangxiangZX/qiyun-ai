@@ -1,6 +1,7 @@
 import { LoginBrandPanel } from "@/components/auth/login-brand-panel";
 import { LoginFooter } from "@/components/auth/login-footer";
 import { LegalDocument } from "@/components/auth/legal-document";
+import { BRAND_NAME } from "@/lib/brand";
 import styles from "@/styles/login.module.css";
 
 const sections = [
@@ -29,7 +30,7 @@ const sections = [
 
 export default function PrivacyPolicyPage() {
   return (
-    <section className={styles.shell} aria-label="企云 AI 隐私政策">
+    <section className={styles.shell} aria-label={`${BRAND_NAME} 隐私政策`}>
       <LoginBrandPanel />
       <LegalDocument title="隐私政策" updatedAt="2026-07-03" sections={sections} />
       <LoginFooter />

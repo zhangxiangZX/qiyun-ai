@@ -96,6 +96,7 @@ export function ReportsWorkspace() {
 
   const pageHeader = (
     <PageHeader
+      variant="compact"
       eyebrow={t(defaultLocale, "reports.eyebrow")}
       title={t(defaultLocale, "reports.title")}
       description={t(defaultLocale, "reports.description")}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import {
   getConsoleAuthApiBaseUrl,
   setAuthCookies,
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const payload = JSON.parse(responseText) as ConsoleAuthPayload;
+  const payload = unwrapEnvelope<ConsoleAuthPayload>(JSON.parse(responseText));
   const response = NextResponse.json({
     authenticated: true,
     user: payload.user,

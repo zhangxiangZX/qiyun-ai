@@ -4,8 +4,14 @@ export interface SiteConfig {
   botName: string;
   allowedDomains: string[];
   siteKeyPrefix: string;
-  embedSnippet: string;
+  embedSnippet: string | null;
   updatedAt: string;
+}
+
+export interface SiteKeyRotationResult {
+  site: SiteConfig;
+  /** Full site key — show once in UI, do not persist in list caches. */
+  revealedSiteKey: string;
 }
 
 export interface TestMessageRequest {

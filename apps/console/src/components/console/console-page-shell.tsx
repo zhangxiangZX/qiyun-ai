@@ -9,7 +9,7 @@ export function ConsolePage({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={cn("page-stack", className)}>{children}</div>;
+  return <div className={cn("page-shell page-stack", className)}>{children}</div>;
 }
 
 /** Mode banners, read-only notices, and inline feedback — stacks with consistent gap. */

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import {
   getAuthAccessToken,
   getAuthRefreshToken,
@@ -48,9 +49,9 @@ export async function POST(
     });
   }
 
-  const acceptedPayload = JSON.parse(acceptedText) as {
-    workspaceId: string;
-  } & Record<string, unknown>;
+  const acceptedPayload = unwrapEnvelope<{ workspaceId: string } & Record<string, unknown>>(
+    JSON.parse(acceptedText),
+  );
 
   const activateUpstream = await fetch(
     `${baseUrl}/workspaces/${encodeURIComponent(acceptedPayload.workspaceId)}/activate`,
@@ -87,7 +88,7 @@ export async function POST(
     });
   }
 
-  const refreshPayload = JSON.parse(refreshText) as ConsoleAuthPayload;
+  const refreshPayload = unwrapEnvelope<ConsoleAuthPayload>(JSON.parse(refreshText));
   const response = NextResponse.json(acceptedPayload);
   setAuthCookies(response, refreshPayload);
   return response;

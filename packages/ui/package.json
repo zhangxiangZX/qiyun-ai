@@ -9,9 +9,9 @@
     "./tailwind.preset": "./tailwind.preset.ts"
   },
   "scripts": {
-    "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\""
+    "lint": "pnpm exec tsc --noEmit",
+    "typecheck": "pnpm exec tsc --noEmit",
+    "test": "node --test --test-skip-pattern=."
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -24,6 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.487.0",
+    "qrcode.react": "^4.2.0",
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {

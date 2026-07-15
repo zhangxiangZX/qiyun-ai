@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 
 import { Alert, Button, Input, Label } from "@qiyun/ui";
 
-import type { TestMessageResult } from "@/lib/sites/types";
+import { resolveRequestErrorPresentation } from "@/components/console/console-request-error";
+
 import { t } from "@/lib/i18n";
 import { defaultLocale } from "@/lib/messages";
+import type { TestMessageResult } from "@/lib/sites/types";
 
 export interface TestMessageCardProps {
   allowedDomains: string[];
   savedDomains: string[];
   dirty?: boolean;
+  simulationHint?: string;
   onTest: (origin: string, message: string) => Promise<TestMessageResult>;
 }
 
@@ -20,19 +23,34 @@ export function TestMessageCard({
   allowedDomains,
   savedDomains,
   dirty = false,
+  simulationHint,
   onTest,
 }: TestMessageCardProps) {
   const [origin, setOrigin] = useState(savedDomains[0] ?? "");
   const [message, setMessage] = useState("你好，我想测试一下 Widget");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TestMessageResult | null>(null);
+  const [requestError, setRequestError] = useState<{
+    kind?: "network" | "permission" | "preview" | "rateLimit" | "unknown";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    setOrigin(savedDomains[0] ?? "");
+  }, [savedDomains]);
 
   async function handleSend() {
     setLoading(true);
     setResult(null);
-    const response = await onTest(origin, message);
-    setResult(response);
-    setLoading(false);
+    setRequestError(null);
+    try {
+      const response = await onTest(origin, message);
+      setResult(response);
+    } catch (error) {
+      setRequestError(resolveRequestErrorPresentation(error, "测试消息发送失败。"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -43,6 +61,12 @@ export function TestMessageCard({
       <p className="mt-1 text-sm text-muted-foreground">
         {t(defaultLocale, "sites.test.description")}
       </p>
+
+      {simulationHint ? (
+        <Alert variant="info" title="测试说明" className="mt-4">
+          {simulationHint}
+        </Alert>
+      ) : null}
 
       {dirty ? (
         <Alert
@@ -85,6 +109,12 @@ export function TestMessageCard({
           <Send className="h-4 w-4" aria-hidden />
           {t(defaultLocale, "sites.test.send")}
         </Button>
+
+        {requestError ? (
+          <Alert variant={requestError.kind === "rateLimit" ? "warning" : "error"} title="请求失败">
+            {requestError.message}
+          </Alert>
+        ) : null}
 
         {result ? (
           result.ok ? (

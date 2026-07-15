@@ -10,7 +10,7 @@ import {
   verifyLoginCodeWithConsole,
   type LoginCodeRequestResult,
 } from "@/lib/auth/client";
-import { getRateLimitMessage, isRateLimited } from "@/lib/api/errors";
+import { AUTH_VALIDATION, localizeAuthError } from "@/lib/auth/messages";
 import styles from "@/styles/login.module.css";
 
 type CodeLoginStatus = "idle" | "sending" | "ready" | "verifying" | "error" | "success";
@@ -23,6 +23,7 @@ export function CodeLoginPanel() {
   const [status, setStatus] = useState<CodeLoginStatus>("idle");
   const [message, setMessage] = useState("");
   const [debugCode, setDebugCode] = useState<string | null>(null);
+  const [deliveryMode, setDeliveryMode] = useState<"simulated" | "email" | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   async function handleRequestCode() {
@@ -31,7 +32,7 @@ export function CodeLoginPanel() {
 
     if (!email.trim() || !email.includes("@")) {
       setStatus("error");
-      setMessage("请输入有效邮箱地址。");
+      setMessage(AUTH_VALIDATION.emailInvalid);
       return;
     }
 
@@ -43,17 +44,18 @@ export function CodeLoginPanel() {
       });
       setStatus("ready");
       setExpiresAt(result.expiresAt);
+      setDeliveryMode(result.deliveryMode ?? null);
       setDebugCode(result.debugCode ?? null);
-      setMessage("验证码已发送，10 分钟内有效。");
+      setMessage(
+        result.deliveryMode === "email"
+          ? "验证码已发送，10 分钟内有效。"
+          : result.debugCode
+            ? "当前环境未接入真实邮件，请使用下方验证码登录。"
+            : "验证码已生成。若未显示，请联系管理员开启 AUTH_SHOW_DEBUG_CODES。",
+      );
     } catch (error) {
       setStatus("error");
-      setMessage(
-        isRateLimited(error)
-          ? getRateLimitMessage(error)
-          : error instanceof Error
-            ? error.message
-            : "验证码发送失败，请稍后重试。",
-      );
+      setMessage(localizeAuthError(error, "验证码发送失败，请稍后重试。"));
     }
   }
 
@@ -63,19 +65,19 @@ export function CodeLoginPanel() {
 
     if (!email.trim() || !email.includes("@")) {
       setStatus("error");
-      setMessage("请输入有效邮箱地址。");
+      setMessage(AUTH_VALIDATION.emailInvalid);
       return;
     }
 
     if (!/^\d{6}$/.test(code.trim())) {
       setStatus("error");
-      setMessage("请输入 6 位验证码。");
+      setMessage(AUTH_VALIDATION.codeRequired);
       return;
     }
 
     if (!acceptedTerms) {
       setStatus("error");
-      setMessage("请先同意用户协议与隐私政策。");
+      setMessage(AUTH_VALIDATION.termsRequired);
       return;
     }
 
@@ -91,26 +93,20 @@ export function CodeLoginPanel() {
       router.push("/dashboard");
     } catch (error) {
       setStatus("error");
-      setMessage(
-        isRateLimited(error)
-          ? getRateLimitMessage(error)
-          : error instanceof Error
-            ? error.message
-            : "验证码校验失败，请稍后重试。",
-      );
+      setMessage(localizeAuthError(error, "验证码校验失败，请稍后重试。"));
     }
   }
 
   return (
     <section className={styles.formPanel} aria-label="验证码登录区域">
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <form className={`${styles.form} ${styles.formCompact}`} onSubmit={handleSubmit} noValidate>
         <header className={styles.header}>
           <span className={styles.eyebrow}>邮箱验证码登录</span>
           <h2>验证码登录</h2>
           <p>忘记密码时也可以先用邮箱验证码进入控制台。</p>
         </header>
 
-        <label className={styles.field}>
+        <label className={`${styles.field} ${styles.plainField}`}>
           <span className={styles.srOnly}>邮箱</span>
           <input
             type="email"
@@ -124,7 +120,7 @@ export function CodeLoginPanel() {
         </label>
 
         <div className={styles.inlineActionRow}>
-          <label className={`${styles.field} ${styles.inlineActionField}`}>
+          <label className={`${styles.field} ${styles.plainField} ${styles.inlineActionField}`}>
             <span className={styles.srOnly}>验证码</span>
             <input
               type="text"
@@ -191,19 +187,26 @@ export function CodeLoginPanel() {
 
         {debugCode ? (
           <div className={styles.devCodeCard}>
-            <strong>开发环境验证码</strong>
+            <strong>{deliveryMode === "simulated" ? "测试环境验证码" : "开发环境验证码"}</strong>
             <span>{debugCode}</span>
             {expiresAt ? <small>有效期至 {new Date(expiresAt).toLocaleString("zh-CN")}</small> : null}
+          </div>
+        ) : deliveryMode === "simulated" ? (
+          <div className={styles.helperCard}>
+            <strong>邮件未实际发送</strong>
+            当前服务器使用模拟邮件模式。请在 API 环境变量中设置 AUTH_SHOW_DEBUG_CODES=true 后重新获取验证码，或配置 Resend 真实发信。
           </div>
         ) : null}
 
         <div className={styles.helperCard}>
           <strong>使用说明</strong>
-          首次验证码登录会自动创建账号。若未看到开发环境验证码，请检查 `.env` 中是否开启 `AUTH_SHOW_DEBUG_CODES=true`。
+          首次验证码登录会自动创建账号。验证码 10 分钟内有效。
         </div>
 
         <div className={`${styles.authPageActions} ${styles.authLinks}`}>
           <Link href="/login">返回密码登录</Link>
+          <Link href="/register">注册说明</Link>
+          <Link href="/forgot-password">忘记密码</Link>
           <Link href="/trial">申请试用</Link>
         </div>
       </form>

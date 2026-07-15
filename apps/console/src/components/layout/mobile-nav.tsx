@@ -13,11 +13,13 @@ import { SidebarNav } from "./sidebar-nav";
 
 export function MobileNav({
   pathname,
+  search,
   workspaceName,
   userRole,
   platformRole,
 }: {
   pathname: string;
+  search?: string;
   workspaceName?: string | null;
   userRole?: string | null;
   platformRole?: "platform_admin" | null;
@@ -52,7 +54,7 @@ export function MobileNav({
             <p className="text-sm font-semibold text-foreground">控制台导航</p>
             <p className="text-xs text-muted-foreground">
               {workspaceName
-                ? `${workspaceName}${userRole ? ` · ${memberRoleLabel(userRole)}` : ""}`
+                ? `${workspaceName}${userRole ? ` / ${memberRoleLabel(userRole)}` : ""}`
                 : platformRole === "platform_admin"
                   ? "当前为超级管理员后台"
                   : "选择页面后继续操作"}
@@ -61,6 +63,7 @@ export function MobileNav({
           <div className="min-h-0 flex-1 overflow-y-auto">
             <SidebarNav
               pathname={pathname}
+              search={search}
               onNavigate={() => setOpen(false)}
               variant="drawer"
               platformRole={platformRole}
@@ -87,9 +90,9 @@ export function MobileNav({
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="sm" className="justify-start">
-                    <Link href="/dashboard/invitations" onClick={() => setOpen(false)}>
+                    <Link href="/dashboard/team/invite" onClick={() => setOpen(false)}>
                       <MailPlus className="h-4 w-4" />
-                      邀请审批
+                      邀请成员
                     </Link>
                   </Button>
                 </>

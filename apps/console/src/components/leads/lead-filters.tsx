@@ -17,8 +17,10 @@ export interface LeadFiltersBarProps {
 
 const statusOptions: Array<{ value: LeadStatus | "all"; label: string }> = [
   { value: "all", label: "全部状态" },
-  { value: "new", label: "新建" },
-  { value: "following", label: "跟进中" },
+  { value: "new", label: "新线索" },
+  { value: "pending", label: "待跟进" },
+  { value: "contacted", label: "已联系" },
+  { value: "proposal", label: "方案中" },
   { value: "won", label: "已成交" },
   { value: "invalid", label: "无效" },
 ];
@@ -31,15 +33,18 @@ export function LeadFiltersBar({
 }: LeadFiltersBarProps) {
   return (
     <div className="grid gap-3 rounded-card border border-border bg-card p-4 shadow-card md:grid-cols-2 xl:grid-cols-4">
-      <div className="relative md:col-span-2 xl:col-span-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={filters.query}
-          onChange={(event) => onChange({ query: event.target.value })}
-          placeholder={t(defaultLocale, "leads.filters.search")}
-          className="pl-9"
-          aria-label={t(defaultLocale, "leads.filters.search")}
-        />
+      <div className="space-y-2 md:col-span-2 xl:col-span-1">
+        <Label htmlFor="lead-search-filter">{t(defaultLocale, "leads.filters.searchLabel")}</Label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="lead-search-filter"
+            value={filters.query}
+            onChange={(event) => onChange({ query: event.target.value })}
+            placeholder={t(defaultLocale, "leads.filters.search")}
+            className="pl-9"
+          />
+        </div>
       </div>
 
       <div className="space-y-2">

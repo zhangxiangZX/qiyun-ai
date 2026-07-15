@@ -7,7 +7,7 @@ export const DATA_MODE_TITLES: Record<ConsoleDataMode, string> = {
 
 export const DATA_MODE_SHORT: Record<ConsoleDataMode, string> = {
   preview: "当前为演示数据，刷新或服务重启后可能丢失。",
-  upstream: "当前经 Console BFF 连接 apps/api，展示真实业务数据。",
+  upstream: "数据已同步，展示当前工作区真实业务数据。",
 };
 
 export const PREVIEW_LIMITATION_HINTS: Record<string, string> = {
@@ -28,6 +28,7 @@ export const PREVIEW_LIMITATION_HINTS: Record<string, string> = {
 };
 
 export const UPSTREAM_CAPABILITY_HINTS: Record<string, string> = {
+  询盘中心: "列表与统计来自当前工作区真实询盘数据。",
   知识库:
     "multipart 经 BFF 代理至 apps/api；文件存储与向量索引由后端环境配置决定。",
   概览: "数据来自 apps/api 聚合分析接口，反映当前工作区真实会话与线索统计。",

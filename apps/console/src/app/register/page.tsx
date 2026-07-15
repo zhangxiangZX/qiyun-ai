@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { RegisterOnboardingWorkspace } from "@/components/auth/register-onboarding-workspace";
 
 export default function RegisterPage() {
-  redirect("/trial");
+  return <RegisterOnboardingWorkspace />;
 }

@@ -1,5 +1,6 @@
 import type { NextRequest, NextResponse } from "next/server";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import { getUpstreamApiBaseUrl } from "@/server/api-config";
 
 export interface ConsoleAuthUser {
@@ -8,6 +9,8 @@ export interface ConsoleAuthUser {
   name: string;
   activeWorkspaceId: string | null;
   platformRole?: "platform_admin" | null;
+  /** 首次登录强制改密标记：为 true 时登录后必须跳转到 /reset-password 改密后才能进入控制台 */
+  mustChangePassword?: boolean;
 }
 
 export interface ConsoleWorkspaceSummary {
@@ -32,11 +35,22 @@ export const AUTH_ACCESS_COOKIE = "qiyun_access_token";
 export const AUTH_REFRESH_COOKIE = "qiyun_refresh_token";
 export const AUTH_USER_COOKIE = "qiyun_auth_user";
 
+export function shouldUseSecureCookies(): boolean {
+  if (process.env.COOKIE_SECURE === "true") {
+    return true;
+  }
+  if (process.env.COOKIE_SECURE === "false") {
+    return false;
+  }
+  const appUrl = process.env.APP_URL ?? "";
+  return appUrl.startsWith("https://");
+}
+
 function cookieOptions(maxAgeSeconds?: number) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     path: "/",
     maxAge: maxAgeSeconds,
   };
@@ -115,7 +129,7 @@ export async function refreshAuthPayload(
       return null;
     }
 
-    return (await response.json()) as ConsoleAuthPayload;
+    return unwrapEnvelope<ConsoleAuthPayload>(await response.json());
   } catch {
     return null;
   }

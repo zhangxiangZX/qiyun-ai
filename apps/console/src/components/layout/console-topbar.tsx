@@ -4,20 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Building2,
   Check,
   ChevronDown,
-  CircleHelp,
-  Layers3,
+  HelpCircle,
   Loader2,
   LogOut,
   MailPlus,
   Search,
   ShieldCheck,
-  UserRound,
 } from "lucide-react";
 import {
   Alert,
-  Badge,
   Button,
   ConfirmDialog,
   DropdownMenu,
@@ -30,98 +28,25 @@ import {
 } from "@qiyun/ui";
 
 import { fetchAuthSession, logoutWithConsole, type AuthSession } from "@/lib/auth/client";
+import { BRAND_NAME } from "@/lib/brand";
 import { formatUserDisplayName } from "@/lib/auth/display-name";
-import { getActiveNavItem } from "@/lib/navigation";
 import { activateWorkspace } from "@/lib/auth/workspaces";
+import { getActiveNavItem } from "@/lib/navigation";
 import { notifyWorkspaceChanged } from "@/lib/workspace-events";
 import { memberRoleLabel } from "@/components/team/workspace-access-shared";
-import { DashboardOverviewIcon } from "@/components/dashboard/overview/dashboard-overview-icons";
-import { ConsoleModeBadge } from "@/components/console/console-data-mode-banner";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 
 import { MobileNav } from "./mobile-nav";
-import topbarStyles from "@/styles/dashboard-overview.module.css";
 
 type SessionState = "loading" | "ready" | "error";
 
-function WorkspaceSwitcher({
-  session,
-  activeWorkspace,
-  switchingWorkspaceId,
-  onSwitch,
-  className,
-}: {
-  session: AuthSession | null;
-  activeWorkspace: AuthSession["workspaces"][number] | null;
-  switchingWorkspaceId: string | null;
-  onSwitch: (workspaceId: string) => void;
-  className?: string;
-}) {
-  const isLoading = !session;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={className}
-          disabled={switchingWorkspaceId !== null}
-          aria-label="切换工作区"
-        >
-          {switchingWorkspaceId ? (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-          ) : (
-            <Layers3 className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <span className="truncate">
-            {isLoading ? "加载工作区…" : (activeWorkspace?.name ?? "未选择工作区")}
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>切换工作区</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {(session?.workspaces ?? []).length === 0 ? (
-          <DropdownMenuItem disabled>暂无可用工作区</DropdownMenuItem>
-        ) : (
-          (session?.workspaces ?? []).map((workspace) => {
-            const isActive = workspace.isActive;
-            const isSwitching = workspace.id === switchingWorkspaceId;
-
-            return (
-              <DropdownMenuItem
-                key={workspace.id}
-                onClick={() => onSwitch(workspace.id)}
-                className="flex items-center justify-between"
-                disabled={switchingWorkspaceId !== null || isActive}
-              >
-                <span className="min-w-0">
-                  <span className="block truncate">{workspace.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {memberRoleLabel(workspace.role)}
-                  </span>
-                </span>
-                {isSwitching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isActive ? (
-                  <Check className="h-4 w-4 text-primary" />
-                ) : null}
-              </DropdownMenuItem>
-            );
-          })
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 export function ConsoleTopbar({
   pathname,
+  search,
   platformRole,
 }: {
   pathname: string;
+  search?: string;
   platformRole?: "platform_admin" | null;
 }) {
   const router = useRouter();
@@ -132,7 +57,7 @@ export function ConsoleTopbar({
   const [confirmSignOutOpen, setConfirmSignOutOpen] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const effectivePlatformRole = session?.user.platformRole ?? platformRole ?? null;
-  const active = getActiveNavItem(pathname, effectivePlatformRole);
+  const active = getActiveNavItem(pathname, effectivePlatformRole, search);
 
   const loadSession = () => {
     setSessionState("loading");
@@ -161,6 +86,15 @@ export function ConsoleTopbar({
     () => (session?.user ? formatUserDisplayName(session.user) : null),
     [session],
   );
+  const pageTitle = active?.title ?? active?.groupTitle ?? "工作台";
+  const roleHomeTitle =
+    pathname === "/dashboard/boss"
+      ? `您好，${displayName ?? "团队成员"}`
+      : pathname === "/dashboard/admin"
+        ? "您好，管理员"
+        : pathname === "/dashboard/sales-rep"
+          ? `您好，${displayName ?? "团队成员"} · 销售专员`
+          : null;
 
   async function handleWorkspaceSwitch(workspaceId: string) {
     if (!session || workspaceId === activeWorkspace?.id) {
@@ -194,247 +128,175 @@ export function ConsoleTopbar({
     }
   }
 
-  const todayLabel = useMemo(() => {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      weekday: "long",
-    }).formatToParts(now);
-    const year = parts.find((part) => part.type === "year")?.value ?? "";
-    const month = parts.find((part) => part.type === "month")?.value ?? "";
-    const day = parts.find((part) => part.type === "day")?.value ?? "";
-    const weekday = parts.find((part) => part.type === "weekday")?.value ?? "";
-    return `今天是 ${year} 年 ${month} 月 ${day} 日 ${weekday}`;
-  }, []);
-
-  const isDashboardHome = pathname === "/dashboard";
-
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-[#eef2f8] bg-white">
-        <div className="flex min-h-[91px] items-center gap-3 px-4 py-2 sm:px-6 lg:px-[30px]">
-          <div className="flex min-w-0 items-center gap-3 lg:min-w-[220px]">
-            <div className="lg:hidden">
-              <MobileNav
-                pathname={pathname}
-                workspaceName={activeWorkspace?.name}
-                userRole={activeWorkspace?.role}
-                platformRole={effectivePlatformRole}
-              />
-            </div>
-
-            <div className="min-w-0">
-              {sessionState === "loading" ? (
-                <Skeleton className="h-6 w-40" />
-              ) : (
-                <>
-                  <p className="truncate text-[22px] font-medium tracking-[-0.03em] text-[#17274a]">
-                    {displayName ? (
-                      <>
-                        欢迎回来，{displayName} <span className="text-lg">👋</span>
-                      </>
-                    ) : (
-                      "欢迎使用企云 AI 控制台"
-                    )}
-                  </p>
-                  <p className="truncate text-xs text-[#77869f]">{todayLabel}</p>
-                </>
-              )}
-            </div>
+      <header className="topbar console-topbar relative">
+        <div className="topbar-title flex min-w-0 items-center gap-3">
+          <div className="lg:hidden">
+            <MobileNav
+              pathname={pathname}
+              search={search}
+              workspaceName={activeWorkspace?.name}
+              userRole={activeWorkspace?.role}
+              platformRole={effectivePlatformRole}
+            />
           </div>
+          {roleHomeTitle ? (
+            <div className="min-w-0">
+              <h1 className="truncate">
+                {sessionState === "loading" ? (
+                  <Skeleton className="h-6 w-36" />
+                ) : (
+                  <>{roleHomeTitle} <span aria-hidden>👋</span></>
+                )}
+              </h1>
+              <p className="mt-0.5 hidden text-xs text-[#697b98] sm:block">
+                今天是 {new Date().toLocaleDateString("zh-CN", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  weekday: "long",
+                })}
+              </p>
+            </div>
+          ) : (
+            <h1 className="truncate">
+              {sessionState === "loading" ? <Skeleton className="h-6 w-28" /> : pageTitle}
+            </h1>
+          )}
+        </div>
 
-          <div className="hidden flex-1 justify-center px-2 md:flex">
-            {isDashboardHome ? (
-              <label className={topbarStyles.searchBox}>
-                <input
-                  type="search"
-                  placeholder="搜索会话、线索、知识库…"
-                  disabled
-                  title="全局搜索即将上线"
-                  aria-label="全局搜索"
-                />
-                <Search aria-hidden />
-              </label>
-            ) : (
-              <div className="relative w-full max-w-xl">
-                <Search
-                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        <div className="topbar-search hidden md:block">
+          <div className="search-wrap">
+            <Search
+              className="pointer-events-none absolute left-[14px] h-4 w-4 text-[#8190a8]"
+              aria-hidden
+            />
+            <input
+              className="search topbar-search-input"
+              type="search"
+              placeholder="搜索客户、线索、产品、知识库…"
+              disabled
+              title="全局搜索即将上线"
+              aria-label="全局搜索"
+            />
+          </div>
+        </div>
+
+        <div className="topbar-tools tools">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="帮助中心"
+            title="帮助中心即将上线"
+          >
+            <HelpCircle size={20} />
+          </button>
+
+          <NotificationCenter triggerClassName="icon-btn" triggerVariant="dashboard" />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="user company-user" aria-label="企业与账户">
+                <div className="avatar company-avatar">
+                  <Building2 size={20} />
+                </div>
+                <div className="user-info company-info hidden lg:flex">
+                  <b>{activeWorkspace?.name ?? BRAND_NAME}</b>
+                </div>
+                <ChevronDown
+                  className="hidden h-4 w-4 shrink-0 text-[#8190a8] lg:block"
                   aria-hidden
                 />
-                <input
-                  type="search"
-                  className="console-topbar-search"
-                  placeholder="搜索会话、线索、知识库…"
-                  disabled
-                  title="全局搜索即将上线"
-                  aria-label="全局搜索"
-                />
-              </div>
-            )}
-          </div>
-
-          <div
-            className={
-              isDashboardHome
-                ? `${topbarStyles.topbarTools} ml-auto`
-                : "ml-auto flex flex-wrap items-center justify-end gap-2"
-            }
-          >
-            {isDashboardHome ? (
-              <>
-                <WorkspaceSwitcher
-                  session={session}
-                  activeWorkspace={activeWorkspace}
-                  switchingWorkspaceId={switchingWorkspaceId}
-                  onSwitch={(workspaceId) => void handleWorkspaceSwitch(workspaceId)}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  className={topbarStyles.toolButton}
-                  disabled
-                  title="帮助中心即将上线"
-                  aria-label="帮助"
-                >
-                  <CircleHelp />
-                </button>
-                <NotificationCenter
-                  triggerVariant="dashboard"
-                  triggerClassName={topbarStyles.toolButton}
-                />
-                <button type="button" className={topbarStyles.companySwitch} aria-label="切换企业">
-                  <span className={topbarStyles.companyMark}>
-                    <DashboardOverviewIcon name="cloudBot" />
-                  </span>
-                  <span>{activeWorkspace?.name ?? "企云科技有限公司"}</span>
-                  <i className={topbarStyles.companyChevron}>⌄</i>
-                </button>
-              </>
-            ) : (
-              <>
-            <WorkspaceSwitcher
-              session={session}
-              activeWorkspace={activeWorkspace}
-              switchingWorkspaceId={switchingWorkspaceId}
-              onSwitch={(workspaceId) => void handleWorkspaceSwitch(workspaceId)}
-              className="hidden max-w-[220px] bg-card sm:inline-flex"
-            />
-
-            <WorkspaceSwitcher
-              session={session}
-              activeWorkspace={activeWorkspace}
-              switchingWorkspaceId={switchingWorkspaceId}
-              onSwitch={(workspaceId) => void handleWorkspaceSwitch(workspaceId)}
-              className="inline-flex max-w-[180px] bg-card sm:hidden"
-            />
-
-            <NotificationCenter />
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="hidden bg-card lg:inline-flex"
-              disabled
-              title="帮助中心即将上线"
-              aria-label="帮助"
-            >
-              <CircleHelp className="h-4 w-4" />
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="bg-card">
-                  <UserRound className="h-4 w-4 text-muted-foreground" />
-                  <span className="hidden truncate sm:inline">
-                    {sessionState === "loading" ? (
-                      <Skeleton className="h-4 w-16" />
-                    ) : (
-                      (displayName ?? "账户")
-                    )}
-                  </span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div>
-                    <p className="font-medium text-foreground">{displayName ?? "账户"}</p>
-                    <p className="text-xs font-normal text-muted-foreground">
-                      {session?.user.email ?? "未登录"}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>
+                <div>
+                  <p className="font-medium text-foreground">{displayName ?? "账户"}</p>
+                  <p className="text-xs font-normal text-muted-foreground">
+                    {session?.user.email ?? "未登录"}
+                  </p>
+                  {activeWorkspace ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {activeWorkspace.name} / {memberRoleLabel(activeWorkspace.role)}
                     </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/team" className="flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4" />
-                    团队管理
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/invitations" className="flex items-center gap-2">
-                    <MailPlus className="h-4 w-4" />
-                    邀请审计
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => setConfirmSignOutOpen(true)}
-                  disabled={signingOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  退出登录
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  ) : null}
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {(session?.workspaces ?? []).length > 1 ? (
+                <>
+                  <DropdownMenuLabel>切换工作区</DropdownMenuLabel>
+                  {(session?.workspaces ?? []).map((workspace) => {
+                    const isActive = workspace.isActive;
+                    const isSwitching = workspace.id === switchingWorkspaceId;
 
-            {sessionState === "error" ? (
-              <Badge variant="destructive" className="text-xs">
-                会话异常
-              </Badge>
-            ) : activeWorkspace ? (
-              <Badge variant="secondary" className="text-xs">
-                {memberRoleLabel(activeWorkspace.role)}
-              </Badge>
-            ) : null}
-              </>
-            )}
-          </div>
+                    return (
+                      <DropdownMenuItem
+                        key={workspace.id}
+                        onClick={() => void handleWorkspaceSwitch(workspace.id)}
+                        className="flex items-center justify-between"
+                        disabled={switchingWorkspaceId !== null || isActive}
+                      >
+                        <span className="min-w-0 truncate">{workspace.name}</span>
+                        {isSwitching ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isActive ? (
+                          <Check className="h-4 w-4 text-primary" />
+                        ) : null}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/team" className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  团队管理
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/team/invite" className="flex items-center gap-2">
+                  <MailPlus className="h-4 w-4" />
+                  邀请成员
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => setConfirmSignOutOpen(true)}
+                disabled={signingOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                退出登录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
-        {pathname !== "/dashboard" ? (
-        <div className="flex items-center gap-2 border-t border-border/50 px-4 py-2 text-xs text-muted-foreground sm:px-6 lg:px-8">
-          <span>控制台</span>
-          <span aria-hidden>/</span>
-          <span className="font-medium text-foreground/80">{active?.title ?? "概览"}</span>
-          <ConsoleModeBadge />
-        </div>
-        ) : null}
 
         {workspaceError ? (
-          <div className="border-t border-border/60 px-4 py-2 sm:px-6 lg:px-8">
+          <div className="absolute inset-x-0 top-full border-t border-[var(--line)] bg-white px-4 py-2">
             <Alert variant="error" title="切换失败">
               {workspaceError}
             </Alert>
           </div>
         ) : null}
-
-        {sessionState === "error" ? (
-          <div className="border-t border-border/60 px-4 py-2 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Alert variant="warning" title="无法加载账户信息">
-                顶部栏部分功能可能不可用，请刷新页面或重新登录。
-              </Alert>
-              <Button size="sm" variant="outline" onClick={loadSession}>
-                重试
-              </Button>
-            </div>
-          </div>
-        ) : null}
       </header>
+
+      {sessionState === "error" ? (
+        <div className="border-b border-[var(--line)] bg-white px-4 py-2 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Alert variant="warning" title="无法加载账户信息">
+              顶部栏部分功能可能不可用，请刷新页面或重新登录。
+            </Alert>
+            <Button size="sm" variant="outline" onClick={loadSession}>
+              重试
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={confirmSignOutOpen}

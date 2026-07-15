@@ -37,10 +37,10 @@ import styles from "@/styles/dashboard-overview.module.css";
 const quickActions = [
   { label: "创建知识库", icon: "book", href: "/dashboard/knowledge-bases" },
   { label: "上传资料", icon: "upload", href: "/dashboard/knowledge-bases" },
-  { label: "创建机器人", icon: "robot", href: "/dashboard/bots" },
-  { label: "对话测试", icon: "chat", href: "/dashboard/sites" },
-  { label: "线索管理", icon: "users", href: "/dashboard/leads" },
-  { label: "数据分析", icon: "bars", href: "/dashboard/reports" },
+  { label: "创建AI助手", icon: "robot", href: "/dashboard/bots" },
+  { label: "AI 测试", icon: "chat", href: "/dashboard/conversations/test" },
+  { label: "询盘中心", icon: "users", href: "/dashboard/inquiries" },
+  { label: "数据分析", icon: "bars", href: "/dashboard/sales" },
   { label: "站点接入", icon: "pulse", href: "/dashboard/sites" },
   { label: "系统设置", icon: "settings", href: "/dashboard/team" },
 ] as const;
@@ -333,7 +333,7 @@ export function DashboardOverviewView({
         <article className={`${styles.card} ${styles.listCard}`}>
           <div className={styles.cardHeader}>
             <h2>待跟进线索</h2>
-            <button type="button" onClick={() => router.push("/dashboard/leads")}>
+            <button type="button" onClick={() => router.push("/dashboard/inquiries")}>
               查看全部 ›
             </button>
           </div>
@@ -349,7 +349,7 @@ export function DashboardOverviewView({
                   type="button"
                   className={styles.leadRow}
                   key={row.id}
-                  onClick={() => router.push(`/dashboard/leads?highlight=${encodeURIComponent(row.id)}`)}
+                  onClick={() => router.push(`/dashboard/inquiries?highlight=${encodeURIComponent(row.id)}`)}
                 >
                   <span>
                     <b>{row.company}</b>

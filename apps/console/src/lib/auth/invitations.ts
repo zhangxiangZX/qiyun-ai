@@ -1,9 +1,11 @@
+import { unwrapEnvelope } from "@/lib/api/envelope";
+
 export interface InvitationSummary {
   id: string;
   workspaceId: string;
   workspaceName: string;
   email: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "viewer";
   status: "pending" | "accepted" | "revoked" | "expired";
   token: string;
   inviteUrl: string;
@@ -37,7 +39,7 @@ async function parseJson<T>(response: Response, fallback: string): Promise<T> {
     throw new Error(payload?.message || fallback);
   }
 
-  return (await response.json()) as T;
+  return unwrapEnvelope<T>(await response.json());
 }
 
 export async function loadWorkspaceInvitations(): Promise<InvitationSummary[]> {

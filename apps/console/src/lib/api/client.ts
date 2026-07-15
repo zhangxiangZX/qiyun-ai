@@ -1,4 +1,5 @@
 import { ApiError, normalizeApiErrorCode, type ApiErrorCode } from "@/lib/api/errors";
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import { WORKSPACE_ID } from "@/lib/api/workspace";
 
 // Browser requests must go through the Console BFF (/api) so cookies, session,
@@ -12,9 +13,19 @@ export function getApiPrefix(): string {
 }
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
 };
+
+async function parseJsonBody<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    // 非 JSON（如二进制流）交由调用方另行处理，这里不强行解包。
+    return undefined as T;
+  }
+  const body = (await response.json().catch(() => null)) as unknown;
+  return unwrapEnvelope<T>(body);
+}
 
 async function parseError(response: Response): Promise<ApiError> {
   let code: ApiErrorCode = "INTERNAL_ERROR";
@@ -51,7 +62,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  return parseJsonBody<T>(response);
 }
 
 export async function apiFormDataRequest<T>(path: string, formData: FormData): Promise<T> {
@@ -69,5 +80,5 @@ export async function apiFormDataRequest<T>(path: string, formData: FormData): P
     throw await parseError(response);
   }
 
-  return (await response.json()) as T;
+  return parseJsonBody<T>(response);
 }

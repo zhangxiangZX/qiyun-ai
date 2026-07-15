@@ -1,21 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Globe2 } from "lucide-react";
+import { BookOpen, Globe2, Plus, Wrench } from "lucide-react";
 
 import { Alert, Button, EmptyState, Label, PageHeader, Skeleton } from "@qiyun/ui";
 
+import {
+  ConsoleDataModeBanner,
+  ConsoleModeBadge,
+} from "@/components/console/console-data-mode-banner";
+import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
+import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { DomainWhitelistCard } from "@/components/sites/domain-whitelist-card";
 import { EmbedCodeCard } from "@/components/sites/embed-code-card";
 import { SiteKeyCard } from "@/components/sites/site-key-card";
+import { SiteKeyRevealPanel } from "@/components/sites/site-key-reveal-panel";
 import { TestMessageCard } from "@/components/sites/test-message-card";
 import {
-  fetchSites,
-  rotateSiteKey,
-  saveSiteDomains,
-  sendTestMessage,
-} from "@/lib/sites/mock-data";
-import type { SiteConfig } from "@/lib/sites/types";
+  getSitesCapabilities,
+  listSites,
+  rotateKey,
+  saveDomains,
+  testMessage,
+  type SitesCapabilities,
+} from "@/lib/sites/data";
+import type { SiteConfig, SiteKeyRotationResult } from "@/lib/sites/types";
 import { t } from "@/lib/i18n";
 import { defaultLocale } from "@/lib/messages";
 
@@ -24,17 +34,23 @@ type LoadState = "loading" | "ready" | "error";
 export function SitesWorkspace() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [sites, setSites] = useState<SiteConfig[]>([]);
-  const [selectedBotId, setSelectedBotId] = useState<string>("");
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+  const [capabilities, setCapabilities] = useState<SitesCapabilities | null>(null);
   const [draftDomains, setDraftDomains] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [rotating, setRotating] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [rotateMessage, setRotateMessage] = useState<string | null>(null);
+  const [rotateError, setRotateError] = useState<string | null>(null);
+  const [revealedRotation, setRevealedRotation] = useState<SiteKeyRotationResult | null>(null);
 
   const selectedSite = useMemo(
-    () => sites.find((site) => site.botId === selectedBotId) ?? null,
-    [sites, selectedBotId],
+    () => sites.find((site) => site.id === selectedSiteId) ?? null,
+    [sites, selectedSiteId],
   );
+
+  const previewMode = capabilities?.dataMode === "preview";
 
   const dirty = useMemo(() => {
     if (!selectedSite) return false;
@@ -44,10 +60,13 @@ export function SitesWorkspace() {
 
   const loadSites = useCallback(async () => {
     setLoadState("loading");
+    setSaveError(null);
+    setRotateError(null);
     try {
-      const data = await fetchSites();
+      const [data, caps] = await Promise.all([listSites(), getSitesCapabilities()]);
       setSites(data);
-      setSelectedBotId((current) => current || data[0]?.botId || "");
+      setCapabilities(caps);
+      setSelectedSiteId((current) => current || data[0]?.id || "");
       setLoadState("ready");
     } catch {
       setLoadState("error");
@@ -67,125 +86,244 @@ export function SitesWorkspace() {
     setDraftDomains(selectedSite.allowedDomains);
     setSaveMessage(null);
     setRotateMessage(null);
+    setSaveError(null);
+    setRotateError(null);
   }, [selectedSite]);
 
   async function handleSaveDomains() {
     if (!selectedSite) return;
     setSaving(true);
     setSaveMessage(null);
-    await new Promise((resolve) => window.setTimeout(resolve, 400));
-    const updated = saveSiteDomains(selectedSite.id, draftDomains);
-    if (updated) {
-      setSites((current) => current.map((site) => (site.id === updated.id ? updated : site)));
-      setSaveMessage(t(defaultLocale, "sites.domains.saved"));
+    setSaveError(null);
+    try {
+      const updated = await saveDomains(selectedSite.id, draftDomains);
+      if (updated) {
+        setSites((current) => current.map((site) => (site.id === updated.id ? updated : site)));
+        setSaveMessage(t(defaultLocale, "sites.domains.saved"));
+      }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "保存域名白名单失败，请稍后重试。");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function handleRotateKey() {
     if (!selectedSite) return;
     setRotating(true);
     setRotateMessage(null);
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    const updated = rotateSiteKey(selectedSite.id);
-    if (updated) {
-      setSites((current) => current.map((site) => (site.id === updated.id ? updated : site)));
-      setRotateMessage(t(defaultLocale, "sites.key.rotated"));
+    setRotateError(null);
+    try {
+      const result = await rotateKey(selectedSite.id);
+      if (result) {
+        setSites((current) =>
+          current.map((site) => (site.id === result.site.id ? result.site : site)),
+        );
+        setRevealedRotation(result);
+        setRotateMessage(t(defaultLocale, "sites.key.rotated"));
+      }
+    } catch (error) {
+      setRotateError(error instanceof Error ? error.message : "轮换站点密钥失败，请稍后重试。");
+    } finally {
+      setRotating(false);
     }
-    setRotating(false);
   }
+
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button asChild variant="outline" size="sm">
+        <Link href="/dashboard/sites/appearance">
+          <Wrench className="mr-1.5 h-4 w-4" />
+          外观与行为
+        </Link>
+      </Button>
+      <Button asChild variant="outline" size="sm">
+        <Link href="/dashboard/sites/install">
+          <BookOpen className="mr-1.5 h-4 w-4" />
+          安装说明
+        </Link>
+      </Button>
+      <Button asChild size="sm">
+        <Link href="/dashboard/sites/new">
+          <Plus className="mr-1.5 h-4 w-4" />
+          添加站点
+        </Link>
+      </Button>
+    </div>
+  );
 
   if (loadState === "loading") {
     return (
-      <div className="space-y-6">
+      <ConsolePage>
+        <ConsolePageAlerts>
+          <ConsoleModeBadge />
+          <ConsoleDataModeBanner feature="官网 Widget" />
+        </ConsolePageAlerts>
         <PageHeader
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
+          actions={headerActions}
         />
-        <div className="space-y-4 px-4 sm:px-6 lg:px-page">
+        <div className="space-y-4 pb-6">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-72 rounded-card" />
           <Skeleton className="h-48 rounded-card" />
         </div>
-      </div>
+      </ConsolePage>
     );
   }
 
   if (loadState === "error") {
     return (
-      <div className="space-y-6">
+      <ConsolePage>
+        <ConsolePageAlerts>
+          <ConsoleModeBadge />
+          <ConsoleDataModeBanner feature="官网 Widget" />
+        </ConsolePageAlerts>
         <PageHeader
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
+          actions={headerActions}
         />
-        <div className="space-y-4 px-4 sm:px-6 lg:px-page">
-          <Alert variant="error" title={t(defaultLocale, "sites.error.load")} />
-          <Button variant="outline" size="sm" onClick={() => void loadSites()}>
-            {t(defaultLocale, "dashboard.error.retry")}
-          </Button>
+        <div className="space-y-4 pb-6">
+          <ConsoleRequestError
+            message={t(defaultLocale, "sites.error.load")}
+            onRetry={() => void loadSites()}
+          />
         </div>
-      </div>
+      </ConsolePage>
     );
   }
 
-  if (!sites.length || !selectedSite) {
+  if (!sites.length) {
     return (
-      <div className="space-y-6">
+      <ConsolePage>
+        <ConsolePageAlerts>
+          <ConsoleModeBadge />
+          <ConsoleDataModeBanner feature="官网 Widget" />
+        </ConsolePageAlerts>
         <PageHeader
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
+          actions={headerActions}
         />
-        <div className="px-4 sm:px-6 lg:px-page">
+        <div className="pb-6">
           <EmptyState
             icon={<Globe2 className="h-8 w-8" aria-hidden />}
             title={t(defaultLocale, "sites.empty.title")}
             description={t(defaultLocale, "sites.empty.description")}
+            action={
+              <Button asChild>
+                <Link href="/dashboard/sites/new">添加第一个站点</Link>
+              </Button>
+            }
           />
         </div>
-      </div>
+      </ConsolePage>
     );
   }
 
+  if (!selectedSite) {
+    return (
+      <ConsolePage>
+        <PageHeader
+          title={t(defaultLocale, "sites.title")}
+          description={t(defaultLocale, "sites.description")}
+          actions={headerActions}
+        />
+        <Skeleton className="h-72 rounded-card" />
+      </ConsolePage>
+    );
+  }
+
+  const domainsReadOnly = !capabilities?.canSaveDomains;
+  const embedSnippet =
+    revealedRotation?.site.id === selectedSite.id
+      ? revealedRotation.site.embedSnippet
+      : selectedSite.embedSnippet;
+
   return (
-    <div className="space-y-6">
+    <ConsolePage>
+      <ConsolePageAlerts>
+        <ConsoleModeBadge />
+        <ConsoleDataModeBanner feature="官网 Widget" />
+        {capabilities ? (
+          <p className="text-xs text-muted-foreground">{capabilities.syncStatusLabel}</p>
+        ) : null}
+      </ConsolePageAlerts>
+
       <PageHeader
         title={t(defaultLocale, "sites.title")}
-        description={t(defaultLocale, "sites.description")}
+        description="管理官网站点、域名白名单与 Widget 嵌入代码，将 AI 助手接入企业官网。"
+        actions={headerActions}
       />
 
-      <div className="space-y-4 px-4 sm:px-6 lg:px-page">
-        <div className="max-w-sm space-y-2 rounded-card border border-border bg-card p-4 shadow-card">
-          <Label htmlFor="site-bot-select">{t(defaultLocale, "sites.selectBot")}</Label>
-          <select
-            id="site-bot-select"
-            className="flex h-10 w-full rounded-control border border-input bg-background px-3 text-sm"
-            value={selectedBotId}
-            onChange={(event) => setSelectedBotId(event.target.value)}
-          >
-            {sites.map((site) => (
-              <option key={site.id} value={site.botId}>
-                {site.botName}
-              </option>
-            ))}
-          </select>
+      <div className="space-y-4 pb-6">
+        <div className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-card sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-md flex-1 space-y-2">
+            <Label htmlFor="site-select">当前站点</Label>
+            <select
+              id="site-select"
+              className="flex h-10 w-full rounded-control border border-input bg-background px-3 text-sm"
+              value={selectedSiteId}
+              onChange={(event) => setSelectedSiteId(event.target.value)}
+            >
+              {sites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.botName} · {site.allowedDomains[0] ?? site.id}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/sites/install">
+                <BookOpen className="mr-1.5 h-4 w-4" />
+                查看安装步骤
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/sites/appearance">
+                <Wrench className="mr-1.5 h-4 w-4" />
+                外观与行为设置
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/bots/config">配置绑定助手</Link>
+            </Button>
+          </div>
         </div>
 
+        {saveMessage ? <Alert variant="success" title={saveMessage} /> : null}
+        {saveError ? <Alert variant="error" title={saveError} /> : null}
         {rotateMessage ? <Alert variant="success" title={rotateMessage} /> : null}
+        {rotateError ? <Alert variant="error" title={rotateError} /> : null}
+
+        {revealedRotation && revealedRotation.site.id === selectedSite.id ? (
+          <SiteKeyRevealPanel
+            siteKey={revealedRotation.revealedSiteKey}
+            embedSnippet={revealedRotation.site.embedSnippet ?? ""}
+            previewMode={previewMode}
+            onDismiss={() => setRevealedRotation(null)}
+          />
+        ) : null}
 
         <div className="grid gap-4 xl:grid-cols-2">
           <DomainWhitelistCard
             domains={draftDomains}
             saving={saving}
             dirty={dirty}
-            saveMessage={saveMessage}
+            readOnly={domainsReadOnly}
+            readOnlyReason={capabilities?.domainsReadOnlyReason}
             onChange={setDraftDomains}
             onSave={() => void handleSaveDomains()}
           />
           <div className="space-y-4">
-            <EmbedCodeCard embedSnippet={selectedSite.embedSnippet} />
+            <EmbedCodeCard embedSnippet={embedSnippet} />
             <SiteKeyCard
               siteKeyPrefix={selectedSite.siteKeyPrefix}
               rotating={rotating}
+              previewMode={previewMode}
               onRotate={() => void handleRotateKey()}
             />
           </div>
@@ -195,9 +333,10 @@ export function SitesWorkspace() {
           allowedDomains={draftDomains.length ? draftDomains : selectedSite.allowedDomains}
           savedDomains={selectedSite.allowedDomains}
           dirty={dirty}
-          onTest={(origin, message) => sendTestMessage(selectedSite, { origin, message })}
+          simulationHint={capabilities?.testMessageHint}
+          onTest={(origin, message) => testMessage(selectedSite, { origin, message })}
         />
       </div>
-    </div>
+    </ConsolePage>
   );
 }

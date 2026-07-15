@@ -1,7 +1,9 @@
 .content {
-  max-width: 1450px;
-  margin: auto;
-  padding: 15px 22px 34px;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .filters {
@@ -20,7 +22,7 @@
   height: 33px;
   min-width: 190px;
   padding: 0 12px 0 10px;
-  border: 1px solid #dce5f2;
+  border: 1px solid var(--border);
   border-radius: 17px;
   background: #fff;
   cursor: pointer;
@@ -39,7 +41,7 @@
   padding-right: 18px;
   border: 0;
   outline: 0;
-  color: #53637e;
+  color: var(--muted-foreground);
   background: transparent;
   font-size: 11px;
   cursor: pointer;
@@ -50,7 +52,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: #8a97ad;
+  color: var(--muted-foreground);
 }
 
 .filterChevron {
@@ -58,7 +60,7 @@
   right: 10px;
   width: 14px;
   height: 14px;
-  color: #8a97ad;
+  color: var(--muted-foreground);
   pointer-events: none;
 }
 
@@ -66,10 +68,10 @@
   height: 33px;
   min-width: 190px;
   padding: 0 12px;
-  border: 1px solid #dce5f2;
+  border: 1px solid var(--border);
   border-radius: 17px;
   outline: 0;
-  color: #53637e;
+  color: var(--muted-foreground);
   background: #fff;
   font-size: 11px;
 }
@@ -85,19 +87,19 @@
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 13px;
+  gap: var(--sp-4);
 }
 
 .kpiCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 131px;
-  padding: 20px;
-  border: 1px solid #edf1f7;
-  border-radius: 10px;
+  min-height: 120px;
+  padding: var(--card-pad);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
   background: #fff;
-  box-shadow: 0 5px 18px rgba(24, 54, 105, 0.035);
+  box-shadow: var(--shadow-card);
   animation: kpi-enter 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition:
     transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
@@ -146,7 +148,7 @@
 
 .kpiCard p {
   margin: 0;
-  color: #62738f;
+  color: var(--muted-foreground);
   font-size: 13px;
   line-height: 1.2;
 }
@@ -154,7 +156,7 @@
 .kpiCard strong {
   display: block;
   margin-top: 11px;
-  color: #182849;
+  color: var(--foreground);
   font-size: 28px;
   font-weight: 700;
   line-height: 1.1;
@@ -169,13 +171,13 @@
 }
 
 .kpiEmpty {
-  color: #94a3b8 !important;
+  color: var(--muted-foreground) !important;
   font-size: 22px !important;
   font-weight: 600 !important;
 }
 
 .kpiMuted {
-  color: #94a3b8 !important;
+  color: var(--muted-foreground) !important;
 }
 
 .chartWrap {
@@ -194,54 +196,38 @@
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   margin-left: 12px;
-  border-radius: 50%;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--primary);
 }
 
 .kpiIcon svg {
-  width: 29px;
-  height: 29px;
+  width: 24px;
+  height: 24px;
+  color: #fff;
 }
 
-.blue {
-  color: #3068ff;
-  background: #e9f1ff;
-}
-
-.green {
-  color: #1dc879;
-  background: #e5f9ef;
-}
-
-.purple {
-  color: #6954f7;
-  background: #f0ecff;
-}
-
-.orange {
-  color: #fb8b1e;
-  background: #fff0df;
-}
-
-.gray {
-  color: #6b7c96;
-  background: #eef2f8;
-}
+.blue { background: var(--primary); color: #fff; }
+.green { background: #22c55e; color: #fff; }
+.purple { background: #8b5cf6; color: #fff; }
+.orange { background: #f97316; color: #fff; }
+.gray { background: var(--muted-foreground); color: #fff; }
 
 .midGrid {
   display: grid;
   grid-template-columns: 1.55fr 0.97fr 1fr;
-  gap: 14px;
-  margin-top: 14px;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
 }
 
 .card {
-  border: 1px solid #edf1f7;
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
   background: #fff;
-  box-shadow: 0 5px 18px rgba(24, 54, 105, 0.035);
+  box-shadow: var(--shadow-card);
   animation: card-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition:
     transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
@@ -290,19 +276,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 17px 20px;
-  border-bottom: 1px solid #eef2f7;
+  padding: var(--card-pad-sm) var(--card-pad);
+  border-bottom: 1px solid var(--border);
 }
 
 .cardHeader h2 {
   margin: 0;
-  color: #1a2c50;
-  font-size: 16px;
+  color: var(--foreground);
+  font-size: var(--fs-h3);
 }
 
 .cardHeader button {
   border: 0;
-  color: #315cf2;
+  color: var(--primary);
   background: transparent;
   font-size: 11px;
   font-weight: 700;
@@ -321,7 +307,7 @@
   padding: 5px 8px;
   border-radius: 14px;
   border: 0;
-  color: #6c7b95;
+  color: var(--muted-foreground);
   background: transparent;
   cursor: pointer;
   transition:
@@ -336,7 +322,7 @@
 }
 
 .headerActions .rangeActive {
-  color: #3f5eff;
+  color: var(--primary);
   border: 1px solid #cbd9ff;
   background: #f7f9ff;
   box-shadow: 0 4px 12px rgba(63, 94, 255, 0.12);
@@ -348,13 +334,13 @@
 
 .legend {
   padding: 15px 37px 0;
-  color: #687895;
+  color: var(--muted-foreground);
   font-size: 11px;
 }
 
 .legendBlue {
   margin-right: 5px;
-  color: #3f5eff;
+  color: var(--primary);
 }
 
 .legendGreen {
@@ -444,7 +430,7 @@
 }
 
 .chart text {
-  fill: #8090ab;
+  fill: var(--muted-foreground);
   font-size: 10px;
 }
 
@@ -508,14 +494,14 @@
 
 .donut strong {
   display: block;
-  color: #1a2d52;
+  color: var(--foreground);
   font-size: 28px;
 }
 
 .donut span {
   display: block;
   margin-top: 4px;
-  color: #70809a;
+  color: var(--muted-foreground);
   font-size: 11px;
 }
 
@@ -538,7 +524,7 @@
 
 .sourceBody b {
   margin-left: auto;
-  color: #263856;
+  color: var(--foreground);
 }
 
 .sourceBody li span {
@@ -578,7 +564,7 @@
 .panelStatus {
   margin: 0;
   padding: 24px 14px;
-  color: #70809a;
+  color: var(--muted-foreground);
   font-size: 13px;
   text-align: center;
 }
@@ -589,7 +575,7 @@
   align-items: center;
   gap: 9px;
   padding: 13px 0;
-  border-bottom: 1px solid #eff3f8;
+  border-bottom: 1px solid var(--border);
   transition:
     background 0.2s ease,
     transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
@@ -620,7 +606,7 @@
 
 .robotName b {
   display: block;
-  color: #253755;
+  color: var(--foreground);
   font-size: 11px;
 }
 
@@ -640,22 +626,22 @@
 
 .robotRow > div:not(.robotName) small {
   display: block;
-  color: #9aa7ba;
+  color: var(--muted-foreground);
   font-size: 9px;
 }
 
 .robotRow > div:not(.robotName) b {
   display: block;
   margin-top: 3px;
-  color: #2e405f;
+  color: var(--foreground);
   font-size: 11px;
 }
 
 .bottomGrid {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr 0.98fr;
-  gap: 14px;
-  margin-top: 14px;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
 }
 
 .listCard {
@@ -675,7 +661,7 @@
   width: 100%;
   padding: 12px 0;
   border: 0;
-  border-bottom: 1px solid #f0f3f7;
+  border-bottom: 1px solid var(--border);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -724,7 +710,7 @@
 
 .chatContent b {
   display: block;
-  color: #2a3a58;
+  color: var(--foreground);
   font-size: 11px;
 }
 
@@ -742,7 +728,7 @@
   max-width: 240px;
   margin-top: 5px;
   overflow: hidden;
-  color: #8390a7;
+  color: var(--muted-foreground);
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -757,14 +743,14 @@
 .chatMeta em {
   padding: 3px 6px;
   border-radius: 7px;
-  color: #8290a7;
+  color: var(--muted-foreground);
   background: #f3f6fa;
   font-size: 9px;
   font-style: normal;
 }
 
 .chatMeta span {
-  color: #75849c;
+  color: var(--muted-foreground);
   font-size: 10px;
 }
 
@@ -788,7 +774,7 @@
   width: 100%;
   padding: 15px 0;
   border: 0;
-  border-bottom: 1px solid #f0f3f7;
+  border-bottom: 1px solid var(--border);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -804,14 +790,14 @@
 
 .leadRow b {
   display: block;
-  color: #2a3a58;
+  color: var(--foreground);
   font-size: 11px;
 }
 
 .leadRow small {
   display: block;
   margin-top: 6px;
-  color: #8290a7;
+  color: var(--muted-foreground);
   font-size: 10px;
 }
 
@@ -833,7 +819,7 @@
 }
 
 .leadRow time {
-  color: #71809a;
+  color: var(--muted-foreground);
   font-size: 10px;
 }
 
@@ -854,7 +840,7 @@
   justify-items: center;
   gap: 8px;
   border: 0;
-  color: #364763;
+  color: var(--foreground);
   background: transparent;
   font-size: 10px;
   cursor: pointer;
@@ -874,7 +860,7 @@
   width: 54px;
   height: 54px;
   border-radius: 12px;
-  color: #4866f7;
+  color: var(--primary);
   background: linear-gradient(145deg, #f3f6ff, #eff3ff);
   transition:
     transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
@@ -911,24 +897,24 @@
 
 .emptyState {
   padding: 48px 24px;
-  border: 1px dashed #dce5f2;
+  border: 1px dashed var(--border);
   border-radius: 10px;
   background: #fff;
   text-align: center;
-  color: #62738f;
+  color: var(--muted-foreground);
   font-size: 13px;
 }
 
 .emptyState strong {
   display: block;
   margin-bottom: 8px;
-  color: #1a2c50;
+  color: var(--foreground);
   font-size: 16px;
 }
 
 .skeletonBlock {
   border-radius: 10px;
-  background: linear-gradient(90deg, #eef2f8 25%, #f6f9ff 50%, #eef2f8 75%);
+  background: linear-gradient(90deg, var(--border) 25%, #f6f9ff 50%, var(--border) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }
@@ -1123,13 +1109,13 @@
 }
 
 .searchBox input::placeholder {
-  color: #a5b0c1;
+  color: var(--muted-foreground);
 }
 
 .searchBox svg {
   width: 18px;
   flex-shrink: 0;
-  color: #6d7c9c;
+  color: var(--muted-foreground);
 }
 
 .toolButton {
@@ -1172,7 +1158,7 @@
   gap: 8px;
   max-width: 220px;
   border: 0;
-  color: #2d3d5d;
+  color: var(--foreground);
   background: transparent;
   font-size: 12px;
   font-weight: 700;
@@ -1204,5 +1190,5 @@
 .companyChevron {
   flex-shrink: 0;
   font-style: normal;
-  color: #6d7c9c;
+  color: var(--muted-foreground);
 }

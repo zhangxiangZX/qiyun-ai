@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import { cn } from "../lib/utils";
 
 const iconToneClass = {
-  brand: "bg-brand-500/10 text-brand-500",
-  success: "bg-success/10 text-success",
-  purple: "bg-violet-500/10 text-violet-600",
-  warning: "bg-warning/10 text-warning",
-  info: "bg-info/10 text-info",
+  brand: "bg-[#3b5eff] text-white",
+  success: "bg-[#22c55e] text-white",
+  purple: "bg-[#8b5cf6] text-white",
+  warning: "bg-[#f97316] text-white",
+  info: "bg-[#06b6d4] text-white",
 } as const;
 
 export interface StatCardProps {

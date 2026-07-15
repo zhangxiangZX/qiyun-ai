@@ -41,40 +41,135 @@
   }
 
   .page-stack {
-    @apply space-y-6;
+    @apply space-y-5;
   }
 
   .page-stack > * {
-    animation: ui-fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: ui-fade-in-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
 
-  .page-stack > *:nth-child(1) {
-    animation-delay: 0ms;
+  .page-stack > *:nth-child(1) { animation-delay: 0ms; }
+  .page-stack > *:nth-child(2) { animation-delay: 40ms; }
+  .page-stack > *:nth-child(3) { animation-delay: 80ms; }
+  .page-stack > *:nth-child(4) { animation-delay: 120ms; }
+  .page-stack > *:nth-child(5) { animation-delay: 160ms; }
+  .page-stack > *:nth-child(6) { animation-delay: 200ms; }
+  .page-stack > *:nth-child(7) { animation-delay: 240ms; }
+  .page-stack > *:nth-child(8) { animation-delay: 280ms; }
+
+  /* Second-level stagger: cards inside a single-root page fade in sequence.
+     (The old third-level deep stagger was removed — it compounded delays
+     across nested wrappers and made every navigation feel slow. Inner
+     content now reveals together with its parent card.) */
+  .page-stack > *:not(.page-stack):only-child > * {
+    animation: ui-fade-in-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
-  .page-stack > *:nth-child(2) {
-    animation-delay: 55ms;
-  }
-  .page-stack > *:nth-child(3) {
-    animation-delay: 110ms;
-  }
-  .page-stack > *:nth-child(4) {
-    animation-delay: 165ms;
-  }
-  .page-stack > *:nth-child(5) {
-    animation-delay: 220ms;
-  }
-  .page-stack > *:nth-child(6) {
-    animation-delay: 275ms;
-  }
-  .page-stack > *:nth-child(7) {
-    animation-delay: 330ms;
-  }
-  .page-stack > *:nth-child(8) {
-    animation-delay: 385ms;
-  }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(1) { animation-delay: 0ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(2) { animation-delay: 30ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(3) { animation-delay: 60ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(4) { animation-delay: 90ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(5) { animation-delay: 120ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(6) { animation-delay: 150ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(7) { animation-delay: 180ms; }
+  .page-stack > *:not(.page-stack):only-child > *:nth-child(8) { animation-delay: 210ms; }
 
   .page-section {
     @apply space-y-4;
+  }
+
+  /* =========================================================
+     Shared page chrome — SINGLE SOURCE OF TRUTH.
+     Every page should reuse these token-driven classes instead
+     of re-declaring .page / .card / .cardHeader / .kpiCard with
+     slightly different magic values. This is what keeps the
+     console visually consistent.
+     ========================================================= */
+
+  /* Outer page wrapper: centered, capped width, consistent padding */
+  .page-shell {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding: var(--page-padding-block) 0
+      calc(var(--page-padding-block) * 1.5);
+  }
+
+  /* Page header block (title + optional subtitle/actions) */
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-5);
+  }
+
+  .page-head__title {
+    margin: 0;
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: var(--lh-snug);
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+  }
+
+  .page-head__subtitle {
+    margin: var(--sp-1) 0 0;
+    font-size: var(--fs-sm);
+    line-height: var(--lh-snug);
+    color: var(--muted-foreground);
+  }
+
+  /* Canonical card title row (replaces per-page .cardHeader) */
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: var(--card-pad-sm) var(--card-pad);
+    border-bottom: 1px solid var(--border);
+    font-size: var(--fs-h3);
+    font-weight: 700;
+    line-height: var(--lh-snug);
+    color: var(--foreground);
+  }
+
+  .card-head h2,
+  .card-head h3 {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  /* Canonical KPI grid + tile (replaces per-page .kpiGrid/.kpiCard) */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--sp-4);
+  }
+
+  .kpi-tile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 120px;
+    padding: var(--card-pad);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.2s ease;
+  }
+
+  .kpi-tile:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    box-shadow:
+      0 8px 24px hsl(var(--primary) / 0.1),
+      0 2px 8px hsl(var(--primary) / 0.06);
   }
 
   /* Main content canvas — light grey field + white cards (design mockup) */
@@ -84,11 +179,29 @@
       radial-gradient(circle at 85% 8%, hsl(var(--primary) / 0.06), transparent 38%),
       radial-gradient(circle at 12% 92%, hsl(var(--info) / 0.05), transparent 42%);
     background-size: 200% 200%;
-    animation: ui-canvas-drift 22s ease-in-out infinite;
   }
 
   .console-panel {
-    @apply rounded-card border border-border bg-card p-5 shadow-card sm:p-6;
+    @apply rounded-card border border-border bg-card shadow-card;
+    padding: var(--card-pad);
+  }
+
+  /* Older feature workspaces still carry their own page padding. When they
+     live in the canonical shell, neutralise that outer padding so every
+     dashboard page aligns to the same grid without a double gutter. */
+  .page-shell > [class*="px-4"][class*="lg:px-page"],
+  .page-shell > [class*="py-4"][class*="lg:px-page"] {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .page-shell > [class*="pb-6"][class*="lg:px-page"] {
+    padding-bottom: 0;
+  }
+
+  @media (max-width: 639px) {
+    .page-stack { @apply space-y-4; }
+    .page-section { @apply space-y-3; }
   }
 
   .console-metric-card {
@@ -113,7 +226,6 @@
 
   .console-metric-card:hover::after {
     @apply opacity-100;
-    animation: ui-tech-scan 3.5s ease-in-out infinite;
   }
 
   .console-topbar-search {
@@ -146,16 +258,29 @@
     @apply flex h-full flex-col overflow-y-auto pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))];
   }
 
+  .console-scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .console-scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   /* Dashboard sidebar — reference dark nav (always loaded via layout) */
   .console-sidebar {
     display: flex;
     flex-direction: column;
     width: 100%;
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
     padding: 25px 15px;
     background: linear-gradient(180deg, #0d1e40 0%, #07142d 100%);
     color: #d2ddf4;
-    font-family: Inter, var(--font-inter), "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    font-family: var(--font-inter), "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
     box-shadow: 6px 0 26px rgba(10, 28, 70, 0.08);
   }
 
@@ -193,12 +318,86 @@
   }
 
   .console-sidebar__nav {
-    display: grid;
+    display: flex;
     flex: 1;
-    gap: 8px;
-    align-content: start;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
     padding: 0 1px;
+  }
+
+  .console-sidebar__nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .console-sidebar__nav-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    height: 44px;
+    padding: 0 15px;
+    border: 0;
+    border-radius: 8px;
+    color: #d2ddf4;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .console-sidebar__nav-group-toggle:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .console-sidebar__nav-group--active .console-sidebar__nav-group-toggle {
+    color: #fff;
+  }
+
+  .console-sidebar__nav-sublist {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 0 4px 12px;
+  }
+
+  .console-sidebar__nav-subitem {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 12px 0 14px;
+    border-radius: 8px;
+    color: #c5d1e5 !important;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .console-sidebar__nav-subitem:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .console-sidebar__nav-subitem--active {
+    color: #fff !important;
+    background: linear-gradient(105deg, rgba(70, 84, 250, 0.88), rgba(98, 87, 255, 0.88)) !important;
+    box-shadow: 0 6px 16px rgba(60, 72, 255, 0.28);
+  }
+
+  .console-sidebar__nav-chevron--open {
+    transform: rotate(180deg);
   }
 
   .console-sidebar__nav-item {
@@ -223,14 +422,12 @@
   .console-sidebar__nav-item:hover {
     color: #fff !important;
     background: rgba(255, 255, 255, 0.06);
-    transform: translateX(3px);
   }
 
   .console-sidebar__nav-item--active {
     color: #fff !important;
     background: linear-gradient(105deg, #4654fa, #6257ff) !important;
     box-shadow: 0 9px 22px rgba(60, 72, 255, 0.38);
-    animation: ui-glow-pulse 3s ease-in-out infinite;
   }
 
   .console-sidebar__nav-item--active:hover {
@@ -241,7 +438,7 @@
     width: 19px;
     height: 19px;
     flex-shrink: 0;
-    color: #aab9d3;
+    color: #c5d1e5;
     stroke: currentColor;
   }
 
@@ -267,6 +464,7 @@
     font-size: 13px;
     font-style: normal;
     line-height: 1;
+    transition: transform 0.2s ease;
   }
 
   .console-sidebar__nav-item--active .console-sidebar__nav-chevron {
@@ -274,16 +472,114 @@
   }
 
   .console-sidebar__bottom {
+    flex-shrink: 0;
     margin-top: auto;
     padding-top: 22px;
   }
 
   .console-sidebar__plan {
+    position: relative;
     padding: 22px 16px 18px;
     border: 1px solid rgba(128, 151, 212, 0.28);
     border-radius: 13px;
     background: linear-gradient(145deg, rgba(57, 79, 155, 0.66), rgba(35, 54, 121, 0.62));
     text-align: center;
+  }
+
+  .console-sidebar__plan--popup {
+    position: fixed;
+    z-index: 2;
+    padding-top: 28px;
+    pointer-events: auto;
+    box-shadow:
+      0 18px 40px rgba(8, 18, 48, 0.42),
+      0 0 0 1px rgba(128, 151, 212, 0.18);
+    animation: console-sidebar-plan-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .console-sidebar__plan--closing {
+    animation: console-sidebar-plan-out 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .console-sidebar__plan-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    color: #c9d7f5;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .console-sidebar__plan-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    transform: scale(1.05);
+  }
+
+  .console-sidebar__plan-anchor {
+    position: relative;
+    width: 100%;
+  }
+
+  .console-sidebar__plan-trigger {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid rgba(128, 151, 212, 0.28);
+    border-radius: 13px;
+    color: #fff;
+    background: linear-gradient(145deg, rgba(57, 79, 155, 0.5), rgba(35, 54, 121, 0.48));
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .console-sidebar__plan-trigger:hover {
+    border-color: rgba(128, 151, 212, 0.45);
+    background: linear-gradient(145deg, rgba(57, 79, 155, 0.66), rgba(35, 54, 121, 0.62));
+    transform: translateY(-1px);
+  }
+
+  .console-sidebar__plan-trigger-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .console-sidebar__plan-trigger-action {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c9d7f5;
+  }
+
+  .console-sidebar__plan-trigger--hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Sidebar-only layer: no backdrop, main content stays interactive */
+  .console-sidebar-plan-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 41;
+    pointer-events: none;
   }
 
   .console-sidebar__plan-title {
@@ -381,5 +677,29 @@
     font-size: 26px;
     font-style: normal;
     line-height: 1;
+  }
+}
+
+@keyframes console-sidebar-plan-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes console-sidebar-plan-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
   }
 }

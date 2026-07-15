@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { Button, Input, Label } from "@qiyun/ui";
+import { Button, Input, Label, useFocusTrap } from "@qiyun/ui";
 
 export interface CreateBotDialogProps {
   open: boolean;
@@ -18,6 +18,19 @@ export function CreateBotDialog({
   onCreate,
 }: CreateBotDialogProps) {
   const [name, setName] = useState("");
+  const containerRef = useRef<HTMLFormElement>(null);
+
+  // Focus trap: Tab cycling + ESC close + auto-focus + focus restore
+  useFocusTrap(containerRef, { active: open, onEscape: onClose });
+
+  // Lock body scroll when open
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -31,15 +44,17 @@ export function CreateBotDialog({
 
   return (
     <div
-      aria-modal="true"
-      role="dialog"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     >
       <form
+        ref={containerRef}
         onSubmit={handleSubmit}
         className="w-full max-w-md rounded-dialog border border-border bg-card p-6 shadow-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label="新建AI助手"
       >
-        <h2 className="text-lg font-semibold text-card-foreground">新建机器人</h2>
+        <h2 className="text-lg font-semibold text-card-foreground">新建AI助手</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           创建后可配置知识库、行为规则与嵌入代码。
         </p>

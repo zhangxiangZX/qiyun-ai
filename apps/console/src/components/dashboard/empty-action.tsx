@@ -8,7 +8,7 @@ import { defaultLocale } from "@/lib/messages";
 export function DashboardEmptyAction() {
   return (
     <Button asChild className="inline-flex items-center gap-2">
-      <Link href="/dashboard/bots">
+      <Link href="/dashboard/bots/config">
         <Plus className="h-4 w-4" />
         {t(defaultLocale, "dashboard.empty.action")}
       </Link>

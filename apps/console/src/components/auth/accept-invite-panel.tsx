@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -97,7 +98,7 @@ export function AcceptInvitePanel({ token }: { token: string | null }) {
         throw new Error(payload?.message || "无法加载邀请信息。");
       }
 
-      const payload = (await response.json()) as InviteLookup;
+      const payload = unwrapEnvelope<InviteLookup>(await response.json());
       setInvite(payload);
       setLoadStatus("ready");
     } catch (error) {
@@ -122,7 +123,7 @@ export function AcceptInvitePanel({ token }: { token: string | null }) {
     })
       .then(async (response) => {
         if (!response.ok) throw new Error();
-        return (await response.json()) as DeliveryAudit[];
+        return unwrapEnvelope<DeliveryAudit[]>(await response.json());
       })
       .then((entries) => {
         if (mounted) setAudits(entries);
@@ -153,7 +154,7 @@ export function AcceptInvitePanel({ token }: { token: string | null }) {
         throw new Error(payload?.message || "无法接受邀请。");
       }
 
-      const payload = (await response.json()) as InviteLookup;
+      const payload = unwrapEnvelope<InviteLookup>(await response.json());
       setInvite(payload);
       setActionStatus("success");
     } catch (error) {

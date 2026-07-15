@@ -75,7 +75,7 @@ export function BotList({ bots }: BotListProps) {
         {bots.map((bot) => (
           <article
             key={bot.id}
-            className="rounded-card border border-border bg-card p-4 shadow-card"
+            className="rounded-card border border-border bg-card p-4 shadow-card min-h-[44px]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

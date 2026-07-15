@@ -4,26 +4,68 @@ export const defaultLocale: Locale = "zh-CN";
 
 const zhCN = {
   shell: {
-    brand: "企云 AI 企业智能服务平台",
+    brand: "企云图 AI 企业智能服务平台",
     subtitle: "统一管理客服机器人、知识库、线索留资与会话数据。",
     workspace: "当前工作区",
     footer: "先把基础控制台做好，再逐步接入 RAG、SSE 和自动化能力。",
   },
   auth: {
     hero: {
+      eyebrow: "工业官网获客系统",
+      headlineBefore: "让工业官网",
+      headlineHighlight: "更会获客",
+      headline: "让工业官网更会获客",
+      subheadline: "企云图 AI 为工业企业提供一站式智能获客解决方案",
+      tags: "AI 客服 · 知识库管理 · 线索管理 · 网站诊断",
       title: "把知识库、客服机器人和线索留资放进一个可交付的控制台。",
       description:
-        "企云 AI 优先做好多租户隔离、检索问答、Widget 嵌入与会话留资，再逐步扩展工作流和 Agent 能力。",
+        "企云图 AI 优先做好多租户隔离、检索问答、Widget 嵌入与会话留资，再逐步扩展工作流和 Agent 能力。",
+      features: {
+        ai: {
+          title: "AI 智能客服",
+          description: "7×24 小时在线，精准回答访客问题",
+          line1: "7×24 小时在线，精准回答访客问题",
+          line2: "提升转化率，抓住每次商机",
+        },
+        knowledge: {
+          title: "知识库赋能",
+          description: "企业知识统一管理，AI 深度理解",
+          line1: "企业知识统一管理，AI 深度理解",
+          line2: "让每一次对话都更专业",
+        },
+        growth: {
+          title: "数据驱动增长",
+          description: "线索全生命周期管理、数据洞察",
+          line1: "线索全生命周期管理、数据洞察",
+          line2: "持续优化官网获客效果",
+        },
+      },
     },
     form: {
+      welcome: "欢迎登录",
+      subtitle: "登录企云图 AI，开启智能获客之旅",
       kicker: "控制台访问",
       title: "登录",
+      account: "账号",
+      accountPlaceholder: "请输入账号/手机号/邮箱",
       email: "工作邮箱",
       password: "密码",
-      submit: "进入控制台",
+      passwordPlaceholder: "请输入密码",
+      submit: "登录",
       loading: "正在验证账号...",
       remember: "记住我",
+      forgotPassword: "忘记密码？",
       needHelp: "忘记密码 / 联系管理员",
+      codeLogin: "验证码登录",
+      trial: "申请试用",
+      altLoginTitle: "其他登录方式",
+      ssoTitle: "企业账号快捷登录",
+      comingSoon: "即将上线",
+      comingSoonDetail: "该功能即将上线，请先用邮箱密码登录。",
+      legalPrefix: "我已阅读并同意",
+      termsUser: "《用户协议》",
+      termsAnd: "和",
+      termsPrivacy: "《隐私政策》",
       footer: "登录成功后将跳转到数据看板。",
       empty: "请输入工作邮箱和密码。",
       error: "登录失败",
@@ -32,21 +74,33 @@ const zhCN = {
         description: "正在跳转到数据看板...",
       },
       validation: {
-        required: "请填写邮箱和密码。",
+        required: "请填写账号和密码。",
+        accountRequired: "请输入账号、手机号或邮箱",
+        passwordRequired: "请输入密码",
         email: "邮箱格式不正确。",
-        password: "密码至少 6 位。",
+        password: "密码至少需要 6 位",
+        terms: "请先阅读并同意用户协议与隐私政策。",
       },
+    },
+    footer: {
+      about: "关于企云图 AI",
+      terms: "用户协议",
+      privacy: "隐私政策",
+      help: "帮助中心",
+      contact: "联系我们",
+      copyright: "© 2025 企云科技有限公司 版权所有 粤ICP备2023141592号-1",
+      copyrightShort: "© 2026 企云科技有限公司",
     },
   },
   dashboard: {
-    eyebrow: "工作区概览",
-    title: "数据看板",
-    description: "查看会话、线索与知识库命中情况，快速发现需要补充的内容。",
+    eyebrow: "工作台",
+    title: "工作台",
+    description: "聚焦有效询盘、待报价、高意向客户与成交进展。",
     empty: {
       title: "还没有机器人",
-      pageDescription: "创建第一个机器人后，这里就会开始显示会话和线索数据。",
-      description: "先创建机器人并关联知识库，再部署 Widget 开始收集真实会话。",
-      action: "创建第一个机器人",
+      pageDescription: "完成助手配置并关联知识库后，这里会开始显示会话和询盘数据。",
+      description: "先配置智能助手并关联知识库，再部署官网 Widget 开始收集真实询盘。",
+      action: "配置智能助手",
     },
     leads: {
       empty: {
@@ -56,7 +110,73 @@ const zhCN = {
     },
     error: {
       load: "看板数据加载失败，请稍后重试。",
+      botsPanel: "机器人状态加载失败，请稍后重试。",
+      conversationsPanel: "最近会话加载失败，请稍后重试。",
       retry: "重新加载",
+    },
+  },
+  reports: {
+    eyebrow: "数据分析",
+    title: "报表",
+    description: "按周期查看趋势、机器人表现与问题分析，支持导出复盘。",
+    empty: {
+      title: "暂无报表数据",
+      description: "创建机器人并开始收集会话后，趋势与问题分析会显示在这里。",
+    },
+    error: {
+      load: "报表数据加载失败，请稍后重试。",
+      retry: "重新加载",
+    },
+  },
+  mode: {
+    badge: {
+      preview: "演示模式",
+      upstream: "正式 API",
+    },
+    banner: {
+      previewBody:
+        "未配置 API_BASE_URL（或 NEXT_PUBLIC_API_BASE_URL），当前使用 Console 内置演示数据，未连接 apps/api。",
+    },
+    notice: {
+      previewTitle: "演示模式说明",
+      upstreamTitle: "正式 API 模式",
+    },
+    feedback: {
+      previewSaved: "已写入演示数据，刷新或服务重启后可能丢失，不会同步至真实后端。",
+      upstreamSaved: "已保存至 apps/api。",
+      previewCreated: "已在演示数据中创建，刷新或服务重启后可能丢失。",
+      upstreamCreated: "已创建并写入 apps/api。",
+      leadPreviewSaved: "线索更新已写入演示数据，不会同步至真实后端。",
+      leadUpstreamSaved: "线索已更新并写入 apps/api。",
+      domainPreviewSaved: "域名白名单已写入演示数据，不会同步至真实后端。",
+      domainUpstreamSaved: "域名白名单已保存至 apps/api。",
+      keyPreviewRotated: "站点密钥已在演示数据中轮换，不会同步至真实后端。",
+      keyUpstreamRotated: "站点密钥已轮换，请更新嵌入代码。",
+      botPreviewSaved: "机器人设置已写入演示数据，刷新或服务重启后可能丢失。",
+      botUpstreamSaved: "机器人设置已保存至 apps/api。",
+      conversationStatusPreview: "状态修改仅本地预览，刷新后恢复，不会写入真实后端。",
+      conversationStatusUpstream: "会话状态已保存至 apps/api。",
+      conversationTagsPreview: "标签修改仅本地预览，刷新后恢复，不会写入真实后端。",
+      conversationTagsUpstream: "会话标签已保存至 apps/api。",
+      markAllRead: "已全部标记为已读。",
+    },
+    filters: {
+      previewDisabled: "演示模式下日期/机器人筛选仅用于界面预览，不会向后端发起聚合请求。",
+    },
+    analytics: {
+      previewTitle: "演示数据说明",
+      upstreamTitle: "真实数据说明",
+      dashboardPreview:
+        "当前 KPI 与趋势来自 Console 内置演示快照，不代表真实业务指标。配置 API_BASE_URL 后将读取 apps/api 聚合结果（与报表页策略一致）。",
+      dashboardUpstream:
+        "指标来自 apps/api；若数值为 0 表示当前工作区尚无对应业务活动，并非接口故障。",
+      reportsPreview:
+        "演示模式下本页展示 Console 内置演示快照（与数据看板相同策略）。未配置 API_BASE_URL 时不会请求 apps/api；配置后将读取真实聚合结果。",
+      reportsUpstream: "报表来自 apps/api；空图表表示统计周期内暂无会话或引用记录。",
+    },
+    notifications: {
+      emptyPreview: "演示模式下通知来自预设样例；配置 API_BASE_URL 后将展示真实业务事件。",
+      emptyUpstream: "新线索、文档失败、邀请失败与高意向会话等事件会出现在这里。",
     },
   },
   topbar: {
@@ -91,6 +211,18 @@ const zhCN = {
       description: "左侧切换配置分区，右侧实时预览对话效果。",
       backToList: "返回列表",
       notFound: "未找到该机器人，可能已被删除或链接无效。",
+      notFoundHint: "请检查链接是否正确，或返回列表选择其他机器人。",
+      loadError: "机器人加载失败，请稍后重试。",
+    },
+    mode: {
+      previewReadOnly:
+        "演示模式下机器人配置仅供浏览；新建、编辑与保存已禁用，不会写入 apps/api。",
+      previewListReadOnly:
+        "演示模式下机器人列表仅供浏览；新建、编辑与保存已禁用，连接正式 API 后才会生效。",
+      previewEditReadOnly:
+        "演示模式下机器人配置仅供浏览；表单与保存已禁用，连接正式 API 后才会生效。",
+      upstreamExtendedReadOnly:
+        "上游当前仅持久化名称、状态与知识库关联；欢迎语、系统提示词、行为与留资配置待后端接口开放（切换 BOTS_UPSTREAM_EXTENDED_FIELDS_ENABLED）。",
     },
   },
   conversations: {
@@ -98,6 +230,7 @@ const zhCN = {
     description: "查看访客对话、引用来源、留资信息与处理状态。",
     error: {
       load: "会话列表加载失败，请稍后重试。",
+      detail: "会话详情加载失败，请稍后重试。",
     },
     empty: {
       title: "暂无会话",
@@ -109,10 +242,88 @@ const zhCN = {
       allBots: "全部机器人",
       hasLead: "仅看已留资",
       unresolvedOnly: "仅看未解决",
+      reset: "重置筛选",
     },
     detail: {
       title: "会话详情",
       empty: "选择会话后查看属性与留资信息",
+      loading: "加载会话详情中...",
+      attributes: "会话属性",
+      visitor: "访客",
+      visitorId: "访客 ID",
+      bot: "机器人",
+      channel: "渠道",
+      pageUrl: "来源页面",
+      createdAt: "创建时间",
+      statusSection: "处理状态",
+      statusLabel: "更新状态",
+      assignee: "负责人",
+      tags: "标签",
+      tagPlaceholder: "添加标签",
+      tagAdd: "添加",
+      leadSection: "留资信息",
+      leadName: "姓名",
+      leadPhone: "手机",
+      leadEmail: "邮箱",
+      leadCompany: "公司",
+      leadCapturedAt: "留资时间",
+      leadEmpty: "该会话暂时没有留资记录。",
+      editDisabledDefault: "当前模式下无法保存状态与标签，仅供查看。",
+    },
+    mode: {
+      previewEditDisabled: "仅预览，不持久化：状态与标签修改不会写入后端。",
+      metadataUnavailable:
+        "已连接 apps/api 读取会话，但元数据 PATCH 接口尚未就绪，暂不可保存状态与标签。",
+      previewEmptyDescription:
+        "本地预览模式下，会话来自 Console 内存 BFF（含聊天预览产生的数据）。配置 API_BASE_URL 后将读取 apps/api。",
+      upstreamReadonly: "当前为只读查看：会话列表与消息来自真实后端，元数据编辑尚未开放。",
+      previewReadonlyTitle: "演示模式",
+      previewReadonlyDescription:
+        "可浏览与编辑状态/标签，但修改仅保存在当前浏览器会话，刷新后恢复。",
+      previewFilterHint: "筛选在已加载的演示会话上执行；未配置上游时一次加载全部数据。",
+      previewPaginationHint: "演示模式一次加载全部会话，分页仅用于 UI 预览。",
+      upstreamFilterHint:
+        "筛选在已加载会话上执行；服务端筛选待上游 GET /conversations 支持查询参数后开启。",
+      upstreamFilterReady: "筛选条件将随列表请求发送至 apps/api。",
+      upstreamPaginationHint: "使用「加载更多」分批拉取；筛选仅作用于已加载结果。",
+    },
+    pagination: {
+      loaded: "已加载 {loaded} 条会话",
+      loadedFiltered: "已加载 {loaded} 条，筛选后显示 {filtered} 条",
+      loadMore: "加载更多会话",
+      allLoaded: "已加载全部 {loaded} 条会话",
+      loadMoreError: "加载更多会话失败，请稍后重试。",
+      filterMayHide: "筛选仅作用于已加载会话；若未找到目标，请加载更多或重置筛选。",
+    },
+    selection: {
+      hiddenByFilter:
+        "当前选中的会话不在筛选结果中，仍可查看消息与详情；重置筛选可在列表中高亮。",
+      pinnedLabel: "当前选中（未在筛选结果中）",
+      threadEmpty: "选择左侧会话查看消息记录",
+      detailLoadError: "当前会话详情加载失败，请重试或切换其他会话。",
+    },
+    stats: {
+      current: "当前会话",
+      unresolved: "待补回答",
+      leads: "已留资",
+      filteredTitle: "当前筛选结果",
+      filteredDescription: "会根据机器人、留资和未解决条件实时变化。",
+      followUpTitle: "待人工跟进",
+      followUpDescription: "优先补知识库或转人工处理。",
+      leadsTitle: "有留资记录",
+      leadsDescription: "适合联动销售或客服继续跟进。",
+    },
+    mobile: {
+      list: "会话列表",
+      back: "返回",
+      detail: "详情",
+      hint: "选择会话查看消息与详情",
+    },
+    status: {
+      open: "进行中",
+      pending: "待处理",
+      unresolved: "未解决",
+      resolved: "已解决",
     },
   },
   leads: {
@@ -126,6 +337,7 @@ const zhCN = {
       description: "访客通过机器人提交留资后，记录会显示在这里。",
     },
     filters: {
+      searchLabel: "搜索",
       search: "搜索姓名、联系方式或问题",
       status: "状态",
       bot: "来源机器人",
@@ -148,6 +360,12 @@ const zhCN = {
       saved: "线索已更新",
       empty: "选择一条线索查看详情",
     },
+    mode: {
+      previewSave: "保存后写入演示数据，不会同步至真实后端。",
+      upstreamReadOnly:
+        "已连接 apps/api，但线索 PATCH 暂不可用。当前仅可查看列表与详情。",
+      upstreamWriteReady: "线索读写均已连接 apps/api，保存会写入真实后端。",
+    },
   },
   sites: {
     title: "站点与嵌入",
@@ -162,7 +380,7 @@ const zhCN = {
     },
     domains: {
       title: "域名白名单",
-      description: "仅允许白名单内的域名加载 Widget 并调用接口。",
+      description: "只有白名单内的域名才允许加载 Widget 并调用接口。",
       warning: "更换域名后必须点击保存；未保存时，非白名单来源仍会被拒绝。",
       add: "添加域名",
       save: "保存白名单",
@@ -170,25 +388,147 @@ const zhCN = {
     },
     embed: {
       title: "嵌入代码",
-      description: "复制脚本并粘贴到官网页面 </body> 前。",
+      description: "复制脚本并粘贴到官网页面 `</body>` 前。",
       copy: "复制代码",
       copied: "已复制",
+      qrTitle: "嵌入代码二维码",
+      qrHint: "手机扫码可快速复制安装代码",
     },
     key: {
       title: "站点密钥",
-      description: "密钥用于 Widget 鉴权，仅显示前缀。",
-      hint: "轮换密钥后，旧嵌入代码将立即失效，请重新部署。",
+      description: "用于 Widget 鉴权，仅显示前缀。",
+      hint: "轮换密钥后，旧嵌入代码会立刻失效。",
       rotate: "轮换密钥",
       confirmTitle: "确认轮换站点密钥？",
-      confirmDescription: "轮换后现有嵌入代码中的 siteKey 将失效，需要在所有站点重新部署。",
+      confirmDescription: "现有嵌入代码中的 siteKey 会失效，需要在所有站点重新部署。",
       rotated: "站点密钥已轮换，请更新嵌入代码。",
+      revealTitle: "请立即保存新站点密钥",
+      revealDescription:
+        "完整 siteKey 仅显示一次。关闭本面板后将无法再次查看，请复制密钥并更新所有嵌入页面。",
+      revealDismiss: "我已保存，隐藏完整密钥",
     },
     test: {
       title: "发送测试消息",
-      description: "模拟 Widget 从指定域名发起请求，验证白名单是否生效。",
+      description: "模拟指定域名的 Widget 请求，验证白名单是否生效。",
       origin: "模拟来源域名",
       message: "测试消息",
       send: "发送测试",
+    },
+    mode: {
+      syncPreview: "当前配置来自演示数据，保存不会同步至 apps/api。",
+      syncUpstream: "站点与密钥来自 apps/api；域名白名单只读直到 PATCH 接口开放。",
+      upstreamDomainReadOnly:
+        "域名白名单读取来自 apps/api，保存接口尚未开放。编辑演示请在演示模式下进行。",
+      testPreviewOnly: "测试消息为本地模拟，不会调用真实 Widget 接口。",
+      testUpstream: "测试消息将调用真实 Widget 公共聊天接口。",
+      testSuccessPreview: "演示模式下测试通过，结果为本地模拟，不代表真实 Widget 接口可用。",
+      testSuccessUpstream: "测试消息已送达真实公共聊天接口。",
+      keyRotatePreviewHint: "密钥轮换仅更新演示数据，不会写入 apps/api。",
+      keyRevealPreviewHint: "以下为演示轮换结果，不会写入 apps/api。",
+    },
+  },
+  calendar: {
+    title: "跟进日历",
+    description: "按日程视图管理销售跟进、产品演示与客户会议，避免遗漏高意向线索。",
+    previewBadge: "V2 预览",
+    view: {
+      month: "月视图",
+      upcoming: "即将到来",
+    },
+    today: "今天",
+    prev: "上个月",
+    next: "下个月",
+    kpi: {
+      month: "本月安排",
+      pending: "待跟进",
+      done: "已完成",
+      overdue: "已逾期",
+    },
+    legend: "事件类型",
+    selectedDay: "选中日安排",
+    noEventsDay: "当日暂无安排",
+    upcomingTitle: "即将到来",
+    upcomingEmpty: "未来两个月暂无安排",
+    status: {
+      pending: "待办",
+      done: "已完成",
+      cancelled: "已取消",
+    },
+    mode: {
+      upstreamPending:
+        "上游日历接口（apps/api GET /calendar/events）由 Codex 实现中，当前显示演示数据。",
+    },
+    error: {
+      load: "日历加载失败，请稍后重试。",
+    },
+  },
+  documents: {
+    title: "文档中心",
+    description: "统一管理对外资料与销售物料，支持上传、下载与加水印，保护企业知识产权。",
+    previewBadge: "V2 预览",
+    uploadButton: "上传文档",
+    listTitle: "全部文档",
+    kpi: {
+      total: "文档总数",
+      images: "图片数量",
+      watermarkable: "可水印",
+      watermarked: "已水印",
+    },
+    col: {
+      name: "文件名",
+      category: "分类",
+      size: "大小",
+      uploaded: "上传时间",
+      watermark: "水印",
+      actions: "操作",
+    },
+    wmDone: "已水印",
+    wmAvailable: "可水印",
+    wmNone: "不支持",
+    download: "下载",
+    watermark: "加水印",
+    delete: "删除",
+    empty: "暂无文档，点击「上传文档」添加第一份资料。",
+    loading: "加载文档中心…",
+    uploadTitle: "上传文档",
+    uploadHint: "支持 PDF、图片、Word、Excel 等常见格式，单文件不超过 20 MB。",
+    chooseFile: "选择文件",
+    category: "文档分类",
+    cancel: "取消",
+    startUpload: "开始上传",
+    close: "关闭",
+    notice: {
+      uploaded: "文档已上传（演示模式下仅保存在本次会话）。",
+      wmUnsupported: "该文件类型暂不支持水印。",
+      wmImage: "图片已添加水印并下载（含水印副本）。",
+      wmPreviewPdf: "预览模式：PDF / 文档水印需后端服务生成，已为你下载原始文件。",
+      wmPdf: "已下载水印版本（由上游服务生成）。",
+      deleted: "文档已删除。",
+    },
+    error: {
+      load: "文档加载失败，请稍后重试。",
+      upload: "上传失败，请稍后重试。",
+      download: "下载失败，请稍后重试。",
+      watermark: "水印生成失败，请稍后重试。",
+      delete: "删除失败，请稍后重试。",
+    },
+  },
+  geo: {
+    title: "地域分布",
+    description: "按省份查看线索与客户的地理分布，识别核心区域与待开拓市场，辅助区域投放决策。",
+    previewBadge: "V2 预览",
+    kpi: {
+      provinces: "覆盖省份",
+      total: "线索总量",
+      coreShare: "核心区占比",
+      untapped: "待开拓区域",
+    },
+    rankTitle: "区域线索排行",
+    mapTitle: "地理分布",
+    legendTitle: "区域等级",
+    loading: "加载地域分布…",
+    error: {
+      load: "地域分布加载失败，请稍后重试。",
     },
   },
 } as const;
@@ -202,19 +542,61 @@ const enUS = {
   },
   auth: {
     hero: {
+      eyebrow: "Industrial acquisition system",
+      headlineBefore: "Help industrial websites ",
+      headlineHighlight: "capture more leads",
+      headline: "Help industrial websites capture more leads",
+      subheadline: "Qiyun AI delivers one-stop intelligent acquisition for industrial enterprises.",
+      tags: "AI Support · Knowledge · Leads · Site Diagnosis",
       title: "Bring knowledge bases, support bots, and lead capture into one deliverable console.",
       description:
         "Qiyun AI focuses on multi-tenant isolation, retrieval, widget embedding, and conversation capture first, then expands into workflows and richer Agent capabilities.",
+      features: {
+        ai: {
+          title: "AI support",
+          description: "24/7 online, accurate product answers",
+          line1: "24/7 online, accurate product answers",
+          line2: "Improve conversion and reduce manual work",
+        },
+        knowledge: {
+          title: "Knowledge base",
+          description: "Unified enterprise knowledge for AI",
+          line1: "Unified enterprise knowledge for AI",
+          line2: "Make every conversation more reliable",
+        },
+        growth: {
+          title: "Data-driven growth",
+          description: "Full-funnel lead tracking and insights",
+          line1: "Full-funnel lead tracking and insights",
+          line2: "Continuously optimize acquisition results",
+        },
+      },
     },
     form: {
+      welcome: "Welcome back",
+      subtitle: "Sign in to Qiyun AI and start capturing leads",
       kicker: "Console Access",
       title: "Sign in",
+      account: "Account",
+      accountPlaceholder: "Email/phone/username",
       email: "Work email",
       password: "Password",
-      submit: "Enter console",
+      passwordPlaceholder: "Enter your password",
+      submit: "Sign in",
       loading: "Verifying account...",
       remember: "Remember me",
+      forgotPassword: "Forgot password?",
       needHelp: "Forgot password / Contact admin",
+      codeLogin: "Code sign-in",
+      register: "Create account",
+      altLoginTitle: "Other sign-in options",
+      ssoTitle: "Enterprise fast sign-in",
+      comingSoon: "Coming soon",
+      comingSoonDetail: "This feature is coming soon. Please sign in with email and password for now.",
+      legalPrefix: "I have read and agree to the",
+      termsUser: "Terms of Service",
+      termsAnd: " and ",
+      termsPrivacy: "Privacy Policy",
       footer: "You will be redirected to the dashboard after login.",
       empty: "Enter your work email and password to continue.",
       error: "Sign-in failed",
@@ -223,10 +605,22 @@ const enUS = {
         description: "Redirecting you to the dashboard...",
       },
       validation: {
-        required: "Please enter both email and password.",
+        required: "Please enter both account and password.",
+        accountRequired: "Enter your account, phone, or email",
+        passwordRequired: "Enter your password",
         email: "That email format looks invalid.",
         password: "Password must be at least 6 characters.",
+        terms: "Please accept the terms and privacy policy.",
       },
+    },
+    footer: {
+      about: "About Qiyun AI",
+      terms: "Terms",
+      privacy: "Privacy",
+      help: "Help Center",
+      contact: "Contact",
+      copyright: "© 2025 Qiyun Technology Co., Ltd. All rights reserved.",
+      copyrightShort: "© 2026 Qiyun Technology Co., Ltd.",
     },
   },
   dashboard: {
@@ -248,7 +642,73 @@ const enUS = {
     },
     error: {
       load: "Failed to load dashboard data. Please try again.",
+      botsPanel: "Failed to load bot status. Please try again.",
+      conversationsPanel: "Failed to load recent conversations. Please try again.",
       retry: "Reload",
+    },
+  },
+  reports: {
+    eyebrow: "Analytics",
+    title: "Reports",
+    description: "Period trends, bot performance, and question analysis with export for review.",
+    empty: {
+      title: "No report data yet",
+      description: "Create a bot and start collecting conversations to populate analytics.",
+    },
+    error: {
+      load: "Failed to load report data. Please try again.",
+      retry: "Reload",
+    },
+  },
+  mode: {
+    badge: {
+      preview: "Demo mode",
+      upstream: "Live API",
+    },
+    banner: {
+      previewBody:
+        "API_BASE_URL (or NEXT_PUBLIC_API_BASE_URL) is not configured. Console is using built-in demo data and is not connected to apps/api.",
+    },
+    notice: {
+      previewTitle: "Demo mode",
+      upstreamTitle: "Live API mode",
+    },
+    feedback: {
+      previewSaved: "Saved to demo data only. Changes may be lost on refresh and are not written to apps/api.",
+      upstreamSaved: "Saved to apps/api.",
+      previewCreated: "Created in demo data only. Changes may be lost on refresh.",
+      upstreamCreated: "Created and saved to apps/api.",
+      leadPreviewSaved: "Lead update saved to demo data only and is not written to apps/api.",
+      leadUpstreamSaved: "Lead updated and saved to apps/api.",
+      domainPreviewSaved: "Allowlist saved to demo data only and is not written to apps/api.",
+      domainUpstreamSaved: "Allowlist saved to apps/api.",
+      keyPreviewRotated: "Site key rotated in demo data only and is not written to apps/api.",
+      keyUpstreamRotated: "Site key rotated. Update your embed snippet.",
+      botPreviewSaved: "Bot settings saved to demo data only. Changes may be lost on refresh.",
+      botUpstreamSaved: "Bot settings saved to apps/api.",
+      conversationStatusPreview: "Status change is local preview only and is not persisted.",
+      conversationStatusUpstream: "Conversation status saved to apps/api.",
+      conversationTagsPreview: "Tag change is local preview only and is not persisted.",
+      conversationTagsUpstream: "Conversation tags saved to apps/api.",
+      markAllRead: "All notifications marked as read.",
+    },
+    filters: {
+      previewDisabled: "In demo mode, date/bot filters are UI-only and do not query apps/api.",
+    },
+    analytics: {
+      previewTitle: "Demo data",
+      upstreamTitle: "Live data",
+      dashboardPreview:
+        "KPIs and trends come from Console demo data, not real metrics. Configure API_BASE_URL to read apps/api aggregates.",
+      dashboardUpstream:
+        "Metrics come from apps/api. Zero values mean no activity yet, not an API failure.",
+      reportsPreview:
+        "Reports come from Console demo data. Live API mode reads real aggregates from apps/api.",
+      reportsUpstream: "Reports come from apps/api. Empty charts mean no activity in the selected period.",
+    },
+    notifications: {
+      emptyPreview: "In demo mode, notifications are sample events. Configure API_BASE_URL for live events.",
+      emptyUpstream: "New leads, document failures, invite failures, and high-intent chats appear here.",
     },
   },
   topbar: {
@@ -283,6 +743,18 @@ const enUS = {
       description: "Switch sections on the left and preview conversations on the right.",
       backToList: "Back to list",
       notFound: "This bot could not be found. It may have been deleted.",
+      notFoundHint: "Check the link or go back to the bot list.",
+      loadError: "Failed to load this bot. Please try again.",
+    },
+    mode: {
+      previewReadOnly:
+        "In demo mode, bot configuration is browse-only; create, edit, and save are disabled and are not written to apps/api.",
+      previewListReadOnly:
+        "In demo mode, the bot list is browse-only; create, edit, and save require a live API connection.",
+      previewEditReadOnly:
+        "In demo mode, bot configuration is browse-only; the form and save are disabled until a live API connection is available.",
+      upstreamExtendedReadOnly:
+        "Upstream currently persists name, status, and knowledge base links only. Welcome message, prompts, and behavior settings await backend support (flip BOTS_UPSTREAM_EXTENDED_FIELDS_ENABLED).",
     },
   },
   conversations: {
@@ -290,6 +762,7 @@ const enUS = {
     description: "Review visitor chats, citations, lead captures, and handling status.",
     error: {
       load: "Failed to load conversations. Please try again.",
+      detail: "Failed to load conversation details. Please try again.",
     },
     empty: {
       title: "No conversations yet",
@@ -301,10 +774,93 @@ const enUS = {
       allBots: "All bots",
       hasLead: "Lead captured only",
       unresolvedOnly: "Unresolved only",
+      reset: "Reset filters",
     },
     detail: {
       title: "Conversation details",
       empty: "Select a conversation to view properties and lead info",
+      loading: "Loading conversation details...",
+      attributes: "Properties",
+      visitor: "Visitor",
+      visitorId: "Visitor ID",
+      bot: "Bot",
+      channel: "Channel",
+      pageUrl: "Source page",
+      createdAt: "Created at",
+      statusSection: "Handling status",
+      statusLabel: "Update status",
+      assignee: "Assignee",
+      tags: "Tags",
+      tagPlaceholder: "Add tag",
+      tagAdd: "Add",
+      leadSection: "Lead capture",
+      leadName: "Name",
+      leadPhone: "Phone",
+      leadEmail: "Email",
+      leadCompany: "Company",
+      leadCapturedAt: "Captured at",
+      leadEmpty: "No lead capture for this conversation yet.",
+      editDisabledDefault: "Status and tags cannot be saved in the current mode.",
+    },
+    mode: {
+      previewEditDisabled:
+        "Preview only, not persisted: status and tag changes are not written to the backend.",
+      metadataUnavailable:
+        "Connected to apps/api for reads, but conversation metadata PATCH is not available yet.",
+      previewEmptyDescription:
+        "In preview mode, conversations come from the Console in-memory BFF. Set API_BASE_URL to read from apps/api.",
+      upstreamReadonly:
+        "Read-only view: conversation list and messages come from the real backend; metadata editing is not open yet.",
+      previewReadonlyTitle: "Demo mode",
+      previewReadonlyDescription:
+        "You can browse and edit status/tags, but changes stay in this browser session until refresh.",
+      previewFilterHint:
+        "Filters apply to loaded demo conversations; preview mode loads the full list at once.",
+      previewPaginationHint: "Preview mode loads all conversations; pagination is for UI exercise only.",
+      upstreamFilterHint:
+        "Filters apply to loaded conversations until upstream GET /conversations supports query parameters.",
+      upstreamFilterReady: "Filter parameters are sent with each list request to apps/api.",
+      upstreamPaginationHint:
+        "Use Load more to fetch batches; filters apply only to conversations already loaded.",
+    },
+    pagination: {
+      loaded: "Loaded {loaded} conversations",
+      loadedFiltered: "Loaded {loaded}, showing {filtered} after filters",
+      loadMore: "Load more conversations",
+      allLoaded: "All {loaded} conversations loaded",
+      loadMoreError: "Failed to load more conversations. Please try again.",
+      filterMayHide:
+        "Filters apply to loaded conversations only. Load more or reset filters if you cannot find a match.",
+    },
+    selection: {
+      hiddenByFilter:
+        "The selected conversation is hidden by filters. Messages and details remain visible; reset filters to highlight it in the list.",
+      pinnedLabel: "Selected (not in filtered results)",
+      threadEmpty: "Select a conversation on the left to view messages",
+      detailLoadError: "Failed to load this conversation. Retry or pick another one.",
+    },
+    stats: {
+      current: "Conversations",
+      unresolved: "Needs follow-up",
+      leads: "With leads",
+      filteredTitle: "Filtered results",
+      filteredDescription: "Updates as you change bot, lead, and unresolved filters.",
+      followUpTitle: "Needs attention",
+      followUpDescription: "Prioritize knowledge updates or human handoff.",
+      leadsTitle: "With lead capture",
+      leadsDescription: "Good candidates for sales or support follow-up.",
+    },
+    mobile: {
+      list: "Conversation list",
+      back: "Back",
+      detail: "Details",
+      hint: "Select a conversation to view messages and details",
+    },
+    status: {
+      open: "Open",
+      pending: "Pending",
+      unresolved: "Unresolved",
+      resolved: "Resolved",
     },
   },
   leads: {
@@ -318,6 +874,7 @@ const enUS = {
       description: "Lead records will appear here after visitors submit the capture form.",
     },
     filters: {
+      searchLabel: "Search",
       search: "Search name, contact, or question",
       status: "Status",
       bot: "Source bot",
@@ -339,6 +896,12 @@ const enUS = {
       save: "Save",
       saved: "Lead updated",
       empty: "Select a lead to view details",
+    },
+    mode: {
+      previewSave: "Changes are saved to demo data only and are not written upstream.",
+      upstreamReadOnly:
+        "Upstream is connected, but lead write APIs are not enabled yet. List and detail are read-only.",
+      upstreamWriteReady: "Lead read and write are connected to upstream.",
     },
   },
   sites: {
@@ -374,6 +937,10 @@ const enUS = {
       confirmTitle: "Rotate site key?",
       confirmDescription: "Existing embed code will stop working and must be redeployed everywhere.",
       rotated: "Site key rotated. Update your embed code.",
+      revealTitle: "Save the new site key now",
+      revealDescription:
+        "The full siteKey is shown only once. Copy it and update every embed before dismissing.",
+      revealDismiss: "I saved it — hide full key",
     },
     test: {
       title: "Send test message",
@@ -381,6 +948,14 @@ const enUS = {
       origin: "Simulated origin",
       message: "Test message",
       send: "Send test",
+    },
+    mode: {
+      syncPreview: "Configuration is stored in demo data.",
+      syncUpstream: "Sites and keys come from upstream; domain allowlist is read-only until PATCH ships.",
+      upstreamDomainReadOnly:
+        "Allowlist is read from upstream; save API is not enabled. Use Preview mode to demo edits.",
+      testPreviewOnly: "Test messages are simulated locally, not sent to the real widget API.",
+      testUpstream: "Test messages call the real widget API.",
     },
   },
 } as const;

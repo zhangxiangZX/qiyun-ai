@@ -5,15 +5,15 @@ export function validateKnowledgeFile(file: File): string | null {
   const extension = getFileExtension(file.name);
 
   if (!ALLOWED_EXTENSIONS.includes(extension as (typeof ALLOWED_EXTENSIONS)[number])) {
-    return `Only ${ALLOWED_EXTENSIONS.join(", ")} files are supported.`;
+    return `仅支持 ${ALLOWED_EXTENSIONS.join("、")} 格式。`;
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return "Each file must be 20 MB or smaller.";
+    return "单个文件不能超过 20 MB。";
   }
 
   if (file.size === 0) {
-    return "Empty files cannot be uploaded.";
+    return "不能上传空文件。";
   }
 
   return null;

@@ -235,7 +235,7 @@ export function InvitationsAuditWorkspace() {
         </Button>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-6 ui-stagger-fade-in ui-hover-lift-children xl:grid-cols-[1.15fr_0.85fr]">
         <WorkspaceAccessCard
           title="邀请列表"
           description="可按邮箱、工作区和状态快速筛选。"

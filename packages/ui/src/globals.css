@@ -16,28 +16,74 @@
   --card-foreground: 222.2 47.4% 11.2%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 47.4% 11.2%;
-  --primary: 217.2 91.2% 59.8%;
+  --primary: 221.2 83.2% 53.3%;
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
   --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  --muted-foreground: 215.3 19.3% 34.5%;
   --accent: 210 40% 96.1%;
   --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
+  --destructive: 0 72.2% 42%;
   --destructive-foreground: 210 40% 98%;
-  --success: 142 71% 45%;
+  --success: 142 72% 29%;
   --warning: 38 92% 50%;
   --info: 221 83% 53%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 217.2 91.2% 59.8%;
+  --ring: 221.2 83.2% 53.3%;
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
   --radius-dialog: 1rem;
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 12px 36px rgba(15, 23, 42, 0.08);
-  --page-max-width: 1440px;
+  --page-max-width: none;
   --page-padding: 1.5rem;
+  --page-padding-inline: clamp(16px, 2.2vw, 28px);
+  --page-padding-block: clamp(16px, 2vw, 24px);
+
+  /* =========================================================
+     Design tokens — single source of truth for typography,
+     spacing and cards. Every page module MUST read from these
+     instead of hardcoding magic numbers, so the whole console
+     stays visually consistent and tunable from one place.
+     ========================================================= */
+
+  /* ---- Typography scale (4px-friendly, clear steps) ---- */
+  --fs-display: 30px;   /* hero stat / oversized numbers */
+  --fs-h1: 22px;        /* page title */
+  --fs-h2: 18px;        /* section / card title */
+  --fs-h3: 16px;        /* sub-section title */
+  --fs-body: 14px;      /* base body text */
+  --fs-sm: 13px;        /* secondary text, table cells */
+  --fs-xs: 12px;        /* captions, tags, buttons */
+  --fs-caption: 11px;   /* micro labels, legends */
+
+  --lh-tight: 1.25;
+  --lh-snug: 1.4;
+  --lh-base: 1.6;
+
+  /* ---- Spacing scale (4px base, aligns Tailwind default) ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+
+  /* ---- Card tokens (consumed by .console-panel / .surface-card
+     and every page-level .card) ---- */
+  --card-pad: 20px;
+  --card-pad-sm: 16px;
+  --card-radius: var(--radius-card);
+  --card-border: var(--border);
+  --card-shadow: var(--shadow-card);
+  --card-bg: var(--card);
+
+  /* Neutral text shortcuts (semantic, theme-aware) */
+  --text-strong: var(--foreground);
+  --text-muted: var(--muted-foreground);
 }
 
 :root[data-theme="dark"] {

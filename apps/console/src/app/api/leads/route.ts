@@ -1,0 +1,30 @@
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+import { tryProxy } from "@/server/proxy";
+
+export async function GET(request: NextRequest) {
+  const proxied = await tryProxy(request, "/leads");
+  if (proxied) return proxied;
+
+  return NextResponse.json(
+    {
+      code: "PREVIEW_MODE",
+      message: "Configure API_BASE_URL to load leads from apps/api.",
+    },
+    { status: 503 },
+  );
+}
+
+export async function POST(request: NextRequest) {
+  const proxied = await tryProxy(request, "/leads");
+  if (proxied) return proxied;
+
+  return NextResponse.json(
+    {
+      code: "UPSTREAM_REQUIRED",
+      message: "Configure API_BASE_URL to create leads via apps/api.",
+    },
+    { status: 503 },
+  );
+}

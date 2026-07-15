@@ -6,6 +6,10 @@ export const knowledgeBaseOptions: KnowledgeBaseOption[] = [
   { id: "kb-faq", name: "官网 FAQ" },
 ];
 
+export function getKnowledgeBaseOptions(): KnowledgeBaseOption[] {
+  return knowledgeBaseOptions;
+}
+
 const botDetails: Record<string, BotDetail> = {
   "bot-support": {
     id: "bot-support",
@@ -16,12 +20,15 @@ const botDetails: Record<string, BotDetail> = {
     updatedAt: "2026-06-29T10:20:00.000Z",
     description: "面向官网访客的售前与售后问答机器人。",
     welcomeMessage: "你好，我是企云 AI 客服助手，有什么可以帮你？",
+    recommendedQuestions: ["产品参数有哪些？", "支持定制吗？", "交货周期多久？"],
     systemPrompt: "你是专业、简洁的企业客服助手，优先依据知识库回答。",
     knowledgeBaseIds: ["kb-product", "kb-faq"],
     collectLeadsOnFailure: true,
     rateLimitPerMinute: 30,
     allowedDomains: ["www.example.com", "help.example.com"],
     leadFields: ["name", "phone", "email"],
+    llmTemperature: 0.3,
+    maxOutputTokens: 1024,
     embedSnippet: `<script src="https://cdn.qiyun.ai/widget.js" data-bot-id="bot-support" async></script>`,
   },
   "bot-sales": {
@@ -33,12 +40,15 @@ const botDetails: Record<string, BotDetail> = {
     updatedAt: "2026-06-28T16:05:00.000Z",
     description: "帮助销售团队回答套餐、报价与演示预约问题。",
     welcomeMessage: "想了解哪款产品？我可以帮你快速对比方案。",
+    recommendedQuestions: [],
     systemPrompt: "你是友好的销售顾问，回答要准确，必要时引导留资。",
     knowledgeBaseIds: ["kb-sales"],
     collectLeadsOnFailure: true,
     rateLimitPerMinute: 20,
     allowedDomains: ["sales.example.com"],
     leadFields: ["name", "company", "phone"],
+    llmTemperature: 0.4,
+    maxOutputTokens: 1536,
     embedSnippet: `<script src="https://cdn.qiyun.ai/widget.js" data-bot-id="bot-sales" async></script>`,
   },
   "bot-internal": {
@@ -50,12 +60,15 @@ const botDetails: Record<string, BotDetail> = {
     updatedAt: "2026-06-27T09:40:00.000Z",
     description: "仅供内部团队检索制度与流程文档。",
     welcomeMessage: "你好，我可以帮你查内部文档。",
+    recommendedQuestions: [],
     systemPrompt: "仅回答内部知识库内容，不对外提供商业承诺。",
     knowledgeBaseIds: ["kb-product", "kb-sales", "kb-faq"],
     collectLeadsOnFailure: false,
     rateLimitPerMinute: 60,
     allowedDomains: ["intranet.example.com"],
     leadFields: [],
+    llmTemperature: 0.2,
+    maxOutputTokens: 800,
     embedSnippet: `<script src="https://cdn.qiyun.ai/widget.js" data-bot-id="bot-internal" async></script>`,
   },
 };
@@ -75,13 +88,13 @@ export function listBots(): BotListItem[] {
 
 export function fetchBots(): Promise<BotListItem[]> {
   return new Promise((resolve) => {
-    window.setTimeout(() => resolve(listBots()), 500);
+    setTimeout(() => resolve(listBots()), 500);
   });
 }
 
 export function fetchBotDetail(botId: string): Promise<BotDetail | null> {
   return new Promise((resolve) => {
-    window.setTimeout(() => resolve(botDetails[botId] ?? null), 300);
+    setTimeout(() => resolve(botDetails[botId] ?? null), 300);
   });
 }
 
@@ -101,14 +114,27 @@ export function createBotDraft(name: string): BotDetail {
     updatedAt: now,
     description: "",
     welcomeMessage: "你好，有什么可以帮你？",
+    recommendedQuestions: [],
     systemPrompt: "你是专业、友好的企业客服助手。",
     knowledgeBaseIds: [],
     collectLeadsOnFailure: true,
     rateLimitPerMinute: 30,
     allowedDomains: [],
     leadFields: ["name", "phone"],
+    llmTemperature: 0.3,
+    maxOutputTokens: 1024,
     embedSnippet: `<script src="https://cdn.qiyun.ai/widget.js" data-bot-id="${id}" async></script>`,
   };
   botDetails[id] = draft;
   return draft;
+}
+
+export function saveBotDetail(bot: BotDetail): BotDetail {
+  const updated: BotDetail = {
+    ...bot,
+    knowledgeBaseCount: bot.knowledgeBaseIds.length,
+    updatedAt: new Date().toISOString(),
+  };
+  botDetails[bot.id] = updated;
+  return updated;
 }

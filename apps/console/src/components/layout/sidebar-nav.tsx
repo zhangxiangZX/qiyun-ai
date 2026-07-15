@@ -2,53 +2,198 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronLeft } from "lucide-react";
 
 import { cn } from "@qiyun/ui";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { BRAND_DOMAIN, BRAND_ICON_SRC, BRAND_NAME } from "@/lib/brand";
 import { fetchAuthSession, type AuthSession } from "@/lib/auth/client";
-import { formatUserDisplayName } from "@/lib/auth/display-name";
-import { getActiveNavItem, getNavigation } from "@/lib/navigation";
-import { memberRoleLabel } from "@/components/team/workspace-access-shared";
+import {
+  defaultExpandedNavigationGroupIds,
+  getActiveNavItem,
+  getNavigationGroups,
+  isNavigationGroupActive,
+  isNavigationLinkActive,
+  type NavigationGroup,
+} from "@/lib/navigation";
 import { WORKSPACE_CHANGED_EVENT } from "@/lib/workspace-events";
 
-function getInitials(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return "?";
-  return trimmed.slice(0, 1).toUpperCase();
+function NavExpandIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <span
+      className={cn("nav-group-chevron", expanded && "nav-group-chevron--open")}
+      aria-hidden
+    >
+      <ChevronDown size={14} strokeWidth={2.25} />
+    </span>
+  );
 }
 
-function hasNavChevron(href: string): boolean {
-  return href !== "/dashboard" && href !== "/dashboard/conversations";
+function SidebarNavGroup({
+  group,
+  pathname,
+  search,
+  platformRole,
+  onNavigate,
+  variant,
+}: {
+  group: NavigationGroup;
+  pathname: string;
+  search?: string;
+  platformRole?: "platform_admin" | null;
+  onNavigate?: () => void;
+  variant: "sidebar" | "drawer";
+}) {
+  const isDark = variant === "sidebar";
+  const Icon = group.icon;
+  const groupActive = isNavigationGroupActive(group, pathname, search, platformRole);
+  const [expanded, setExpanded] = useState(
+    groupActive || defaultExpandedNavigationGroupIds.has(group.id),
+  );
+
+  useEffect(() => {
+    if (groupActive) {
+      setExpanded(true);
+    }
+  }, [groupActive]);
+
+  if (group.href && !group.children?.length) {
+    const isActive = group.exact ? pathname === group.href : pathname.startsWith(group.href);
+
+    if (isDark) {
+      return (
+        <Link
+          href={group.href}
+          onClick={onNavigate}
+          className={cn("nav-standalone-link", isActive && "active")}
+        >
+          <i>
+            <Icon aria-hidden />
+          </i>
+          <span>{group.title}</span>
+        </Link>
+      );
+    }
+
+    return (
+      <Link
+        href={group.href}
+        onClick={onNavigate}
+        className={cn(
+          "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition-colors",
+          isActive
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        )}
+      >
+        <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+        <span className="flex-1">{group.title}</span>
+      </Link>
+    );
+  }
+
+  if (isDark) {
+    return (
+      <div className={cn("nav-group", groupActive && "nav-group--active")}>
+        <button
+          type="button"
+          className="nav-group-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <i>
+            <Icon aria-hidden />
+          </i>
+          <span>{group.title}</span>
+          <NavExpandIcon expanded={expanded} />
+        </button>
+        {expanded ? (
+          <div className="nav-sublist">
+            {group.children?.map((child) => {
+              const isActive = isNavigationLinkActive(child, pathname, search, platformRole);
+              return (
+                <Link
+                  key={child.id}
+                  href={child.href}
+                  onClick={onNavigate}
+                  className={cn("nav-subitem", isActive && "active")}
+                >
+                  {child.title}
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5">
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 rounded-control px-3 py-2 text-sm font-semibold text-foreground"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+        <span className="flex-1 text-left">{group.title}</span>
+        <NavExpandIcon expanded={expanded} />
+      </button>
+      {expanded ? (
+        <div className="space-y-0.5 pb-1 pl-3">
+          {group.children?.map((child) => {
+            const isActive = isNavigationLinkActive(child, pathname, search, platformRole);
+            return (
+              <Link
+                key={child.id}
+                href={child.href}
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center rounded-control px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                {child.title}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function SidebarNav({
   pathname,
+  search,
   onNavigate,
   variant = "sidebar",
   platformRole,
+  collapsed = false,
+  onToggleCollapse,
 }: {
   pathname: string;
+  search?: string;
   onNavigate?: () => void;
   variant?: "sidebar" | "drawer";
   platformRole?: "platform_admin" | null;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const isDark = variant === "sidebar";
   const [session, setSession] = useState<AuthSession | null>(null);
   const effectivePlatformRole = session?.user.platformRole ?? platformRole ?? null;
-  const navigation = useMemo(() => getNavigation(effectivePlatformRole), [effectivePlatformRole]);
+  const navigationGroups = useMemo(
+    () => getNavigationGroups(effectivePlatformRole),
+    [effectivePlatformRole],
+  );
   const active = useMemo(
-    () => getActiveNavItem(pathname, effectivePlatformRole),
-    [effectivePlatformRole, pathname],
-  );
-
-  const activeWorkspace = useMemo(
-    () => session?.workspaces.find((item) => item.isActive) ?? session?.workspaces[0] ?? null,
-    [session],
-  );
-  const displayName = useMemo(
-    () => (session?.user ? formatUserDisplayName(session.user) : null),
-    [session],
+    () => getActiveNavItem(pathname, effectivePlatformRole, search),
+    [effectivePlatformRole, pathname, search],
   );
 
   useEffect(() => {
@@ -67,101 +212,70 @@ export function SidebarNav({
       <aside className="flex h-full flex-col px-4 py-5">
         <BrandLogo size="md" variant="circle" showWordmark />
 
-        <nav className="mt-6 flex-1 space-y-0.5 overflow-y-auto">
-          {navigation.map((item) => {
-            const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-            const Icon = item.icon;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNavigate}
-                className={cn(
-                  "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-                <span className="flex-1">{item.title}</span>
-              </Link>
-            );
-          })}
+        <nav
+          aria-label="主导航"
+          className="console-scrollbar-hidden mt-6 flex-1 space-y-2 overflow-y-auto"
+        >
+          {navigationGroups.map((group) => (
+            <SidebarNavGroup
+              key={group.id}
+              group={group}
+              pathname={pathname}
+              search={search}
+              platformRole={effectivePlatformRole}
+              onNavigate={onNavigate}
+              variant={variant}
+            />
+          ))}
         </nav>
 
         <div className="mt-4 rounded-card border border-border/70 bg-muted/30 px-4 py-3">
           <p className="text-xs font-medium text-muted-foreground">当前页面</p>
-          <p className="mt-1 text-sm font-medium text-foreground">{active?.title ?? "概览"}</p>
+          <p className="mt-1 text-sm font-medium text-foreground">
+            {active ? `${active.groupTitle} / ${active.title}` : "工作台"}
+          </p>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="console-sidebar">
-      <div className="console-sidebar__logo">
-        <BrandLogo
-          size="md"
-          variant="circle"
-          tone="on-dark"
-          showWordmark
-          showSubtitle
-          englishSubtitle="Qiyun AI"
-          className="console-sidebar__logo-brand"
-        />
+    <aside className={cn("sidebar console-scrollbar-hidden", collapsed && "sidebar--collapsed")}>
+      <div className="brand">
+        <div className="brandMark">
+          <img src={BRAND_ICON_SRC} alt={BRAND_NAME} width={28} height={28} />
+        </div>
+        {!collapsed ? (
+          <div>
+            <b>{BRAND_NAME}</b>
+            <small>{BRAND_DOMAIN}</small>
+          </div>
+        ) : null}
       </div>
 
-      <nav className="console-sidebar__nav">
-        {navigation.map((item) => {
-          const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                "console-sidebar__nav-item",
-                isActive && "console-sidebar__nav-item--active",
-              )}
-            >
-              <Icon className="console-sidebar__nav-icon" aria-hidden />
-              <span className="console-sidebar__nav-label">{item.title}</span>
-              {hasNavChevron(item.href) ? (
-                <i className="console-sidebar__nav-chevron">⌄</i>
-              ) : null}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="console-sidebar__bottom">
-        <section className="console-sidebar__plan">
-          <strong className="console-sidebar__plan-title">企云 AI 旗舰版</strong>
-          <span className="console-sidebar__plan-subtitle">智能获客 · 高效转化</span>
-          <Link href="/dashboard/team" className="console-sidebar__plan-btn" onClick={onNavigate}>
-            升级套餐
-          </Link>
-        </section>
-
-        <Link href="/dashboard/team" className="console-sidebar__user" onClick={onNavigate}>
-          <span className="console-sidebar__user-avatar">
-            {getInitials(displayName ?? session?.user.email ?? "?")}
-          </span>
-          <span className="min-w-0 flex-1">
-            <b className="console-sidebar__user-name">{displayName ?? "未登录"}</b>
-            <small className="console-sidebar__user-role">
-              {activeWorkspace?.role
-                ? memberRoleLabel(activeWorkspace.role)
-                : (session?.user.email ?? "—")}
-            </small>
-          </span>
-          <i className="console-sidebar__user-chevron">›</i>
-        </Link>
+      <div className="nav-groups">
+        {navigationGroups.map((group) => (
+          <SidebarNavGroup
+            key={group.id}
+            group={group}
+            pathname={pathname}
+            search={search}
+            platformRole={effectivePlatformRole}
+            onNavigate={onNavigate}
+            variant={variant}
+          />
+        ))}
       </div>
+
+      <button
+        type="button"
+        className="nav-collapse-btn"
+        onClick={onToggleCollapse}
+        aria-label={collapsed ? "展开菜单" : "收起菜单"}
+      >
+        <ChevronLeft size={18} />
+        {!collapsed ? <span>收起菜单</span> : null}
+      </button>
     </aside>
   );
 }

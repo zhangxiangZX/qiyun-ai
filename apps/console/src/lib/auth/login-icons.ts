@@ -13,6 +13,6 @@ export const loginIcons = {
   featureAi: "/assets/login/icon-ai-service.svg",
   featureKnowledge: "/assets/login/icon-knowledge.svg",
   featureGrowth: "/assets/login/icon-growth.svg",
-  brandLockup: "/assets/login/brand-lockup.png",
+  brandLockup: "/brand/qiyun-logo-full.png",
   brandIllustration: "/assets/login/brand-illustration.png",
 } as const;

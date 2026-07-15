@@ -11,10 +11,16 @@ import { defaultLocale } from "@/lib/messages";
 export interface SiteKeyCardProps {
   siteKeyPrefix: string;
   rotating?: boolean;
+  previewMode?: boolean;
   onRotate: () => void;
 }
 
-export function SiteKeyCard({ siteKeyPrefix, rotating = false, onRotate }: SiteKeyCardProps) {
+export function SiteKeyCard({
+  siteKeyPrefix,
+  rotating = false,
+  previewMode = false,
+  onRotate,
+}: SiteKeyCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
@@ -28,7 +34,16 @@ export function SiteKeyCard({ siteKeyPrefix, rotating = false, onRotate }: SiteK
           {t(defaultLocale, "sites.key.description")}
         </p>
         <p className="mt-4 font-mono text-sm text-foreground">{siteKeyPrefix}***</p>
-        <Alert variant="info" title={t(defaultLocale, "sites.key.hint")} className="mt-4" />
+        <Alert
+          variant="info"
+          title={t(defaultLocale, "sites.key.hint")}
+          className="mt-4"
+        />
+        {previewMode ? (
+          <Alert variant="warning" title={t(defaultLocale, "mode.notice.previewTitle")} className="mt-3">
+            {t(defaultLocale, "sites.mode.keyRotatePreviewHint")}
+          </Alert>
+        ) : null}
         <Button
           variant="outline"
           className="mt-4"

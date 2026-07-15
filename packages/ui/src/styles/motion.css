@@ -21,7 +21,9 @@
 }
 
 .ui-stagger-fade-in > * {
-  animation: ui-fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* backwards: 入场结束后释放 transform（回到基态，与 to 态视觉一致），
+     从而不再锁住 hover 的 transform，解决「入场动画拖死 hover 浮起」的问题 */
+  animation: ui-fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 .ui-stagger-fade-in > *:nth-child(1) {
@@ -57,10 +59,27 @@
 }
 
 .ui-hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  border-color: hsl(var(--primary) / 0.35);
   box-shadow:
-    0 4px 12px hsl(var(--primary) / 0.08),
-    0 12px 32px hsl(var(--primary) / 0.06);
+    0 8px 24px hsl(var(--primary) / 0.10),
+    0 2px 8px hsl(var(--primary) / 0.06);
+}
+
+/* 容器挂此类 → 其直接子元素各自 hover 浮起（与 ui-stagger-fade-in 对称，用于卡片网格/列表容器） */
+.ui-hover-lift-children > * {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease;
+}
+
+.ui-hover-lift-children > *:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--primary) / 0.35);
+  box-shadow:
+    0 8px 24px hsl(var(--primary) / 0.10),
+    0 2px 8px hsl(var(--primary) / 0.06);
 }
 
 .ui-tech-glow {
@@ -162,4 +181,57 @@
   50% {
     background-position: 100% 100%;
   }
+}
+
+.ui-fade-in {
+  animation: ui-fade-in 0.28s ease-out both;
+}
+
+.ui-slide-in-right {
+  animation: ui-slide-in-right 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ui-slide-in-left {
+  animation: ui-slide-in-left 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ui-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes ui-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.ui-row-highlight {
+  animation: ui-row-highlight 2.4s ease-out both;
+}
+
+@keyframes ui-row-highlight {
+  from {
+    background-color: hsl(var(--primary) / 0.22);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+/* ── Toast auto-dismiss progress bar ──────────────────────────────── */
+@keyframes toast-shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
 }

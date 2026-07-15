@@ -46,7 +46,7 @@ export function DashboardRecentLeads({ leads }: DashboardRecentLeadsProps) {
           <p className="mt-1 text-sm text-muted-foreground">最新留资记录与跟进状态。</p>
         </div>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard/leads">查看全部</Link>
+          <Link href="/dashboard/inquiries">查看全部</Link>
         </Button>
       </div>
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<defs>
+ <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4F7BFF"/><stop offset="1" stop-color="#2452F4"/></linearGradient>
+ <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#67E6FF"/><stop offset="1" stop-color="#2E73F8"/></linearGradient>
+ <filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#1B4CD7" flood-opacity=".18"/></filter>
+</defs><rect x="54" y="132" width="32" height="72" rx="12" fill="url(#g)"/><rect x="112" y="85" width="32" height="119" rx="12" fill="#4F7BFF"/><rect x="170" y="46" width="32" height="158" rx="12" fill="#285CF5"/></svg>

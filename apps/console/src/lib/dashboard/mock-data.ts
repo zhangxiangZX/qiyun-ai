@@ -35,7 +35,7 @@ export const dashboardWithBots: DashboardSnapshot = {
     },
     {
       id: "leads",
-      label: "新增线索数",
+      label: "今日询盘",
       value: "356",
       description: "较上周 +18.2%",
       trend: "18.2%",
@@ -43,7 +43,7 @@ export const dashboardWithBots: DashboardSnapshot = {
     },
     {
       id: "visitors",
-      label: "高意向线索",
+      label: "有效询盘",
       value: "92",
       description: "较上周 +25.6%",
       trend: "25.6%",

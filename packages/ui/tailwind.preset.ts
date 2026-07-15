@@ -73,6 +73,16 @@ const preset = {
       fontFamily: {
         sans: ["var(--font-sans)"],
       },
+      fontSize: {
+        display: ["var(--fs-display)", { lineHeight: "var(--lh-tight)", fontWeight: "700" }],
+        h1: ["var(--fs-h1)", { lineHeight: "var(--lh-snug)", fontWeight: "700" }],
+        h2: ["var(--fs-h2)", { lineHeight: "var(--lh-snug)", fontWeight: "600" }],
+        h3: ["var(--fs-h3)", { lineHeight: "var(--lh-snug)", fontWeight: "600" }],
+        body: ["var(--fs-body)", { lineHeight: "var(--lh-base)" }],
+        sm: ["var(--fs-sm)", { lineHeight: "var(--lh-base)" }],
+        xs: ["var(--fs-xs)", { lineHeight: "var(--lh-snug)" }],
+        caption: ["var(--fs-caption)", { lineHeight: "var(--lh-tight)" }],
+      },
       keyframes: {
         "fade-in-up": {
           from: { opacity: "0", transform: "translateY(14px)" },
@@ -96,10 +106,10 @@ const preset = {
         },
       },
       animation: {
-        "fade-in-up": "fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both",
-        "fade-in": "fade-in 0.35s ease-out both",
-        "scale-in": "scale-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
-        "slide-in-down": "slide-in-down 0.38s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-in-up": "fade-in-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) backwards",
+        "fade-in": "fade-in 0.35s ease-out backwards",
+        "scale-in": "scale-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards",
+        "slide-in-down": "slide-in-down 0.38s cubic-bezier(0.22, 1, 0.36, 1) backwards",
         "glow-pulse": "glow-pulse 2.8s ease-in-out infinite",
       },
     },

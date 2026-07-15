@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { BRAND_NAME } from "@/lib/brand";
 import { LoginBrandPanel } from "@/components/auth/login-brand-panel";
 import { LoginFooter } from "@/components/auth/login-footer";
 import { LoginForm } from "@/components/auth/login-form";
@@ -27,7 +28,7 @@ export default async function LoginPage({
   }
 
   return (
-    <section className={styles.shell} aria-label="企云 AI 登录">
+    <section className={styles.shell} aria-label={`${BRAND_NAME} 登录`}>
       <LoginBrandPanel />
       <LoginForm inviteEmail={params.inviteEmail} inviteToken={params.inviteToken} />
       <LoginFooter />

@@ -18,7 +18,7 @@ export function LegalDocument({
           <h2>{title}</h2>
           <p>最近更新：{updatedAt}</p>
         </header>
-        <div className={styles.legalBody}>
+        <div className={styles.legalBody} tabIndex={0} aria-label={`${title}正文`}>
           {sections.map((section) => (
             <section key={section.heading} className={styles.legalSection}>
               <h3>{section.heading}</h3>

@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 
 import { AuthFieldError, AuthFormFeedback } from "@/components/auth/auth-form-feedback";
 import { fetchAuthSession, loginWithConsole } from "@/lib/auth/client";
+import { localizeAuthError, AUTH_VALIDATION } from "@/lib/auth/messages";
+import { resolveWorkspaceHomePathFromSession } from "@/lib/auth/workspace-home";
 import { loginIcons } from "@/lib/auth/login-icons";
-import { getRateLimitMessage, isRateLimited } from "@/lib/api/errors";
 import styles from "@/styles/login.module.css";
 
 type LoginStatus = "idle" | "loading" | "error" | "success";
@@ -16,6 +17,7 @@ const REMEMBER_EMAIL_KEY = "qiyun-console-remember-email";
 
 const actionItems = [
   { label: "验证码登录", icon: loginIcons.codeLogin, href: "/login/code" },
+  { label: "注册开通", icon: loginIcons.register, href: "/register" },
   { label: "申请试用", icon: loginIcons.register, href: "/trial" },
 ];
 
@@ -57,14 +59,20 @@ export function LoginForm({
         }
         try {
           const session = await fetchAuthSession();
+          if (session?.user.mustChangePassword) {
+            router.push(`/reset-password?email=${encodeURIComponent(session.user.email)}`);
+            return;
+          }
           if (session?.user.platformRole === "platform_admin") {
             router.push("/dashboard/super-admin");
             return;
           }
+          router.push(resolveWorkspaceHomePathFromSession(session));
+          return;
         } catch {
           /* fall through to dashboard */
         }
-        router.push("/dashboard");
+        router.push("/dashboard/sales-rep");
       }, 900);
       return () => window.clearTimeout(timeout);
     }
@@ -87,26 +95,26 @@ export function LoginForm({
   }, [inviteEmail]);
 
   function handleForgotPassword() {
-    router.push("/reset-password");
+    router.push("/forgot-password");
   }
 
   function validateForm() {
     const nextErrors: { account?: string; password?: string; terms?: string } = {};
 
     if (!email.trim()) {
-      nextErrors.account = "请输入邮箱地址。";
+      nextErrors.account = AUTH_VALIDATION.emailRequired;
     } else if (!email.includes("@")) {
-      nextErrors.account = "当前仅支持邮箱登录，请输入有效邮箱地址。";
+      nextErrors.account = AUTH_VALIDATION.emailInvalid;
     }
 
     if (!password.trim()) {
-      nextErrors.password = "请输入密码。";
+      nextErrors.password = AUTH_VALIDATION.passwordRequired;
     } else if (password.length < 6) {
-      nextErrors.password = "密码至少需要 6 位。";
+      nextErrors.password = AUTH_VALIDATION.passwordMinLogin;
     }
 
     if (!acceptedTerms) {
-      nextErrors.terms = "请先同意用户协议与隐私政策。";
+      nextErrors.terms = AUTH_VALIDATION.termsRequired;
     }
 
     setFieldErrors(nextErrors);
@@ -143,12 +151,9 @@ export function LoginForm({
       setFormMessageType("ok");
     } catch (error) {
       setStatus("error");
-      const message = isRateLimited(error)
-        ? getRateLimitMessage(error)
-        : error instanceof Error
-          ? error.message
-          : "登录失败，请稍后重试。";
-      setFormMessage(message);
+      setFormMessage(
+        localizeAuthError(error, "登录失败，请稍后重试。"),
+      );
       setFormMessageType("bad");
     }
   }

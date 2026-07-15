@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Alert, Badge } from "@qiyun/ui";
+import { Badge } from "@qiyun/ui";
 
 import { fetchConsoleMode, type ConsoleModeInfo } from "@/lib/api/mode";
 import {
@@ -38,9 +38,17 @@ export function ConsoleDataModeBanner({ feature }: ConsoleDataModeBannerProps) {
   );
 
   return (
-    <Alert variant={presentation.variant} title={presentation.title}>
-      {presentation.body}
-    </Alert>
+    <div
+      className={`flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 rounded-control border px-3 py-2 text-xs ${
+        presentation.variant === "success"
+          ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
+          : "border-amber-200 bg-amber-50/70 text-amber-800"
+      }`}
+      role="status"
+    >
+      <strong className="font-semibold">{presentation.title}</strong>
+      <span className="opacity-80">{presentation.body}</span>
+    </div>
   );
 }
 

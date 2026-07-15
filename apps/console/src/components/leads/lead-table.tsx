@@ -12,14 +12,6 @@ export interface LeadTableProps {
 }
 
 export function LeadTable({ leads, selectedId, onSelect }: LeadTableProps) {
-  if (!leads.length) {
-    return (
-      <div className="p-8 text-center text-sm text-muted-foreground">
-        没有匹配的线索
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="hidden md:block">
@@ -67,7 +59,7 @@ export function LeadTable({ leads, selectedId, onSelect }: LeadTableProps) {
             type="button"
             onClick={() => onSelect(lead.id)}
             className={cn(
-              "w-full rounded-card border border-border bg-card p-4 text-left shadow-sm transition-colors",
+              "w-full min-h-[44px] rounded-card border border-border bg-card p-4 text-left shadow-sm transition-colors",
               selectedId === lead.id && "border-primary bg-accent/40",
             )}
           >

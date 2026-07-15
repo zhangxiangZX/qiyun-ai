@@ -7,3 +7,12 @@ export async function GET(request: NextRequest) {
     requireAuth: true,
   });
 }
+
+export async function POST(request: NextRequest) {
+  const body = await request.text();
+  return proxyAuthRequest(request, "/workspace-invitations", {
+    requireAuth: true,
+    method: "POST",
+    body,
+  });
+}

@@ -14,12 +14,15 @@ export interface BotListItem {
 export interface BotDetail extends BotListItem {
   description: string;
   welcomeMessage: string;
+  recommendedQuestions: string[];
   systemPrompt: string;
   knowledgeBaseIds: string[];
   collectLeadsOnFailure: boolean;
   rateLimitPerMinute: number;
   allowedDomains: string[];
   leadFields: string[];
+  llmTemperature: number;
+  maxOutputTokens: number;
   embedSnippet: string;
 }
 

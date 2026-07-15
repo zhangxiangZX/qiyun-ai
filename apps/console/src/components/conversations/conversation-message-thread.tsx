@@ -5,17 +5,28 @@ import { Bot, Clock3, Cpu } from "lucide-react";
 
 import { Skeleton } from "@qiyun/ui";
 
+import { KnowledgeCitationList } from "@/components/shared/knowledge-citation-list";
+import {
+  ChatResponseOutcomeBadge,
+  inferChatResponseOutcome,
+} from "@/components/shared/chat-response-outcome";
 import { formatLatency, formatShortDateTime } from "@/lib/conversations/format";
 import type { ConversationDetail } from "@/lib/conversations/types";
+import { t } from "@/lib/i18n";
+import { defaultLocale } from "@/lib/messages";
 
 export interface ConversationMessageThreadProps {
   conversation: ConversationDetail | null;
   loading?: boolean;
+  errorMessage?: string | null;
+  emptyMessage?: string;
 }
 
 export function ConversationMessageThread({
   conversation,
   loading = false,
+  errorMessage = null,
+  emptyMessage,
 }: ConversationMessageThreadProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -36,10 +47,20 @@ export function ConversationMessageThread({
     );
   }
 
+  if (errorMessage) {
+    return (
+      <div className="flex h-full min-h-[240px] items-center justify-center p-6">
+        <p className="text-center text-sm text-muted-foreground">{errorMessage}</p>
+      </div>
+    );
+  }
+
   if (!conversation) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        选择左侧会话查看消息记录
+      <div className="flex h-full min-h-[240px] items-center justify-center p-6">
+        <p className="max-w-sm text-center text-sm text-muted-foreground">
+          {emptyMessage ?? t(defaultLocale, "conversations.selection.threadEmpty")}
+        </p>
       </div>
     );
   }
@@ -69,6 +90,13 @@ export function ConversationMessageThread({
           }
 
           const isUser = message.role === "user";
+          const outcome =
+            !isUser
+              ? inferChatResponseOutcome({
+                  citations: message.citations,
+                  unresolved: conversation.status === "unresolved",
+                })
+              : null;
 
           return (
             <article
@@ -84,19 +112,33 @@ export function ConversationMessageThread({
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
 
+                {!isUser && outcome ? (
+                  <div className="mt-2">
+                    <ChatResponseOutcomeBadge outcome={outcome} compact />
+                  </div>
+                ) : null}
+
                 {!isUser && message.citations?.length ? (
                   <div className="mt-3 space-y-2 border-t border-border/70 pt-2">
-                    <p className="text-xs font-medium text-muted-foreground">引用来源</p>
-                    {message.citations.map((citation) => (
-                      <div
-                        key={citation.id}
-                        className="rounded-control bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground"
-                      >
-                        <p className="font-medium text-foreground">{citation.title}</p>
-                        <p className="mt-1">{citation.excerpt}</p>
-                      </div>
-                    ))}
+                    <p className="text-xs font-medium text-muted-foreground">知识引用</p>
+                    <KnowledgeCitationList
+                      citations={message.citations.map((citation) => ({
+                        id: citation.id,
+                        title: citation.title,
+                        excerpt: citation.excerpt,
+                        score: citation.score,
+                      }))}
+                      compact
+                      emptyTitle=""
+                      emptyDescription=""
+                    />
                   </div>
+                ) : !isUser && outcome && outcome !== "knowledge_hit" ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {outcome === "needs_followup"
+                      ? "未命中知识库，会话已标记为需人工跟进。"
+                      : "本次回复未返回知识引用。"}
+                  </p>
                 ) : null}
 
                 {!isUser && (message.model || message.latencyMs) ? (

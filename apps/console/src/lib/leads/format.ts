@@ -1,8 +1,10 @@
 import type { LeadStatus } from "./types";
 
 const statusLabels: Record<LeadStatus, string> = {
-  new: "新建",
-  following: "跟进中",
+  new: "新线索",
+  pending: "待跟进",
+  contacted: "已联系",
+  proposal: "方案中",
   won: "已成交",
   invalid: "无效",
 };

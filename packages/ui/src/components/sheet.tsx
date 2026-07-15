@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { cn } from "../lib/utils";
+import { useFocusTrap } from "../hooks/use-focus-trap";
 
 interface SheetContextValue {
   open: boolean;
@@ -58,24 +59,31 @@ export function SheetContent({
   children,
   side = "left",
   className,
+  "aria-label": ariaLabel,
 }: {
   children: React.ReactNode;
   side?: "left" | "right";
   className?: string;
+  /** Accessible label for the sheet panel */
+  "aria-label"?: string;
 }) {
   const { open, setOpen } = useSheet();
+  const panelRef = React.useRef<HTMLElement>(null);
 
+  // Focus trap: Tab cycling + ESC close + auto-focus + focus restore
+  useFocusTrap(panelRef, {
+    active: open,
+    onEscape: () => setOpen(false),
+  });
+
+  // Lock body scroll when open
   React.useEffect(() => {
     if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
     };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, setOpen]);
+  }, [open]);
 
   if (!open || typeof document === "undefined") {
     return null;
@@ -86,15 +94,19 @@ export function SheetContent({
       <button
         type="button"
         aria-label="Close sidebar"
-        className="absolute inset-0 bg-foreground/20 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-foreground/20 backdrop-blur-[2px] ui-fade-in"
         onClick={() => setOpen(false)}
       />
       <aside
+        ref={panelRef}
         className={cn(
           "absolute top-0 flex h-full w-[min(100vw,20rem)] flex-col border-border bg-card shadow-card",
-          side === "left" ? "left-0 border-r" : "right-0 border-l",
+          side === "left" ? "left-0 border-r ui-slide-in-left" : "right-0 border-l ui-slide-in-right",
           className,
         )}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel}
       >
         <button
           type="button"

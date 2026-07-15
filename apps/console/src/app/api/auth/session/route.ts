@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import {
   applyRefreshedAuthCookies,
   clearAuthCookies,
@@ -43,7 +44,7 @@ async function refreshUserFromUpstream(
       return null;
     }
 
-    const payload = (await response.json()) as { user?: ConsoleAuthUser };
+    const payload = unwrapEnvelope<{ user?: ConsoleAuthUser }>(await response.json());
     return payload.user ?? null;
   } catch {
     return null;
@@ -91,7 +92,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (workspacesResponse.ok) {
-      const workspaces = (await workspacesResponse.json()) as ConsoleWorkspaceSummary[];
+      const workspaces = unwrapEnvelope<ConsoleWorkspaceSummary[]>(
+        await workspacesResponse.json(),
+      );
       const response = NextResponse.json({
         authenticated: true,
         user,

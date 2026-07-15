@@ -2,10 +2,20 @@ import Image from "next/image";
 
 import { cn } from "@qiyun/ui";
 
+import {
+  BRAND_DOMAIN,
+  BRAND_ICON_SRC,
+  BRAND_LOGO_FULL_SRC,
+  BRAND_NAME,
+} from "@/lib/brand";
+
 export interface BrandLogoProps {
   size?: "sm" | "md" | "lg";
-  showWordmark?: boolean;
+  /** icon：仅云图标；wordmark：图标 + 中文名；lockup：完整横版 Logo 图 */
+  layout?: "icon" | "wordmark" | "lockup";
   showSubtitle?: boolean;
+  /** @deprecated 使用 layout="lockup" */
+  showWordmark?: boolean;
   /** e.g. "Qiyun AI" on login page brand lockup */
   englishSubtitle?: string;
   /** `circle` matches floating-widget / sidebar mockup. */
@@ -15,15 +25,16 @@ export interface BrandLogoProps {
 }
 
 const sizeMap = {
-  sm: { box: 32, image: 28 },
-  md: { box: 40, image: 36 },
-  lg: { box: 48, image: 44 },
+  sm: { box: 32, image: 28, lockupW: 140, lockupH: 40 },
+  md: { box: 40, image: 36, lockupW: 176, lockupH: 50 },
+  lg: { box: 48, image: 44, lockupW: 220, lockupH: 62 },
 } as const;
 
 export function BrandLogo({
   size = "md",
-  showWordmark = true,
+  layout,
   showSubtitle = true,
+  showWordmark = true,
   englishSubtitle,
   variant = "default",
   tone = "default",
@@ -31,6 +42,22 @@ export function BrandLogo({
 }: BrandLogoProps) {
   const dims = sizeMap[size];
   const onDark = tone === "on-dark";
+  const resolvedLayout = layout ?? (showWordmark ? "wordmark" : "icon");
+
+  if (resolvedLayout === "lockup") {
+    return (
+      <div className={cn("flex min-w-0 items-center", className)}>
+        <Image
+          src={BRAND_LOGO_FULL_SRC}
+          alt={BRAND_NAME}
+          width={dims.lockupW}
+          height={dims.lockupH}
+          className="h-auto w-auto max-w-full object-contain"
+          priority
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
@@ -44,38 +71,39 @@ export function BrandLogo({
         style={{ width: dims.box, height: dims.box }}
       >
         <Image
-          src="/brand/qiyun-logo.png"
-          alt="企云 AI"
+          src={BRAND_ICON_SRC}
+          alt={BRAND_NAME}
           width={dims.image}
           height={dims.image}
           className="object-contain"
           style={{
-            width: variant === "circle" ? dims.image - 8 : dims.image,
-            height: variant === "circle" ? dims.image - 8 : dims.image,
+            width: variant === "circle" ? dims.image - 6 : dims.image,
+            height: variant === "circle" ? dims.image - 6 : dims.image,
           }}
-          priority
         />
       </div>
-      {showWordmark ? (
+      {resolvedLayout === "wordmark" ? (
         <div className="min-w-0">
           <p
             className={cn(
               "truncate text-base font-semibold leading-tight",
-              onDark ? "text-sidebar-foreground" : "text-[#0F172A]",
+              onDark ? "text-white" : "text-[#0F172A]",
             )}
           >
-            企云 AI
+            {BRAND_NAME}
           </p>
           {englishSubtitle ? (
-            <p className="truncate text-xs leading-tight text-[#64748B]">{englishSubtitle}</p>
+            <p className={cn("truncate text-xs leading-tight", onDark ? "text-slate-400" : "text-[#64748B]")}>
+              {englishSubtitle}
+            </p>
           ) : showSubtitle ? (
             <p
               className={cn(
                 "truncate text-xs leading-tight",
-                onDark ? "text-sidebar-muted" : "text-muted-foreground",
+                onDark ? "text-slate-400" : "text-muted-foreground",
               )}
             >
-              Enterprise Console
+              {BRAND_DOMAIN}
             </p>
           ) : null}
         </div>

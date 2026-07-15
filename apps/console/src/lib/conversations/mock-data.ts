@@ -16,19 +16,31 @@ const conversationDetails: Record<string, ConversationDetail> = {
     id: "conv-001",
     visitorId: "visitor_8f2a",
     visitorLabel: "访客 #8f2a",
-    summary: "想了解企业版报价和部署周期",
+    summary: "想了解企业版报价和部署周期。",
     botId: "bot-support",
     botName: "官网客服",
     status: "unresolved",
     hasLead: true,
+    highIntent: true,
+    aiIntentLabel: "报价意向",
     updatedAt: "2026-06-29T10:18:00.000Z",
     createdAt: "2026-06-29T10:05:00.000Z",
     tags: ["报价", "高意向"],
     assignee: "张晨",
+    aiInsight: {
+      intent: "quote",
+      productLine: "general",
+      confidence: 0.91,
+      missingFields: ["数量", "交期"],
+      leadCaptureRecommended: true,
+      suggestedQuestions: ["预计采购数量是多少？", "希望什么时候交付？"],
+      highIntentTurnCount: 2,
+      lastEvaluatedAt: "2026-06-29T10:15:03.000Z",
+    },
     channel: "官网 Widget",
     pageUrl: "https://www.example.com/pricing",
     lead: {
-      name: "李薇",
+      name: "李伟",
       phone: "138****2201",
       email: "lwei@example.com",
       company: "示例科技",
@@ -45,7 +57,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
         id: "m-002",
         role: "assistant",
         content:
-          "企业版按坐席与知识库容量计费，支持标准 SaaS 与私有化部署。私有化通常 2-4 周可完成首版上线。",
+          "企业版按坐席和知识库容量计费，支持 SaaS 与私有化部署。私有化通常 2 到 4 周可完成首版上线。",
         createdAt: "2026-06-29T10:05:04.000Z",
         model: "gpt-4o-mini",
         tokenCount: 186,
@@ -53,8 +65,9 @@ const conversationDetails: Record<string, ConversationDetail> = {
         citations: [
           {
             id: "c-1",
-            title: "产品支持文档 / 套餐说明",
+            title: "产品说明 / 套餐介绍",
             excerpt: "企业版支持私有化部署，可按项目评估交付周期。",
+            score: 0.91,
           },
         ],
       },
@@ -67,7 +80,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
       {
         id: "m-004",
         role: "assistant",
-        content: "可以，请留下联系方式，我们会安排顾问与你联系。",
+        content: "可以，请留下联系方式，我们会安排顾问与您联系。",
         createdAt: "2026-06-29T10:15:03.000Z",
         model: "gpt-4o-mini",
         tokenCount: 42,
@@ -90,10 +103,13 @@ const conversationDetails: Record<string, ConversationDetail> = {
     botName: "官网客服",
     status: "resolved",
     hasLead: false,
+    highIntent: false,
+    aiIntentLabel: null,
     updatedAt: "2026-06-29T09:42:00.000Z",
     createdAt: "2026-06-29T09:38:00.000Z",
     tags: ["接入"],
     assignee: null,
+    aiInsight: null,
     channel: "官网 Widget",
     pageUrl: "https://www.example.com/docs/widget",
     lead: null,
@@ -107,7 +123,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
       {
         id: "m-102",
         role: "assistant",
-        content: "将 script 标签粘贴到页面 </body> 前即可，保存后刷新页面验证。",
+        content: "把 script 标签粘贴到页面 </body> 前即可，保存后刷新页面验证。",
         createdAt: "2026-06-29T09:38:03.000Z",
         model: "gpt-4o-mini",
         tokenCount: 98,
@@ -115,8 +131,9 @@ const conversationDetails: Record<string, ConversationDetail> = {
         citations: [
           {
             id: "c-2",
-            title: "产品支持文档 / Widget 接入",
+            title: "产品文档 / Widget 接入",
             excerpt: "推荐将嵌入脚本放在 body 结束前。",
+            score: 0.84,
           },
         ],
       },
@@ -126,15 +143,27 @@ const conversationDetails: Record<string, ConversationDetail> = {
     id: "conv-003",
     visitorId: "visitor_71bd",
     visitorLabel: "访客 #71bd",
-    summary: "标准版与专业版功能差异",
+    summary: "标准版与专业版功能差异。",
     botId: "bot-sales",
     botName: "销售顾问",
     status: "open",
     hasLead: false,
+    highIntent: false,
+    aiIntentLabel: "选型咨询",
     updatedAt: "2026-06-29T08:55:00.000Z",
     createdAt: "2026-06-29T08:50:00.000Z",
     tags: ["套餐对比"],
     assignee: "王磊",
+    aiInsight: {
+      intent: "selection",
+      productLine: "general",
+      confidence: 0.76,
+      missingFields: [],
+      leadCaptureRecommended: false,
+      suggestedQuestions: ["你更关注功能范围还是部署方式？"],
+      highIntentTurnCount: 0,
+      lastEvaluatedAt: "2026-06-29T08:50:04.000Z",
+    },
     channel: "落地页",
     pageUrl: "https://sales.example.com/plans",
     lead: null,
@@ -158,6 +187,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
             id: "c-3",
             title: "销售话术库 / 套餐对比",
             excerpt: "专业版包含多机器人管理与线索导出。",
+            score: 0.72,
           },
         ],
       },
@@ -172,10 +202,22 @@ const conversationDetails: Record<string, ConversationDetail> = {
     botName: "官网客服",
     status: "unresolved",
     hasLead: false,
+    highIntent: false,
+    aiIntentLabel: "通用咨询",
     updatedAt: "2026-06-28T21:40:00.000Z",
     createdAt: "2026-06-28T21:38:00.000Z",
     tags: ["未命中", "功能咨询"],
     assignee: null,
+    aiInsight: {
+      intent: "general",
+      productLine: "general",
+      confidence: 0.42,
+      missingFields: ["目标语言", "使用场景"],
+      leadCaptureRecommended: false,
+      suggestedQuestions: ["是官网客服场景还是内部知识助手场景？"],
+      highIntentTurnCount: 0,
+      lastEvaluatedAt: "2026-06-28T21:38:05.000Z",
+    },
     channel: "官网 Widget",
     pageUrl: "https://www.example.com/",
     lead: null,
@@ -189,7 +231,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
       {
         id: "m-302",
         role: "assistant",
-        content: "当前版本主要支持普通话文本对话，语音识别能力在路线图中，暂未开放。",
+        content: "当前版本主要支持文本对话，语音识别能力在路线图中，暂未开放。",
         createdAt: "2026-06-28T21:38:05.000Z",
         model: "gpt-4o-mini",
         tokenCount: 76,
@@ -206,10 +248,22 @@ const conversationDetails: Record<string, ConversationDetail> = {
     botName: "内部知识助手",
     status: "pending",
     hasLead: false,
+    highIntent: false,
+    aiIntentLabel: "参数确认",
     updatedAt: "2026-06-28T17:10:00.000Z",
     createdAt: "2026-06-28T17:02:00.000Z",
     tags: ["内部"],
-    assignee: "李薇",
+    assignee: "李伟",
+    aiInsight: {
+      intent: "parameters",
+      productLine: "general",
+      confidence: 0.69,
+      missingFields: [],
+      leadCaptureRecommended: false,
+      suggestedQuestions: ["需要按部门还是按角色控制访问？"],
+      highIntentTurnCount: 0,
+      lastEvaluatedAt: "2026-06-28T17:02:06.000Z",
+    },
     channel: "内网",
     pageUrl: "https://intranet.example.com/help",
     lead: null,
@@ -223,7 +277,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
       {
         id: "m-402",
         role: "assistant",
-        content: "可通过工作区与知识库权限组控制可见范围，默认仅本工作区成员可访问。",
+        content: "可通过工作区和知识库权限组控制可见范围，默认仅本工作区成员可访问。",
         createdAt: "2026-06-28T17:02:06.000Z",
         model: "gpt-4o-mini",
         tokenCount: 94,
@@ -233,6 +287,7 @@ const conversationDetails: Record<string, ConversationDetail> = {
             id: "c-4",
             title: "内部制度 / 权限说明",
             excerpt: "知识库访问受工作区成员身份约束。",
+            score: 0.88,
           },
         ],
       },
@@ -241,6 +296,22 @@ const conversationDetails: Record<string, ConversationDetail> = {
 };
 
 function toListItem(detail: ConversationDetail): ConversationListItem {
+  const highIntent =
+    (detail.aiInsight?.highIntentTurnCount ?? 0) > 0 ||
+    detail.aiInsight?.leadCaptureRecommended ||
+    ["quote", "delivery", "customization"].includes(detail.aiInsight?.intent ?? "");
+  const intentLabels: Record<string, string> = {
+    quote: "报价意向",
+    delivery: "交期咨询",
+    customization: "定制需求",
+    selection: "选型咨询",
+    parameters: "参数咨询",
+  };
+  const aiIntentLabel = highIntent
+    ? intentLabels[detail.aiInsight?.intent ?? ""] ??
+      (detail.aiInsight?.leadCaptureRecommended ? "留资推荐" : "高意向")
+    : null;
+
   return {
     id: detail.id,
     visitorLabel: detail.visitorLabel,
@@ -249,6 +320,8 @@ function toListItem(detail: ConversationDetail): ConversationListItem {
     botName: detail.botName,
     status: detail.status,
     hasLead: detail.hasLead,
+    highIntent,
+    aiIntentLabel,
     updatedAt: detail.updatedAt,
     createdAt: detail.createdAt,
   };
@@ -305,7 +378,9 @@ export function updateConversationStatus(
   status: ConversationDetail["status"],
 ): ConversationDetail | null {
   const detail = conversationDetails[id];
-  if (!detail) return null;
+  if (!detail) {
+    return null;
+  }
   detail.status = status;
   detail.updatedAt = new Date().toISOString();
   return detail;
@@ -313,7 +388,9 @@ export function updateConversationStatus(
 
 export function updateConversationTags(id: string, tags: string[]): ConversationDetail | null {
   const detail = conversationDetails[id];
-  if (!detail) return null;
+  if (!detail) {
+    return null;
+  }
   detail.tags = tags;
   detail.updatedAt = new Date().toISOString();
   return detail;

@@ -1,4 +1,5 @@
 import type { LeadDetail, LeadFilters, LeadListItem } from "./types";
+import { appendFollowUpRecord, enrichLeadDetail } from "./enrichment";
 
 const botOptions = [
   { id: "bot-support", name: "官网客服" },
@@ -25,6 +26,52 @@ const leadStore: Record<string, LeadDetail> = {
     updatedAt: "2026-06-29T10:20:00.000Z",
     conversationId: "conv-001",
     notes: "客户对私有化部署有兴趣，需安排销售演示。",
+    summary: "关键问题：想了解企业版报价；AI 回复摘要：已说明标准版与私有化差异。",
+    sourceSiteName: "官网首页",
+    requirement: "需要企业版报价与私有化方案",
+    drawingAttachment: "已选附件：机柜方案.pdf（演示数据）",
+    attachments: [
+      {
+        id: "att-001",
+        fileName: "机柜方案.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 2457600,
+        uploadedAt: "2026-06-29T10:04:00.000Z",
+        status: "ready",
+      },
+      {
+        id: "att-002",
+        fileName: "现场照片.jpg",
+        mimeType: "image/jpeg",
+        sizeBytes: 512000,
+        uploadedAt: "2026-06-29T10:04:30.000Z",
+        status: "ready",
+      },
+    ],
+    followUpRecords: [
+      {
+        id: "fu-003",
+        kind: "note",
+        title: "安排销售演示",
+        body: "客户对私有化部署有兴趣，需安排销售演示。",
+        actor: "李薇",
+        createdAt: "2026-06-29T10:20:00.000Z",
+      },
+      {
+        id: "fu-002",
+        kind: "assignee",
+        title: "负责人变更为李薇",
+        actor: "系统",
+        createdAt: "2026-06-29T10:10:00.000Z",
+      },
+      {
+        id: "fu-001",
+        kind: "system",
+        title: "线索创建",
+        body: "访客提交留资，等待销售跟进。",
+        createdAt: "2026-06-29T10:05:00.000Z",
+      },
+    ],
   },
   "lead-002": {
     id: "lead-002",
@@ -34,7 +81,7 @@ const leadStore: Record<string, LeadDetail> = {
     sourceBotId: "bot-sales",
     sourceBot: "销售顾问",
     lastQuestion: "能否安排产品演示？",
-    status: "following",
+    status: "pending",
     assignee: "王磊",
     createdAt: "2026-06-29T09:18:00.000Z",
     updatedAt: "2026-06-29T11:00:00.000Z",
@@ -79,7 +126,7 @@ const leadStore: Record<string, LeadDetail> = {
     sourceBotId: "bot-support",
     sourceBot: "官网客服",
     lastQuestion: "是否支持多工作区？",
-    status: "following",
+    status: "pending",
     assignee: "李薇",
     createdAt: "2026-06-26T14:22:00.000Z",
     updatedAt: "2026-06-27T10:40:00.000Z",
@@ -164,13 +211,16 @@ export function listLeads(filters: LeadFilters): LeadListItem[] {
 
 export function fetchLeads(filters: LeadFilters): Promise<LeadListItem[]> {
   return new Promise((resolve) => {
-    window.setTimeout(() => resolve(listLeads(filters)), 400);
+    setTimeout(() => resolve(listLeads(filters)), 400);
   });
 }
 
 export function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
   return new Promise((resolve) => {
-    window.setTimeout(() => resolve(leadStore[id] ?? null), 200);
+    setTimeout(() => {
+      const lead = leadStore[id];
+      resolve(lead ? enrichLeadDetail(lead, { synthesizeTimeline: true }) : null);
+    }, 200);
   });
 }
 
@@ -181,8 +231,39 @@ export function updateLead(
   const lead = leadStore[id];
   if (!lead) return null;
 
-  Object.assign(lead, patch, { updatedAt: new Date().toISOString() });
-  return lead;
+  const previousNotes = lead.notes;
+  const previousStatus = lead.status;
+  const previousAssignee = lead.assignee;
+  const now = new Date().toISOString();
+
+  Object.assign(lead, patch, { updatedAt: now });
+
+  if (patch.notes !== undefined && patch.notes.trim() && patch.notes.trim() !== previousNotes.trim()) {
+    lead.followUpRecords = appendFollowUpRecord(lead, {
+      kind: "note",
+      title: "新增跟进备注",
+      body: patch.notes.trim(),
+      actor: lead.assignee,
+    });
+  }
+
+  if (patch.status !== undefined && patch.status !== previousStatus) {
+    lead.followUpRecords = appendFollowUpRecord(lead, {
+      kind: "status",
+      title: `状态更新为 ${patch.status}`,
+      actor: lead.assignee,
+    });
+  }
+
+  if (patch.assignee !== undefined && patch.assignee !== previousAssignee) {
+    lead.followUpRecords = appendFollowUpRecord(lead, {
+      kind: "assignee",
+      title: patch.assignee ? `负责人变更为 ${patch.assignee}` : "负责人已清空",
+      actor: "系统",
+    });
+  }
+
+  return enrichLeadDetail(lead, { synthesizeTimeline: true });
 }
 
 export function getLeadsForExport(filters: LeadFilters): LeadDetail[] {

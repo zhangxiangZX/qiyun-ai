@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 
-import { Input, Label } from "@qiyun/ui";
+import { Button, Input, Label } from "@qiyun/ui";
 
 import type { BotFilterOption, ConversationFilters } from "@/lib/conversations/types";
 import { t } from "@/lib/i18n";
@@ -12,15 +12,35 @@ export interface ConversationFiltersBarProps {
   filters: ConversationFilters;
   botOptions: BotFilterOption[];
   onChange: (patch: Partial<ConversationFilters>) => void;
+  hasActiveFilters?: boolean;
+  onReset?: () => void;
+  filterHint?: string;
 }
 
 export function ConversationFiltersBar({
   filters,
   botOptions,
   onChange,
+  hasActiveFilters = false,
+  onReset,
+  filterHint,
 }: ConversationFiltersBarProps) {
   return (
     <div className="space-y-3 border-b border-border p-4">
+      {hasActiveFilters && onReset ? (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">已启用筛选条件</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-11 shrink-0"
+            onClick={onReset}
+          >
+            {t(defaultLocale, "conversations.filters.reset")}
+          </Button>
+        </div>
+      ) : null}
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -36,7 +56,7 @@ export function ConversationFiltersBar({
         <Label htmlFor="bot-filter">{t(defaultLocale, "conversations.filters.bot")}</Label>
         <select
           id="bot-filter"
-          className="flex h-10 w-full rounded-control border border-input bg-background px-3 text-sm"
+          className="flex min-h-11 w-full rounded-control border border-input bg-background px-3 text-sm"
           value={filters.botId}
           onChange={(event) => onChange({ botId: event.target.value })}
         >
@@ -69,6 +89,9 @@ export function ConversationFiltersBar({
           <span>{t(defaultLocale, "conversations.filters.unresolvedOnly")}</span>
         </label>
       </div>
+      {filterHint ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">{filterHint}</p>
+      ) : null}
     </div>
   );
 }

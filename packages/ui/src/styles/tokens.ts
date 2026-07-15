@@ -6,7 +6,7 @@ export const designTokens = {
       200: "#b8dcff",
       300: "#86c1ff",
       400: "#58a0ff",
-      500: "#2f7dff",
+      500: "#1266ff",
       600: "#1f64eb",
       700: "#1d52c2",
       800: "#1d469c",

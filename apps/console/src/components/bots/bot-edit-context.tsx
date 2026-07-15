@@ -2,15 +2,30 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { fetchBotDetail } from "@/lib/bots/mock-data";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { canPersistBots, getBotDetail, saveBot as persistBot } from "@/lib/bots/data";
+import { getBotsCapabilities } from "@/lib/bots/capabilities";
+import { getSaveSuccessMessage } from "@/lib/console/mode-copy";
 import type { BotDetail } from "@/lib/bots/types";
+import { t } from "@/lib/i18n";
+import { defaultLocale } from "@/lib/messages";
+import { useOnWorkspaceChanged } from "@/lib/workspace-events";
+
+export type BotLoadState = "loading" | "ready" | "not_found" | "error";
 
 interface BotEditContextValue {
   bot: BotDetail | null;
   loading: boolean;
-  error: boolean;
+  loadState: BotLoadState;
+  loadError: unknown;
+  errorMessage: string | null;
   saving: boolean;
   saveMessage: string | null;
+  saveError: string | null;
+  persistenceEnabled: boolean;
+  dataMode: "preview" | "upstream";
+  extendedFieldsReadOnly: boolean;
+  extendedFieldsReadOnlyReason?: string;
   updateBot: (patch: Partial<BotDetail>) => void;
   saveBot: () => Promise<void>;
   reload: () => Promise<void>;
@@ -26,27 +41,49 @@ export function BotEditProvider({
   children: React.ReactNode;
 }) {
   const [bot, setBot] = useState<BotDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loadState, setLoadState] = useState<BotLoadState>("loading");
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [persistenceEnabled, setPersistenceEnabled] = useState(true);
+  const [dataMode, setDataMode] = useState<"preview" | "upstream">("preview");
+  const [extendedFieldsReadOnly, setExtendedFieldsReadOnly] = useState(false);
+  const [extendedFieldsReadOnlyReason, setExtendedFieldsReadOnlyReason] = useState<
+    string | undefined
+  >(undefined);
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    setError(false);
+    setLoadState("loading");
+    setLoadError(null);
+    setErrorMessage(null);
     try {
-      const detail = await fetchBotDetail(botId);
+      const [detail, canPersist, capabilities] = await Promise.all([
+        getBotDetail(botId),
+        canPersistBots(),
+        getBotsCapabilities(),
+      ]);
+      setPersistenceEnabled(canPersist);
+      setDataMode(capabilities.dataMode);
+      setExtendedFieldsReadOnly(
+        capabilities.dataMode === "upstream" && !capabilities.canPersistExtendedFields,
+      );
+      setExtendedFieldsReadOnlyReason(capabilities.extendedFieldsReadOnlyReason);
       if (!detail) {
-        setError(true);
         setBot(null);
+        setLoadState("not_found");
       } else {
         setBot(detail);
+        setLoadState("ready");
       }
-    } catch {
-      setError(true);
+    } catch (error) {
       setBot(null);
-    } finally {
-      setLoading(false);
+      setLoadState("error");
+      setLoadError(error);
+      setErrorMessage(
+        getApiErrorMessage(error, t(defaultLocale, "bots.edit.loadError")),
+      );
     }
   }, [botId]);
 
@@ -54,33 +91,66 @@ export function BotEditProvider({
     void reload();
   }, [reload]);
 
+  useOnWorkspaceChanged(() => {
+    void reload();
+  });
+
   const updateBot = useCallback((patch: Partial<BotDetail>) => {
     setBot((current) => (current ? { ...current, ...patch } : current));
     setSaveMessage(null);
+    setSaveError(null);
   }, []);
 
   const saveBot = useCallback(async () => {
     if (!bot) return;
     setSaving(true);
     setSaveMessage(null);
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    setSaving(false);
-    setSaveMessage("设置已保存");
-    updateBot({ updatedAt: new Date().toISOString() });
-  }, [bot, updateBot]);
+    setSaveError(null);
+    try {
+      const updated = await persistBot(bot);
+      setBot(updated);
+      setSaveMessage(getSaveSuccessMessage(dataMode, "bot"));
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "保存失败");
+    } finally {
+      setSaving(false);
+    }
+  }, [bot, dataMode]);
 
   const value = useMemo(
     () => ({
       bot,
-      loading,
-      error,
+      loading: loadState === "loading",
+      loadState,
+      loadError,
+      errorMessage,
       saving,
       saveMessage,
+      saveError,
+      persistenceEnabled,
+      dataMode,
+      extendedFieldsReadOnly,
+      extendedFieldsReadOnlyReason,
       updateBot,
       saveBot,
       reload,
     }),
-    [bot, loading, error, saving, saveMessage, updateBot, saveBot, reload],
+    [
+      bot,
+      loadState,
+      loadError,
+      errorMessage,
+      saving,
+      saveMessage,
+      saveError,
+      persistenceEnabled,
+      dataMode,
+      extendedFieldsReadOnly,
+      extendedFieldsReadOnlyReason,
+      updateBot,
+      saveBot,
+      reload,
+    ],
   );
 
   return <BotEditContext.Provider value={value}>{children}</BotEditContext.Provider>;

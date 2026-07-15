@@ -1,13 +1,14 @@
 import { LoginBrandPanel } from "@/components/auth/login-brand-panel";
 import { LoginFooter } from "@/components/auth/login-footer";
 import { LegalDocument } from "@/components/auth/legal-document";
+import { BRAND_NAME } from "@/lib/brand";
 import styles from "@/styles/login.module.css";
 
 const sections = [
   {
     heading: "一、服务说明",
     body: [
-      "企云 AI 为企业提供机器人配置、知识库管理、会话追踪和线索收集等 SaaS 服务。",
+      `${BRAND_NAME} 为企业提供机器人配置、知识库管理、会话追踪和线索收集等 SaaS 服务。`,
       "你需要基于真实、合法的企业场景使用本平台，不得用于违法违规内容生产、传播或自动化攻击。",
     ],
   },
@@ -29,7 +30,7 @@ const sections = [
 
 export default function UserAgreementPage() {
   return (
-    <section className={styles.shell} aria-label="企云 AI 用户协议">
+    <section className={styles.shell} aria-label={`${BRAND_NAME} 用户协议`}>
       <LoginBrandPanel />
       <LegalDocument title="用户协议" updatedAt="2026-07-03" sections={sections} />
       <LoginFooter />

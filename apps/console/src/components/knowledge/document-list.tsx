@@ -1,81 +1,148 @@
 "use client";
 
-import { MoreHorizontal, Trash2 } from "lucide-react";
-
+import { DocumentPipelineStepper } from "@/components/knowledge/document-pipeline-stepper";
+import { DocumentDeleteAction } from "@/components/knowledge/document-delete-action";
+import { DocumentFailurePanel } from "@/components/knowledge/document-failure-panel";
 import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DocumentChunkMeta,
+  DocumentFileMeta,
+  DocumentStatusChip,
+  DocumentStatusHint,
+  DocumentUpdatedMeta,
+} from "@/components/knowledge/document-meta";
+import { DocumentStatusBadgeWithRetry } from "@/components/knowledge/document-status-badge";
+import type { KnowledgeDocument } from "@/lib/knowledge/types";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  Button,
 } from "@qiyun/ui";
-
-import { DocumentStatusBadgeWithRetry } from "@/components/knowledge/document-status-badge";
-import {
-  formatDateTime,
-  formatFileSize,
-  formatRelativeTime,
-} from "@/lib/knowledge/format";
-import type { KnowledgeDocument } from "@/lib/knowledge/types";
+import { RefreshCw, Layers3 } from "lucide-react";
 
 export interface DocumentListProps {
   documents: KnowledgeDocument[];
   onRetry: (documentId: string) => void;
-  onDelete: (documentId: string) => void;
+  onPreviewChunks?: (documentId: string, fileName: string) => void;
+  onDelete?: (documentId: string) => void;
+  documentDeleteAvailable?: boolean;
+  documentDeleteHint?: string;
+  deletingDocumentId?: string | null;
+  loading?: boolean;
 }
 
 export function DocumentList({
   documents,
   onRetry,
+  onPreviewChunks,
   onDelete,
+  documentDeleteAvailable = false,
+  documentDeleteHint = "单文档删除尚未接通。",
+  deletingDocumentId = null,
+  loading = false,
 }: DocumentListProps) {
+  if (!loading && !documents.length) {
+    return null;
+  }
+
   return (
     <>
       <div className="hidden rounded-card border border-border bg-card shadow-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>File</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Chunks</TableHead>
-              <TableHead>Updated</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[24%]">文件</TableHead>
+              <TableHead className="w-[22%]">处理进度</TableHead>
+              <TableHead className="w-[12%]">状态</TableHead>
+              <TableHead className="w-[8%]">切分块</TableHead>
+              <TableHead className="w-[20%]">更新时间</TableHead>
+              <TableHead className="w-[14%]">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {documents.map((document) => (
-              <TableRow key={document.id}>
-                <TableCell className="max-w-[240px] truncate font-medium">
-                  {document.fileName}
-                </TableCell>
-                <TableCell>{document.fileType}</TableCell>
-                <TableCell>{formatFileSize(document.sizeBytes)}</TableCell>
+              <TableRow key={document.id} className="align-top">
                 <TableCell>
-                  <DocumentStatusBadgeWithRetry
-                    status={document.status}
-                    errorMessage={document.errorMessage}
-                    onRetry={() => onRetry(document.id)}
-                  />
+                  <DocumentFileMeta document={document} />
                 </TableCell>
-                <TableCell>{document.chunkCount ?? "-"}</TableCell>
                 <TableCell>
-                  <div className="space-y-1">
-                    <p>{formatDateTime(document.updatedAt)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatRelativeTime(document.updatedAt)}
-                    </p>
+                  <DocumentPipelineStepper status={document.status} compact />
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1.5">
+                    <DocumentStatusBadgeWithRetry
+                      status={document.status}
+                      showInlineError={false}
+                      onRetry={
+                        document.status === "failed"
+                          ? () => onRetry(document.id)
+                          : undefined
+                      }
+                    />
+                    <DocumentStatusChip status={document.status} />
+                    <DocumentStatusHint
+                      status={document.status}
+                      errorCode={document.errorCode}
+                    />
                   </div>
                 </TableCell>
-                <TableCell className="text-right">
-                  <DocumentActions documentId={document.id} onDelete={onDelete} />
+                <TableCell>
+                  <DocumentChunkMeta
+                    chunkCount={document.chunkCount}
+                    status={document.status}
+                  />
+                </TableCell>
+                <TableCell>
+                  <DocumentUpdatedMeta updatedAt={document.updatedAt} />
+                  {document.status === "failed" ? (
+                    <div className="mt-3 max-w-sm">
+                      <DocumentFailurePanel
+                        errorCode={document.errorCode}
+                        errorMessage={document.errorMessage}
+                        fileType={document.fileType}
+                        onRetry={() => onRetry(document.id)}
+                        compact
+                      />
+                    </div>
+                  ) : null}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-2">
+                    {document.status === "ready" ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="min-h-11 w-fit gap-1.5"
+                          onClick={() => onPreviewChunks?.(document.id, document.fileName)}
+                        >
+                          <Layers3 className="h-3.5 w-3.5" aria-hidden />
+                          查看切分块
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="min-h-11 w-fit gap-1.5"
+                          onClick={() => onRetry(document.id)}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                          重新索引
+                        </Button>
+                      </>
+                    ) : null}
+                    <DocumentDeleteAction
+                    document={document}
+                    available={documentDeleteAvailable}
+                    unavailableHint={documentDeleteHint}
+                    deleting={deletingDocumentId === document.id}
+                    onConfirmDelete={onDelete}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -89,56 +156,74 @@ export function DocumentList({
             key={document.id}
             className="rounded-card border border-border bg-card p-4 shadow-card"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="truncate font-medium text-foreground">
-                  {document.fileName}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {document.fileType} · {formatFileSize(document.sizeBytes)}
-                </p>
-              </div>
-              <DocumentActions documentId={document.id} onDelete={onDelete} />
+            <DocumentFileMeta document={document} />
+            <div className="mt-4">
+              <DocumentPipelineStepper status={document.status} compact />
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <DocumentStatusBadgeWithRetry
                 status={document.status}
-                errorMessage={document.errorMessage}
-                onRetry={() => onRetry(document.id)}
+                showInlineError={false}
+                onRetry={
+                  document.status === "failed" ? () => onRetry(document.id) : undefined
+                }
               />
-              <span>Chunks {document.chunkCount ?? "-"}</span>
-              <span>{formatRelativeTime(document.updatedAt)}</span>
+              <DocumentStatusChip status={document.status} />
             </div>
+            <div className="mt-2">
+              <DocumentStatusHint
+                status={document.status}
+                errorCode={document.errorCode}
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm">
+              <DocumentChunkMeta chunkCount={document.chunkCount} status={document.status} />
+              <DocumentUpdatedMeta updatedAt={document.updatedAt} />
+            </div>
+            {document.status === "failed" ? (
+              <div className="mt-3">
+                <DocumentFailurePanel
+                  errorCode={document.errorCode}
+                  errorMessage={document.errorMessage}
+                  fileType={document.fileType}
+                  onRetry={() => onRetry(document.id)}
+                />
+              </div>
+            ) : null}
+            {document.status === "ready" ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 gap-1.5"
+                  onClick={() => onPreviewChunks?.(document.id, document.fileName)}
+                >
+                  <Layers3 className="h-3.5 w-3.5" aria-hidden />
+                  查看切分块
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 gap-1.5"
+                  onClick={() => onRetry(document.id)}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                  重新索引
+                </Button>
+              </div>
+            ) : null}
+            <DocumentDeleteAction
+              document={document}
+              available={documentDeleteAvailable}
+              unavailableHint={documentDeleteHint}
+              deleting={deletingDocumentId === document.id}
+              onConfirmDelete={onDelete}
+            />
           </article>
         ))}
       </div>
     </>
-  );
-}
-
-function DocumentActions({
-  documentId,
-  onDelete,
-}: {
-  documentId: string;
-  onDelete: (documentId: string) => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Document actions">
-          <MoreHorizontal className="h-4 w-4" aria-hidden />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={() => onDelete(documentId)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" aria-hidden />
-          Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

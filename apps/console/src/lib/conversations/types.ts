@@ -10,6 +10,8 @@ export interface ConversationListItem {
   botName: string;
   status: ConversationStatus;
   hasLead: boolean;
+  highIntent: boolean;
+  aiIntentLabel: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -18,6 +20,7 @@ export interface MessageCitation {
   id: string;
   title: string;
   excerpt: string;
+  score?: number;
 }
 
 export interface ConversationMessage {
@@ -43,6 +46,16 @@ export interface ConversationDetail extends ConversationListItem {
   visitorId: string;
   tags: string[];
   assignee: string | null;
+  aiInsight: {
+    intent: string | null;
+    productLine: string | null;
+    confidence: number | null;
+    missingFields: string[];
+    leadCaptureRecommended: boolean;
+    suggestedQuestions: string[];
+    highIntentTurnCount: number;
+    lastEvaluatedAt: string | null;
+  } | null;
   messages: ConversationMessage[];
   lead: ConversationLead | null;
   channel: string;
@@ -59,4 +72,9 @@ export interface ConversationFilters {
 export interface BotFilterOption {
   id: string;
   name: string;
+}
+
+export interface ConversationPage {
+  items: ConversationListItem[];
+  nextCursor: string | null;
 }

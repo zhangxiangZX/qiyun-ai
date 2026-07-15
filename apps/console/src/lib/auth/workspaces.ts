@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrapEnvelope } from "@/lib/api/envelope";
 import type { AuthSession, AuthWorkspaceSummary } from "./client";
 
 async function parseMessage(response: Response, fallback: string) {
@@ -18,7 +19,7 @@ export async function loadWorkspaces(): Promise<AuthWorkspaceSummary[]> {
     throw new Error(await parseMessage(response, "Unable to load workspaces."));
   }
 
-  return (await response.json()) as AuthWorkspaceSummary[];
+  return unwrapEnvelope<AuthWorkspaceSummary[]>(await response.json());
 }
 
 export async function activateWorkspace(workspaceId: string): Promise<AuthSession> {
@@ -31,5 +32,5 @@ export async function activateWorkspace(workspaceId: string): Promise<AuthSessio
     throw new Error(await parseMessage(response, "Unable to switch workspace."));
   }
 
-  return (await response.json()) as AuthSession;
+  return unwrapEnvelope<AuthSession>(await response.json());
 }

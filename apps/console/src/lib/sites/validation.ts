@@ -10,6 +10,8 @@ export function normalizeDomain(value: string): string {
 export function isValidDomain(value: string): boolean {
   const domain = normalizeDomain(value);
   if (!domain) return false;
+  if (domain === "localhost" || domain === "127.0.0.1") return true;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(domain)) return true;
   return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain);
 }
 

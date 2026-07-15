@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 
 import { AuthFieldError, AuthFormFeedback } from "@/components/auth/auth-form-feedback";
 import { registerWithConsole } from "@/lib/auth/client";
+import {
+  AUTH_VALIDATION,
+  isStrongPasswordForRegister,
+  localizeAuthError,
+} from "@/lib/auth/messages";
 import styles from "@/styles/login.module.css";
 
 type RegisterStatus = "idle" | "loading" | "error" | "success";
@@ -32,25 +37,25 @@ export function RegisterForm() {
     setFieldErrors({});
 
     if (!name.trim()) {
-      setFieldErrors({ name: "请输入姓名。" });
+      setFieldErrors({ name: AUTH_VALIDATION.nameRequired });
       setStatus("error");
       return;
     }
 
     if (!email.trim() || !email.includes("@")) {
-      setFieldErrors({ email: "请输入有效邮箱地址。" });
+      setFieldErrors({ email: AUTH_VALIDATION.emailInvalid });
       setStatus("error");
       return;
     }
 
-    if (password.length < 6) {
-      setFieldErrors({ password: "密码至少需要 6 位。" });
+    if (!isStrongPasswordForRegister(password)) {
+      setFieldErrors({ password: AUTH_VALIDATION.passwordMinRegister });
       setStatus("error");
       return;
     }
 
     if (!acceptedTerms) {
-      setFieldErrors({ terms: "请先同意用户协议与隐私政策。" });
+      setFieldErrors({ terms: AUTH_VALIDATION.termsRequired });
       setStatus("error");
       return;
     }
@@ -69,7 +74,7 @@ export function RegisterForm() {
       router.push("/dashboard");
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "注册失败，请稍后重试。");
+      setMessage(localizeAuthError(error, "注册失败，请稍后重试。"));
     }
   }
 
