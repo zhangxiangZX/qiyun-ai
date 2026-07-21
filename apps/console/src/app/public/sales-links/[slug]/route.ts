@@ -1,13 +1,18 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { appendAcquisitionSource, resolveAcquisitionSource } from "@/lib/public/acquisition-source";
 import { getUpstreamApiBaseUrl } from "@/server/api-config";
 
 interface RouteContext {
   params: Promise<{ slug: string }>;
 }
 
-/** Public short-link entry on Console origin → upstream 302 to targetUrl. */
+/**
+ * Public short-link entry on Console origin → upstream 302 to targetUrl.
+ * Merges acquisition `source` onto the Location so WeChat menu params survive the hop.
+ * No dashboard login cookies required.
+ */
 export async function GET(request: NextRequest, context: RouteContext) {
   const { slug } = await context.params;
   const baseUrl = getUpstreamApiBaseUrl();
@@ -18,13 +23,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const url = new URL(
-    `/public/sales-links/${encodeURIComponent(slug)}`,
-    `${baseUrl}/`,
-  );
+  const source = resolveAcquisitionSource(request.nextUrl.searchParams);
+
+  const url = new URL(`/public/sales-links/${encodeURIComponent(slug)}`, `${baseUrl}/`);
   request.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.set(key, value);
   });
+  if (source) url.searchParams.set("source", source);
 
   const upstream = await fetch(url, {
     method: "GET",
@@ -38,7 +43,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const location = upstream.headers.get("location");
   if (upstream.status >= 300 && upstream.status < 400 && location) {
-    return NextResponse.redirect(location, 302);
+    const nextLocation = appendAcquisitionSource(location, source);
+    return NextResponse.redirect(nextLocation, 302);
   }
 
   if (upstream.status === 404) {

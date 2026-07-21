@@ -30,6 +30,7 @@ function normalizeSubmitBody(raw: SubmitBody): {
   contactPhone?: string;
   contactEmail?: string;
   attachmentIds?: string[];
+  source?: string;
 } {
   const answers: Record<string, string> = { ...(raw.answers ?? {}) };
   if (raw.product && !answers.product) answers.product = raw.product;
@@ -44,6 +45,8 @@ function normalizeSubmitBody(raw: SubmitBody): {
   const contactName = (raw.contactName ?? raw.name)?.trim() || undefined;
   const contactPhone = (raw.contactPhone ?? raw.phone)?.trim() || undefined;
   const contactEmail = (raw.contactEmail ?? raw.email)?.trim() || undefined;
+  const source = (raw.source ?? answers.source)?.trim() || undefined;
+  if (source && !answers.source) answers.source = source;
 
   return {
     answers,
@@ -51,6 +54,7 @@ function normalizeSubmitBody(raw: SubmitBody): {
     contactPhone,
     contactEmail,
     attachmentIds: raw.attachmentIds,
+    source,
   };
 }
 
@@ -82,7 +86,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
       {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(normalized),
+        // Forward top-level `source` for future API support; answers.source is always set today.
+        body: JSON.stringify({
+          answers: normalized.answers,
+          contactName: normalized.contactName,
+          contactPhone: normalized.contactPhone,
+          contactEmail: normalized.contactEmail,
+          attachmentIds: normalized.attachmentIds,
+          source: normalized.source,
+        }),
         cache: "no-store",
       },
     );

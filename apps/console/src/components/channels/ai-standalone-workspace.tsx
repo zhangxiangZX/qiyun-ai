@@ -40,6 +40,8 @@ import {
   type SelectionPageIcon,
   type SelectionPageItem,
 } from "@/lib/channels/ai-standalone-shared";
+import { WechatOfficialAccountGuide } from "@/components/channels/wechat-official-account-guide";
+import { WECHAT_OFFICIAL_ACCOUNT_SOURCE } from "@/lib/public/acquisition-source";
 import { listBots } from "@/lib/bots/data";
 import { listSelectionPages } from "@/lib/bots/selection-pages-api";
 import type { BotListItem } from "@/lib/bots/types";
@@ -226,8 +228,8 @@ export function AiStandaloneWorkspace() {
       },
       {
         id: "wechat",
-        name: "微信销售链接",
-        url: `${publicUrl}?source=wechat`,
+        name: "微信公众号链接",
+        url: `${publicUrl}?source=${WECHAT_OFFICIAL_ACCOUNT_SOURCE}`,
         iconBg: "#22c55e",
         icon: <MessageSquare size={16} />,
       },
@@ -695,6 +697,19 @@ export function AiStandaloneWorkspace() {
                   <div className={styles.qrPlaceholder} aria-hidden />
                 </div>
               ))}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <WechatOfficialAccountGuide
+                landingUrl={
+                  allPages.find((p) => p.id === selectedId)
+                    ? resolveSelectionPagePublicUrl(
+                        getPagePublicSlug(
+                          allPages.find((p) => p.id === selectedId) ?? allPages[0]!,
+                        ),
+                      )
+                    : undefined
+                }
+              />
             </div>
           </div>
         </aside>

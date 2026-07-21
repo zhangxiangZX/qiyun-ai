@@ -24,6 +24,7 @@ import { ConsoleFeedback } from "@/components/console/console-feedback";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { listSalesLinks, resolveSalesLinkPublicUrl, type SalesLinkView } from "@/lib/channels/api";
+import { WechatOfficialAccountGuide } from "@/components/channels/wechat-official-account-guide";
 import {
   channelConfig,
   getTopConversionLinks,
@@ -174,6 +175,10 @@ export function SalesLinksWorkspace() {
           />
         ) : null}
       </ConsolePageAlerts>
+
+      <div className="mb-4 px-1">
+        <WechatOfficialAccountGuide compact />
+      </div>
 
       <div className={`${styles.page}`}>
         {loading ? (
@@ -501,7 +506,7 @@ export function SalesLinksWorkspace() {
                       <div className={styles.quickDesc}>快速生成带追踪的短链接</div>
                     </span>
                   </Link>
-                  <Link href="/dashboard/channels/qrcodes" className={styles.quickItem}>
+                  <Link href="/dashboard/channels/links?tab=qrcode" className={styles.quickItem}>
                     <span className={styles.quickIcon} style={{ background: "#dcfce7", color: "#16a34a" }}>
                       <QrCode size={18} />
                     </span>

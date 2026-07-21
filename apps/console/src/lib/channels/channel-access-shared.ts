@@ -1,4 +1,5 @@
 import { resolveSelectionPagePublicUrl } from "@/lib/channels/ai-standalone-shared";
+import { WECHAT_OFFICIAL_ACCOUNT_SOURCE } from "@/lib/public/acquisition-source";
 
 export type ChannelAccessId = "douyin" | "xhs" | "wechat" | "website";
 
@@ -101,12 +102,12 @@ export const DEMO_CHANNEL_ACCESS_ITEMS: ChannelAccessItem[] = [
     group: "社交平台",
     iconBg: "#22c55e",
     iconKind: "wechat",
-    sourceParam: "wechat",
+    sourceParam: WECHAT_OFFICIAL_ACCOUNT_SOURCE,
     guideSteps: [
       "登录微信公众平台",
       "进入【自定义菜单】或【自动回复】",
-      "粘贴复制的落地页链接",
-      "保存并同步到公众号",
+      "粘贴带 source=wechat_official_account 的落地页链接",
+      "保存并同步到公众号（无需对接消息 API）",
     ],
   },
   {
@@ -138,7 +139,7 @@ export function getChannelConfigHint(channelId: ChannelAccessId): string {
     return "将以下链接配置到小红书专业号落地页或笔记/私信引导入口";
   }
   if (channelId === "wechat") {
-    return "将以下链接配置到公众号菜单、自动回复或图文消息中";
+    return "将以下链接（含 source=wechat_official_account）配置到公众号菜单、自动回复或图文消息中；无需对接公众号消息 API";
   }
   return "将以下链接配置到官网浮窗、按钮或导航入口中";
 }

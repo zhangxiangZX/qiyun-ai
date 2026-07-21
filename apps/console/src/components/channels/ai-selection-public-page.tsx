@@ -39,6 +39,11 @@ import {
   type SelectionPagePublicConfig,
 } from "@/lib/channels/ai-selection-page-config";
 import { streamChatMessage } from "@/lib/chat/api";
+import {
+  formatAcquisitionSourceLabel,
+  resolveAcquisitionSource,
+} from "@/lib/public/acquisition-source";
+import { useVisualViewportBottomInset } from "@/lib/public/use-visual-viewport-bottom-inset";
 import styles from "@/styles/ai-selection-public.module.css";
 
 interface ChatMessage extends DemoChatMessage {}
@@ -161,6 +166,8 @@ function formatFileSize(bytes: number): string {
 export function AiSelectionPublicPage({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const preview = searchParams.get("preview") === "1";
+  const sourceQuery = useMemo(() => resolveAcquisitionSource(searchParams), [searchParams]);
+  const keyboardInset = useVisualViewportBottomInset();
   const [config, setConfig] = useState<SelectionPagePublicConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,6 +178,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
   const [uploadedFiles, setUploadedFiles] = useState<
     { id: string; name: string; size: string; attachmentId?: string; uploading?: boolean; error?: string }[]
   >([]);
+  const [uploadBanner, setUploadBanner] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -222,11 +230,6 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
       chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
     }
   }, [messages, botThinking]);
-
-  const sourceQuery = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("source") ?? "";
-  }, []);
 
   function appendBot(
     content: string,
@@ -342,6 +345,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     if (!files.length) return;
     const botId = config?.botId?.trim();
     const siteKey = config?.siteKey?.trim();
+    setUploadBanner(null);
 
     for (const [index, file] of files.entries()) {
       const localId = `f-${Date.now()}-${index}`;
@@ -356,17 +360,20 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
       ]);
 
       if (!botId || !siteKey) {
+        const message =
+          "当前页面未绑定助手，无法上传附件。请联系管理员完成绑定后重试，或直接提交表单（仅记录文件名无效）。";
         setUploadedFiles((current) =>
           current.map((item) =>
             item.id === localId
               ? {
                   ...item,
                   uploading: false,
-                  error: "当前页面未绑定助手，仅记录文件名；请联系管理员完成绑定后再上传附件。",
+                  error: message,
                 }
               : item,
           ),
         );
+        setUploadBanner(message);
         continue;
       }
 
@@ -382,10 +389,11 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
           cache: "no-store",
         });
         if (!response.ok) {
-          let message = `附件上传失败（${response.status}）`;
+          let message = `「${file.name}」上传失败（${response.status}）`;
           try {
-            const payload = (await response.json()) as { message?: string };
-            if (payload.message) message = payload.message;
+            const payload = (await response.json()) as { message?: string; code?: string };
+            if (payload.message) message = `「${file.name}」${payload.message}`;
+            else if (payload.code) message = `「${file.name}」上传失败：${payload.code}`;
           } catch {
             /* ignore */
           }
@@ -406,17 +414,20 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
           ),
         );
       } catch (error) {
+        const message =
+          error instanceof Error ? error.message : `「${file.name}」上传失败，请检查网络后重试`;
         setUploadedFiles((current) =>
           current.map((item) =>
             item.id === localId
               ? {
                   ...item,
                   uploading: false,
-                  error: error instanceof Error ? error.message : "附件上传失败",
+                  error: message,
                 }
               : item,
           ),
         );
+        setUploadBanner(message);
       }
     }
 
@@ -424,7 +435,11 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
   }
 
   function removeFile(id: string) {
-    setUploadedFiles((current) => current.filter((f) => f.id !== id));
+    setUploadedFiles((current) => {
+      const next = current.filter((f) => f.id !== id);
+      if (!next.some((f) => f.error)) setUploadBanner(null);
+      return next;
+    });
   }
 
   function handleSubmit() {
@@ -445,7 +460,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
       if (trimmed) answers[key] = trimmed;
     }
     if (activeProduct) answers.product = activeProduct;
-    const source = sourceQuery || config?.sourceId;
+    const source = sourceQuery || config?.sourceId || undefined;
     if (source) answers.source = source;
     if (messages.length) {
       answers.message = messages
@@ -460,11 +475,22 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
       }
     }
 
+    const failedUploads = uploadedFiles.filter((f) => f.error);
+    if (failedUploads.length) {
+      setFormError("存在上传失败的附件，请删除失败文件后重试，或移除后再提交。");
+      (formSectionRef.current ?? completenessRef.current)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      return;
+    }
+
     const payload = {
       contactName: name,
       contactPhone: phone,
       contactEmail: formValues["email"]?.trim() || undefined,
       answers,
+      attachmentIds: uploadedFiles.map((f) => f.attachmentId).filter(Boolean) as string[],
       // Keep legacy aliases for older BFF / offline tooling
       name,
       phone,
@@ -484,6 +510,14 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
         });
         if (response.ok) {
           setSubmitted(true);
+          const params = new URLSearchParams();
+          if (source) params.set("source", source);
+          params.set("title", config?.postSubmit.successTitle || "提交成功！");
+          params.set("message", config?.postSubmit.successMessage || "感谢您的提交，我们会尽快与您联系");
+          // Soft navigate after short success overlay so WeChat users land on cookie-free page.
+          window.setTimeout(() => {
+            window.location.assign(`/success?${params.toString()}`);
+          }, 1200);
           return;
         }
         // Preview / unpublished local demos: still show success UI when upstream has no page.
@@ -540,7 +574,12 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
           </button>
         </header>
 
-        <main className={styles.main}>
+        <main
+          className={styles.main}
+          style={{
+            paddingBottom: `calc(184px + env(safe-area-inset-bottom, 0px) + ${keyboardInset}px)`,
+          }}
+        >
           <section className={styles.welcomeCard}>
             <BotIllustration />
             <div>
@@ -699,16 +738,20 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
                 onChange={handleFileChange}
               />
             </div>
+            {uploadBanner ? <div className={styles.uploadErrorBanner} role="alert">{uploadBanner}</div> : null}
             {uploadedFiles.length ? (
               <div className={styles.fileList}>
                 {uploadedFiles.map((file) => (
-                  <div key={file.id} className={styles.fileRow}>
+                  <div
+                    key={file.id}
+                    className={file.error ? `${styles.fileRow} ${styles.fileRowError}` : styles.fileRow}
+                  >
                     <div className={styles.fileIcon}>
                       <FileText size={18} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className={styles.fileName}>{file.name}</div>
-                      <div className={styles.fileSize}>
+                      <div className={file.error ? styles.fileError : styles.fileSize}>
                         {file.uploading ? "上传中…" : file.error ? file.error : file.size}
                       </div>
                     </div>
@@ -763,12 +806,18 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
 
           {sourceQuery ? (
             <p style={{ fontSize: 10, color: "#9ca3af", textAlign: "center" }}>
-              来源标识：{sourceQuery || config.sourceId}
+              来源标识：{formatAcquisitionSourceLabel(sourceQuery) || sourceQuery}
             </p>
           ) : null}
         </main>
 
-        <div className={styles.footer}>
+        <div
+          className={styles.footer}
+          style={{
+            bottom: keyboardInset,
+            paddingBottom: `calc(10px + env(safe-area-inset-bottom, 0px))`,
+          }}
+        >
           <form
             className={styles.composer}
             onSubmit={(event) => {

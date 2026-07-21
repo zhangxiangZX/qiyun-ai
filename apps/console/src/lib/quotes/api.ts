@@ -78,5 +78,26 @@ export async function createQuotePublicLink(quoteId: string): Promise<{
   url: string;
   createdAt: string;
 }> {
-  return apiRequest(`/quote-opportunities/${quoteId}/public-token`, { method: "POST" });
+  const result = await apiRequest<{
+    quoteId: string;
+    token: string;
+    tokenPrefix: string;
+    url: string;
+    createdAt: string;
+  }>(`/quote-opportunities/${quoteId}/public-token`, { method: "POST" });
+
+  // Prefer Console public customer page (no dashboard login) over raw API path.
+  const token = result.token?.trim();
+  if (token) {
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : (process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.APP_URL?.trim() || "");
+    const path = `/q/${encodeURIComponent(token)}`;
+    return {
+      ...result,
+      url: origin ? `${origin.replace(/\/$/, "")}${path}` : path,
+    };
+  }
+  return result;
 }
