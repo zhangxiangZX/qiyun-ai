@@ -1,4 +1,4 @@
-# Console ↔ Backend gaps (C-P0-04 / C-P0-05)
+# Console ↔ Backend gaps (C-P0-04 / C-P0-05 / C-P0-06)
 
 Frontend-only notes for missing or incomplete BFF/API capabilities discovered while closing the V1 acquisition → sales workflow and knowledge/quotation hardening. **Do not treat this file as an API implementation.**
 
@@ -21,15 +21,23 @@ Frontend-only notes for missing or incomplete BFF/API capabilities discovered wh
 | Method | Path | Body | Expected response | Page / flow |
 |--------|------|------|-------------------|-------------|
 | `POST` | `/quote-opportunities/:id/send` | `{ recipient?; channel?; subject?; body?; attachmentIds? }` | Delivery log + stage→quoted | 预览页自定义邮件主题/正文/多附件未对接；后端仅固定 subject/text + 单 PDF。 |
-| `POST` | `/quote-opportunities/:id/public-token` | — | `{ url, token }` | 客户链接渠道已在预览页调用；需保证与 send(channel=link) 一致返回可复制 URL。 |
-| `POST` | `/quote-opportunities/:id/confirm` | `{ accepted: boolean; note? }` | Updated stage | 客户页「确认报价」仅本地 state，明确提示未接通。 |
+| `POST` | `/quote-opportunities/:id/public-token` | — | `{ url, token }` | 客户链接渠道已在预览页调用；Console 将 token 映射为 `/q/:token` 公开页（无需登录 Cookie）。 |
+| `POST` | `/public/quotes/:token/confirm` | `{ action? }` | `{ ok, confirmedAt }` | 公开客户页 `/q/:token` 已接通；dashboard 内旧客户页若仍本地 state，以公开页为准。 |
 | `GET` | `/quote-opportunities/:id/attachments` | — | Attachment[] | 客户页/预览页附件列表；未提供前 Console 隐藏假下载。 |
 | `POST` | `/quote-opportunities/:id/attachments` | multipart | Attachment | 新建/编辑页上传按钮保持 disabled。 |
 | `POST` | `/quote-opportunities/:id/documents` | `{ label? }` | QuoteDocumentVersion | 「另存版本」disabled。 |
 | `POST` | `/quote-opportunities/:id/lost` | `{ lostReason? }` | Updated quote | 详情「标记丢单」当前走通用 PATCH，无原因采集。 |
+
+## C-P0-06 · WeChat / public acquisition source
+
+| Method | Path | Body | Expected response | Page / flow |
+|--------|------|------|-------------------|-------------|
+| `POST` | `/public/selection-pages/:slug/submit` | `{ contactName; contactPhone; contactEmail?; answers; attachmentIds?; **source**?: string }` | submission + inquiry with `sourceType`/`sourceCode` from `source` (e.g. `wechat_official_account`) | Console 已传顶层 `source` 与 `answers.source`。当前上游创建询盘固定 `sourceType="website"`、`sourceCode=selection:{slug}`，**忽略** `source`。请 Codex 落库渠道字段。 |
+| `GET` | `/public/sales-links/:slug` | query `source` | `302` Location 合并 `source` 到 `targetUrl` | Console BFF 已合并；上游直出时也建议合并，避免丢参。 |
 
 ## Notes
 
 - Console now surfaces API `message` / mapped Chinese copy and no longer swaps real upstream failures into rich mock tables for assign / quotes list / task create / knowledge upload progress.
 - Preview (`PREVIEW_MODE` / missing `API_BASE_URL`) still uses empty shells or explicit banners; write actions show Chinese errors instead of fake success.
 - Knowledge test (AI 测试) shows citations when stream API returns them; empty KB / low-score / service error use dedicated outcomes without mock reply fallback.
+- C-P0-06 public pages (`/s/:slug`, `/link/:slug`, `/q/:token`, `/success`) do not depend on dashboard login cookies.
