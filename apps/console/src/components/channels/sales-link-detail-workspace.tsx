@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Copy,
@@ -209,6 +209,8 @@ export function SalesLinkDetailWorkspace() {
     return `${fullUrl}${fullUrl.includes("?") ? "&" : "?"}src=qrcode`;
   }, [fullUrl]);
 
+  const qrPanelRef = useRef<HTMLDivElement>(null);
+
   const handleCopy = () => {
     if (!fullUrl) return;
     void navigator.clipboard?.writeText(fullUrl);
@@ -217,7 +219,20 @@ export function SalesLinkDetailWorkspace() {
   };
 
   const handleDownloadQr = () => {
-    setDownloadNotice(true);
+    const svg = qrPanelRef.current?.querySelector("svg");
+    if (!svg) {
+      setDownloadNotice(true);
+      return;
+    }
+    const serializer = new XMLSerializer();
+    const source = serializer.serializeToString(svg);
+    const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${link?.name || "sales-link"}-qrcode.svg`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const qrScanCount = useMemo(
@@ -287,9 +302,9 @@ export function SalesLinkDetailWorkspace() {
         ) : null}
         {downloadNotice ? (
           <ConsoleFeedback
-            variant="info"
-            title="下载二维码"
-            message="请右键点击下方二维码图片，选择「图片另存为」保存到本地。"
+            variant="warning"
+            title="暂无法下载二维码"
+            message="页面上未找到可导出的二维码，请确认链接已生成后再试。"
             onDismiss={() => setDownloadNotice(false)}
           />
         ) : null}
@@ -305,7 +320,11 @@ export function SalesLinkDetailWorkspace() {
 
       <div className={`${styles.page} space-y-4`}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">销售中心 / 链接库 / 详情</p>
+          <p className="text-xs text-muted-foreground">
+            <Link href="/dashboard/channels/links" className="hover:text-primary">
+              ← 返回销售链接
+            </Link>
+          </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleCopy}>
               <Copy className="mr-1.5 h-4 w-4" />
@@ -377,7 +396,7 @@ export function SalesLinkDetailWorkspace() {
               </button>
             </div>
             <div className="flex items-start gap-4">
-              <div className="rounded-lg border border-border bg-background p-3">
+              <div ref={qrPanelRef} className="rounded-lg border border-border bg-background p-3">
                 <QrCodeComp value={qrUrl} size={140} />
               </div>
               <div className="flex flex-col gap-2 pt-2">

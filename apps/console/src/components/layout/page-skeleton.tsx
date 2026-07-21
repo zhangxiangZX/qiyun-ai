@@ -6,7 +6,7 @@ import { Skeleton } from "@qiyun/ui";
  */
 export function PageSkeleton() {
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6" data-skeleton="true" aria-busy="true">
       {/* 页头骨架 */}
       <div className="space-y-2">
         <Skeleton className="h-7 w-48" />

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Calendar,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -11,10 +12,17 @@ import {
   FileText,
   Info,
   ListChecks,
+  MessageSquare,
   SlidersHorizontal,
+  Wallet,
 } from "lucide-react";
 
 import { DataCenterToolbar } from "@/components/data-center/data-center-toolbar";
+import {
+  defaultDateRange,
+  resolveDateRangeBounds,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
 import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/components/console/console-request-error";
 import { HomeAssetIcon, HomeKpiTrend } from "@/components/dashboard/home-overview-parts";
 import { SalesFunnelChart } from "@/components/sales/sales-funnel-chart";
@@ -153,12 +161,15 @@ export function SalesFunnelWorkspace() {
   const [quotes, setQuotes] = useState<QuoteListItem[]>([]);
   const [inquiries, setInquiries] = useState<InquiryListItem[]>([]);
 
-  const dateRange = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to);
-    from.setDate(from.getDate() - 30);
-    return { from, to };
-  }, []);
+  const [range, setRange] = useState<DateRangeValue>(() => defaultDateRange("30d"));
+  const dateBounds = useMemo(() => resolveDateRangeBounds(range), [range]);
+  const dateRange = useMemo(
+    () => ({
+      from: new Date(`${dateBounds.from}T00:00:00`),
+      to: new Date(`${dateBounds.to}T23:59:59`),
+    }),
+    [dateBounds.from, dateBounds.to],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -326,7 +337,8 @@ export function SalesFunnelWorkspace() {
   return (
     <>
       <DataCenterToolbar
-        dateLabel={formatDateRange(dateRange.from, dateRange.to)}
+        range={range}
+        onRangeChange={setRange}
         onRefresh={() => void load()}
         refreshing={loading}
       />
@@ -347,6 +359,9 @@ export function SalesFunnelWorkspace() {
 
       <section className={styles.metrics}>
         <article className={styles.metricCard}>
+          <div className={styles.metricIcon} style={{ background: "#3b82f6" }}>
+            <MessageSquare size={22} aria-hidden />
+          </div>
           <div className={styles.metricInfo}>
             <h3>总询盘数</h3>
             <div className={styles.metricValue}>
@@ -354,17 +369,21 @@ export function SalesFunnelWorkspace() {
             </div>
             <HomeKpiTrend text="较上月 23.5%" good />
           </div>
-          <HomeAssetIcon src={homepageAssets.kpi.validInquiry} size={64} className={styles.metricIcon} />
         </article>
         <article className={styles.metricCard}>
+          <div className={styles.metricIcon} style={{ background: "#f59e0b" }}>
+            <FileText size={22} aria-hidden />
+          </div>
           <div className={styles.metricInfo}>
             <h3>报价中</h3>
             <div className={styles.metricValue}>{quotingCount.toLocaleString("zh-CN")}</div>
             <HomeKpiTrend text="较上月 17.0%" good />
           </div>
-          <HomeAssetIcon src={homepageAssets.kpi.pendingQuote} size={64} className={styles.metricIcon} />
         </article>
         <article className={styles.metricCard}>
+          <div className={styles.metricIcon} style={{ background: "#22c55e" }}>
+            <CheckCircle2 size={22} aria-hidden />
+          </div>
           <div className={styles.metricInfo}>
             <h3>已成交</h3>
             <div className={styles.metricValue}>
@@ -372,15 +391,16 @@ export function SalesFunnelWorkspace() {
             </div>
             <HomeKpiTrend text="较上月 15.8%" good />
           </div>
-          <HomeAssetIcon src={homepageAssets.kpi.highIntent} size={64} className={styles.metricIcon} />
         </article>
         <article className={styles.metricCard}>
+          <div className={styles.metricIcon} style={{ background: "#8b5cf6" }}>
+            <Wallet size={22} aria-hidden />
+          </div>
           <div className={styles.metricInfo}>
             <h3>成交金额</h3>
             <div className={styles.metricValue}>{formatAmount(overview?.wonAmountTotal)}</div>
             <HomeKpiTrend text="较上月 31.4%" good />
           </div>
-          <HomeAssetIcon src={homepageAssets.kpi.revenue} size={64} className={styles.metricIcon} />
         </article>
       </section>
 
@@ -426,7 +446,7 @@ export function SalesFunnelWorkspace() {
         <article className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>转化效率概览</h2>
-            <Link href="/dashboard/reports" className={styles.cardLink}>
+            <Link href="/dashboard/reports/follow-up" className={styles.cardLink}>
               查看转化趋势 <ChevronRight size={14} aria-hidden />
             </Link>
           </div>
@@ -477,7 +497,7 @@ export function SalesFunnelWorkspace() {
         <article className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>渠道成交贡献</h2>
-            <Link href="/dashboard/reports" className={styles.cardLink}>
+            <Link href="/dashboard/reports/channel" className={styles.cardLink}>
               查看全部 <ChevronRight size={14} aria-hidden />
             </Link>
           </div>
@@ -515,7 +535,7 @@ export function SalesFunnelWorkspace() {
               </tbody>
             </table>
           )}
-          <Link href="/dashboard/channels" className={styles.cardLink} style={{ marginTop: 12 }}>
+          <Link href="/dashboard/reports/channel" className={styles.cardLink} style={{ marginTop: 12 }}>
             查看渠道详情 <ChevronRight size={14} aria-hidden />
           </Link>
         </article>
@@ -566,7 +586,7 @@ export function SalesFunnelWorkspace() {
               </div>
             </div>
           )}
-          <Link href="/dashboard/reports" className={styles.cardLink} style={{ marginTop: 14 }}>
+          <Link href="/dashboard/inquiries" className={styles.cardLink} style={{ marginTop: 14 }}>
             查看原因详情 <ChevronRight size={14} aria-hidden />
           </Link>
         </article>
@@ -574,7 +594,7 @@ export function SalesFunnelWorkspace() {
         <article className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>高价值成交线索</h2>
-            <Link href="/dashboard/quotes" className={styles.cardLink}>
+            <Link href="/dashboard/inquiries" className={styles.cardLink}>
               查看全部 <ChevronRight size={14} aria-hidden />
             </Link>
           </div>
@@ -609,7 +629,7 @@ export function SalesFunnelWorkspace() {
             <h2 className={styles.cardTitle}>快捷操作</h2>
           </div>
           <div className={styles.quickGrid}>
-            <Link href="/dashboard/reports" className={styles.quickItem}>
+            <Link href="/dashboard/reports/export" className={styles.quickItem}>
               <div className={styles.quickIcon} style={{ background: "#dbeafe" }}>
                 <FileDown size={22} color="#2563eb" aria-hidden />
               </div>
@@ -621,18 +641,23 @@ export function SalesFunnelWorkspace() {
               </div>
               <span className={styles.quickLabel}>查看报价</span>
             </Link>
-            <Link href="/dashboard/leads" className={styles.quickItem}>
+            <Link href="/dashboard/tasks" className={styles.quickItem}>
               <div className={styles.quickIcon} style={{ background: "#fef3c7" }}>
                 <ListChecks size={22} color="#d97706" aria-hidden />
               </div>
               <span className={styles.quickLabel}>跟进任务</span>
             </Link>
-            <Link href="/dashboard/reports" className={styles.quickItem}>
+            <span
+              className={styles.quickItem}
+              title="自定义漏斗即将上线"
+              aria-disabled="true"
+              style={{ opacity: 0.55, cursor: "not-allowed" }}
+            >
               <div className={styles.quickIcon} style={{ background: "#dbeafe" }}>
                 <SlidersHorizontal size={22} color="#2563eb" aria-hidden />
               </div>
               <span className={styles.quickLabel}>自定义漏斗</span>
-            </Link>
+            </span>
           </div>
         </article>
       </section>

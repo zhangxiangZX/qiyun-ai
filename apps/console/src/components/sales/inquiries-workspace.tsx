@@ -358,6 +358,50 @@ export function InquiriesWorkspace() {
                   ))}
                 </div>
 
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "12px 16px 0",
+                  }}
+                >
+                  <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
+                    <Search
+                      size={14}
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        left: 10,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#94a3b8",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <input
+                      id="inquiry-list-search"
+                      type="search"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value);
+                        setPage(1);
+                      }}
+                      placeholder="搜索客户、需求、询盘编号…"
+                      aria-label="搜索询盘列表"
+                      style={{
+                        width: "100%",
+                        height: 36,
+                        padding: "0 12px 0 32px",
+                        borderRadius: 8,
+                        border: "1px solid #e2e8f0",
+                        fontSize: 13,
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                </div>
+
                 <div className={styles.tableWrap}>
                   <table className={styles.dataTable}>
                     <thead>
@@ -458,7 +502,7 @@ export function InquiriesWorkspace() {
                             <button type="button" className={styles.actionLink} style={{ marginLeft: 8 }}>
                               跟进
                             </button>
-                            <button type="button" className={styles.actionLink} style={{ marginLeft: 8, color: "#94a3b8" }}>
+                            <button type="button" className={styles.actionLink} style={{ marginLeft: 8, color: "#64748b" }}>
                               更多
                             </button>
                           </td>

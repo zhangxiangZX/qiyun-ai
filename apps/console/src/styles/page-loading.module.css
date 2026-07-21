@@ -1,0 +1,49 @@
+.wrap {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.wrapFull {
+  min-height: 48vh;
+  padding: 2rem 1rem;
+}
+
+.wrapCompact {
+  min-height: 0;
+  padding: 0;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  animation: spin 0.9s linear infinite;
+}
+
+.spinnerCompact {
+  width: 28px;
+  height: 28px;
+}
+
+.track,
+.arc {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.track {
+  stroke: hsl(var(--border));
+}
+
+.arc {
+  stroke: hsl(var(--primary));
+  stroke-linecap: round;
+  stroke-dasharray: 28 72;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

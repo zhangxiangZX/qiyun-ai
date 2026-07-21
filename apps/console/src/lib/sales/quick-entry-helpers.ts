@@ -26,6 +26,8 @@ export interface QuickEntryExtractResponse {
   summary: string;
   suggestedFields: SalesAssistantResult;
   fieldConfidence: Record<string, boolean>;
+  /** Present when API supports LLM extract; omit on older responses. */
+  extractMode?: "llm" | "rules";
 }
 
 const CHANNEL_TO_SOURCE: Record<string, SourceType> = {

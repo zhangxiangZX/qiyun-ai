@@ -146,7 +146,7 @@ export function QuotationDetailWorkspace() {
             href="/dashboard/quotes"
             className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
           >
-            <ArrowLeft size={12} /> 询盘与报价 / 报价管理 / 报价详情
+            <ArrowLeft size={12} /> 返回报价列表
           </Link>
         }
         title="报价单号 Q-20240601-0008"

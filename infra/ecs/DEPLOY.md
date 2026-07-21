@@ -41,8 +41,9 @@ mkdir -p /opt/qiyun-ai && cd /opt/qiyun-ai
 # 换成你的仓库地址
 git clone https://github.com/zhangxiangZX/qiyun-ai.git .
 
-cp infra/.env.ecs.example .env
-nano .env
+cp .env.production.http.example .env.production
+nano .env.production
+bash scripts/production-preflight.sh .env.production
 ```
 
 **必须修改的项：**
@@ -73,15 +74,15 @@ APP_URL=http://101.201.63.118
 ## 4. 一键部署
 
 ```bash
-chmod +x infra/ecs/deploy.sh
-./infra/ecs/deploy.sh
+chmod +x infra/ecs/deploy-full.sh scripts/production-preflight.sh
+./infra/ecs/deploy-full.sh
 ```
 
 或分步：
 
 ```bash
-docker compose -f infra/docker-compose.ecs.yml --profile ops run --rm migrate
-docker compose -f infra/docker-compose.ecs.yml up -d --build
+docker compose --env-file .env.production -f infra/docker-compose.ecs.yml --profile ops run --rm migrate
+docker compose --env-file .env.production -f infra/docker-compose.ecs.yml up -d --build
 ```
 
 验证：
@@ -108,7 +109,11 @@ cd /opt/qiyun-ai
 
 # 如有域名，把 server_name 改成 api.example.com
 sudo cp infra/nginx/qiyun-api.conf /etc/nginx/sites-available/qiyun-api
+sudo cp infra/nginx/qiyun-console.conf /etc/nginx/sites-available/qiyun-console
+sudo cp infra/nginx/qiyun-public.conf /etc/nginx/sites-available/qiyun-public
 sudo ln -sf /etc/nginx/sites-available/qiyun-api /etc/nginx/sites-enabled/qiyun-api
+sudo ln -sf /etc/nginx/sites-available/qiyun-console /etc/nginx/sites-enabled/qiyun-console
+sudo ln -sf /etc/nginx/sites-available/qiyun-public /etc/nginx/sites-enabled/qiyun-public
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 

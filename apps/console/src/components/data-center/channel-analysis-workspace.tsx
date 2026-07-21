@@ -16,6 +16,11 @@ import { ChannelFunnelChart } from "@/components/data-center/channel-funnel-char
 import { ChannelAnalysisTrendChart } from "@/components/data-center/channel-analysis-trend-chart";
 import { DataCenterToolbar } from "@/components/data-center/data-center-toolbar";
 import {
+  defaultDateRange,
+  resolveDateRangeBounds,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
+import {
   fetchChannelAttribution,
   fetchSalesOverview,
   formatAmount,
@@ -147,12 +152,15 @@ export function ChannelAnalysisWorkspace() {
   const [inquiries, setInquiries] = useState<InquiryListItem[]>([]);
   const [quotes, setQuotes] = useState<QuoteListItem[]>([]);
 
-  const dateRange = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to);
-    from.setDate(from.getDate() - 29);
-    return { from, to };
-  }, []);
+  const [range, setRange] = useState<DateRangeValue>(() => defaultDateRange("30d"));
+  const dateBounds = useMemo(() => resolveDateRangeBounds(range), [range]);
+  const dateRange = useMemo(
+    () => ({
+      from: new Date(`${dateBounds.from}T00:00:00`),
+      to: new Date(`${dateBounds.to}T23:59:59`),
+    }),
+    [dateBounds.from, dateBounds.to],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -313,7 +321,8 @@ export function ChannelAnalysisWorkspace() {
   return (
     <div className={styles.page}>
       <DataCenterToolbar
-        dateLabel={formatDateRange(dateRange.from, dateRange.to)}
+        range={range}
+        onRangeChange={setRange}
         onRefresh={() => void load()}
       />
 

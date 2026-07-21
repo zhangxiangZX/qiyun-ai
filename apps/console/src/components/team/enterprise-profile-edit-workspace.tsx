@@ -190,13 +190,10 @@ export function EnterpriseProfileEditWorkspace() {
         <ConsoleDataModeBanner feature="企业资料编辑" />
       </ConsolePageAlerts>
 
-      <nav className={styles.breadcrumb} aria-label="面包屑">
-        企业资料
-        <span className={styles.breadcrumbSep}>/</span>
-        编辑
-      </nav>
       <div className={styles.pageTitle}>
-        <h1>企业资料编辑</h1>
+        <Link href="/dashboard/team/profile" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+          ← 返回企业资料
+        </Link>
       </div>
 
       {saveError ? <div className={styles.notice}>{saveError}</div> : null}

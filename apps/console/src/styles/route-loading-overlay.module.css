@@ -1,0 +1,35 @@
+/* Main column only — sidebar & topbar stay clear. Soft wash, no card. */
+.overlay {
+  position: fixed;
+  top: var(--topbar-height, 72px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  background: color-mix(in srgb, hsl(var(--background)) 72%, transparent);
+  animation: fadeIn 120ms ease-out;
+  transition: opacity 140ms ease-out;
+}
+
+@media (min-width: 1024px) {
+  .overlay {
+    left: var(--sidebar-current-width, var(--sidebar-width, 216px));
+  }
+}
+
+.overlayExit {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

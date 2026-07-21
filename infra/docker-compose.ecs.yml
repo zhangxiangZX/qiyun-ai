@@ -89,7 +89,7 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - ../.env
+      - ../.env.production
     environment:
       <<: *app-env
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/qiyun_ai
@@ -113,7 +113,7 @@ services:
       qdrant:
         condition: service_healthy
     env_file:
-      - ../.env
+      - ../.env.production
     environment:
       <<: *app-env
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/qiyun_ai
@@ -157,7 +157,7 @@ services:
       api:
         condition: service_started
     env_file:
-      - ../.env
+      - ../.env.production
     environment:
       <<: *app-env
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/qiyun_ai
@@ -185,7 +185,7 @@ services:
       api:
         condition: service_healthy
     env_file:
-      - ../.env
+      - ../.env.production
     environment:
       NODE_ENV: production
       PORT: 3000

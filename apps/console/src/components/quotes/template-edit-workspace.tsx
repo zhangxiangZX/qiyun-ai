@@ -47,16 +47,20 @@ function Toggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="inline-flex items-center gap-2 text-sm text-foreground"
+      className="inline-flex items-center gap-2.5 text-sm text-foreground"
     >
       <span
-        className={`relative h-5 w-9 rounded-full transition-colors ${checked ? "bg-primary" : "bg-slate-300"}`}
+        className={`relative inline-block h-5 w-9 shrink-0 overflow-hidden rounded-full transition-colors ${
+          checked ? "bg-primary" : "bg-slate-300"
+        }`}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`}
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-[left] duration-150 ${
+            checked ? "left-[18px]" : "left-0.5"
+          }`}
         />
       </span>
-      {label}
+      <span>{label}</span>
     </button>
   );
 }
@@ -211,17 +215,12 @@ export function TemplateEditWorkspace({ templateId }: { templateId?: string }) {
       </ConsolePageAlerts>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            href="/dashboard/quotes/templates"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft size={12} /> 报价模板 / {isEdit ? "编辑模板" : "新建模板"}
-          </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            {isEdit ? "编辑报价模板" : "新建报价模板"}
-          </h1>
-        </div>
+        <Link
+          href="/dashboard/quotes/templates"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          <ArrowLeft size={12} /> 返回报价模板
+        </Link>
         <div className="flex items-center gap-2">
           {templateId ? (
             <Link href={`/dashboard/quotes/templates/${templateId}/preview`}>

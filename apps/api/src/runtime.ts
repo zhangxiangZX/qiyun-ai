@@ -169,14 +169,11 @@ function createEmbeddingProvider(): QueryEmbeddingProvider {
   const embeddingBaseUrl = (
     process.env.LLM_EMBEDDING_BASE_URL?.trim() || baseUrl
   )?.trim();
-  const sameProviderBaseUrl =
-    baseUrl &&
-    embeddingBaseUrl &&
-    baseUrl.replace(/\/+$/, "") === embeddingBaseUrl.replace(/\/+$/, "");
+  // One key for chat + knowledge: dedicated embedding key optional, else reuse LLM_API_KEY.
   const apiKey =
     process.env.LLM_EMBEDDING_API_KEY?.trim()
     || process.env.OPENAI_API_KEY?.trim()
-    || (sameProviderBaseUrl ? process.env.LLM_API_KEY?.trim() : undefined);
+    || process.env.LLM_API_KEY?.trim();
   const model = process.env.LLM_EMBEDDING_MODEL?.trim();
   const expectedDimensions =
     Number.parseInt(process.env.QDRANT_VECTOR_SIZE ?? "", 10) || undefined;
@@ -212,7 +209,8 @@ function createEmbeddingProvider(): QueryEmbeddingProvider {
 
   if (embeddingBaseUrl.toLowerCase().includes("deepseek.com")) {
     return fallback(
-      "Embedding base URL points to DeepSeek. Configure a dedicated OpenAI-compatible embedding provider instead.",
+      "DeepSeek 不提供 embeddings；知识库问答仍使用 LLM_API_KEY。向量检索已降级为本地 embedding。",
+      "ok",
     );
   }
 
@@ -222,7 +220,7 @@ function createEmbeddingProvider(): QueryEmbeddingProvider {
 
   if (!apiKey || apiKey === "replace-me") {
     return fallback(
-      "Embedding is enabled, but no valid LLM_EMBEDDING_API_KEY or OPENAI_API_KEY is configured. Serving local embeddings instead.",
+      "Embedding is enabled, but no valid LLM_API_KEY is configured. Serving local embeddings instead.",
     );
   }
 
@@ -571,7 +569,7 @@ function createApiRuntime(): ApiRuntime {
     fileVaultRepository,
   );
   const selectionPagesApi = new SelectionPagesApi(selectionPagesService);
-  const quickEntryService = new QuickEntryService(salesService);
+  const quickEntryService = new QuickEntryService(salesService, llmChat);
   const quickEntryApi = new QuickEntryApi(quickEntryService);
   const authEnv = {
     APP_NAME: process.env.APP_NAME ?? "qiyun-ai",

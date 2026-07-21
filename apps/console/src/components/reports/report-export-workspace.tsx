@@ -14,6 +14,11 @@ import {
 import { Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
 
 import { DataCenterToolbar } from "@/components/data-center/data-center-toolbar";
+import {
+  defaultDateRange,
+  resolveDateRangeBounds,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleFeedback } from "@/components/console/console-feedback";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
@@ -99,9 +104,16 @@ export function ReportExportWorkspace() {
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  const [range, setRange] = useState<DateRangeValue>(() => defaultDateRange("30d"));
+  const dateBounds = useMemo(() => resolveDateRangeBounds(range), [range]);
+
   const reportQuery = useMemo(
-    () => buildAnalyticsQuery({ dateRange: defaultAnalyticsDateRange(), robotFilter: "全部机器人", bots: [] }),
-    [],
+    () => ({
+      ...buildAnalyticsQuery({ dateRange: defaultAnalyticsDateRange(), robotFilter: "全部机器人", bots: [] }),
+      from: dateBounds.from,
+      to: dateBounds.to,
+    }),
+    [dateBounds.from, dateBounds.to],
   );
 
   useEffect(() => {
@@ -192,7 +204,7 @@ export function ReportExportWorkspace() {
     void loadPreview();
   }, [loadPreview]);
 
-  const dateLabel = formatDateRangeLabel(reportQuery.from, reportQuery.to);
+  const dateLabel = `${dateBounds.from} ~ ${dateBounds.to}`;
   const kpis = previewMode ? MOCK_KPIS : buildSalesExportKpis(overview);
   const funnelRows = previewMode ? MOCK_FUNNEL : buildSalesExportFunnel(funnel);
   const topRows = previewMode ? MOCK_TOP : buildSalesExportTopRows(inquiries);
@@ -201,7 +213,7 @@ export function ReportExportWorkspace() {
   if (loadState === "loading") {
     return (
       <ConsolePage>
-        <DataCenterToolbar dateLabel={dateLabel} />
+        <DataCenterToolbar range={range} onRangeChange={setRange} />
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature="报表导出" />
         </ConsolePageAlerts>
@@ -220,7 +232,7 @@ export function ReportExportWorkspace() {
   if (loadState === "error") {
     return (
       <ConsolePage>
-        <DataCenterToolbar dateLabel={dateLabel} />
+        <DataCenterToolbar range={range} onRangeChange={setRange} />
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature="报表导出" />
         </ConsolePageAlerts>
@@ -234,7 +246,7 @@ export function ReportExportWorkspace() {
 
   return (
     <ConsolePage>
-      <DataCenterToolbar dateLabel={dateLabel} />
+      <DataCenterToolbar range={range} onRangeChange={setRange} />
 
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="报表导出" />
@@ -295,7 +307,7 @@ export function ReportExportWorkspace() {
                 emphasis="metric"
                 label={stat.label}
                 value={stat.value}
-                icon={<Icon className="h-5 w-5" />}
+                icon={<Icon size={22} />}
                 iconTone={tone}
                 trend={
                   stat.trend === "—" ? (

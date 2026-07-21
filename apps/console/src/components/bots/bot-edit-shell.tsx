@@ -1,12 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { Button, PageHeader, Skeleton, cn } from "@qiyun/ui";
 
-import { BotChatPreview } from "@/components/bots/bot-chat-preview";
+import { BotChatPreviewBoundary } from "@/components/bots/bot-chat-preview-boundary";
 import { useBotEdit } from "@/components/bots/bot-edit-context";
 import { BotStatusBadge } from "@/components/bots/bot-status-badge";
 import {
@@ -28,6 +29,18 @@ import { botEditNav, getBotEditSection } from "@/lib/bots/navigation";
 import { getBotsReadOnlyNotice } from "@/lib/console/mode-copy";
 import { t } from "@/lib/i18n";
 import { defaultLocale } from "@/lib/messages";
+
+const BotChatPreview = dynamic(() => import("@/components/bots/bot-chat-preview"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[420px] flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-card">
+      <Skeleton className="h-5 w-28" />
+      <Skeleton className="h-24 w-full" />
+      <Skeleton className="h-24 w-3/4" />
+      <Skeleton className="mt-auto h-11 w-full" />
+    </div>
+  ),
+});
 
 export function BotEditShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -166,7 +179,9 @@ export function BotEditShell({ children }: { children: React.ReactNode }) {
         <div className="min-w-0">{children}</div>
 
         <div className="xl:sticky xl:top-24 xl:self-start">
-          <BotChatPreview bot={bot} />
+          <BotChatPreviewBoundary>
+            <BotChatPreview bot={bot} />
+          </BotChatPreviewBoundary>
         </div>
       </ConsolePageSection>
     </ConsolePage>

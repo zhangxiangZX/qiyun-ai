@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import {
   getInquiryBreadcrumbLabel,
@@ -38,20 +38,13 @@ export function InquiryModuleNav({
     <div className={styles.wrap}>
       <div className={styles.left}>
         {!isListPage ? (
-          <nav className={styles.breadcrumb} aria-label="面包屑">
+          <>
             <Link href="/dashboard/inquiries" className={styles.breadcrumbLink}>
-              询盘中心
+              ← 返回询盘中心
             </Link>
-            {crumbLabel ? (
-              <>
-                <ChevronRight size={14} />
-                <span>{crumbLabel}</span>
-              </>
-            ) : null}
-          </nav>
+            <h1 className={styles.pageTitle}>{title}</h1>
+          </>
         ) : null}
-
-        <h1 className={styles.pageTitle}>{title}</h1>
       </div>
 
       <div className={styles.right}>

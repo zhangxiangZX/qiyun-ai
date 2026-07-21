@@ -16,6 +16,7 @@ import {
 import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
 import { ConsoleFeedback } from "@/components/console/console-feedback";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
+import { copyText } from "@/lib/browser/copy-text";
 
 import {
   loadInvitationDeliveryAudits,
@@ -139,6 +140,8 @@ export function InvitationsAuditWorkspace() {
   const selectedInvitation =
     invitations.find((item) => item.id === selectedInvitationId) ?? null;
 
+  const selectedInvitationUrl = selectedInvitation?.inviteUrl ?? null;
+
   async function handleResendConfirmed() {
     if (!selectedInvitation) return;
 
@@ -177,12 +180,7 @@ export function InvitationsAuditWorkspace() {
   }
 
   async function handleCopy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyState("success");
-    } catch {
-      setCopyState("error");
-    }
+    setCopyState((await copyText(text)) ? "success" : "error");
   }
 
   if (loadState !== "ready") {
@@ -425,14 +423,14 @@ export function InvitationsAuditWorkspace() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">邀请链接</p>
                     <p className="mt-1 break-all text-xs text-muted-foreground">
-                      {selectedInvitation.inviteUrl}
+                      {selectedInvitationUrl}
                     </p>
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
                     leftIcon={<Copy className="h-4 w-4" />}
-                    onClick={() => void handleCopy(selectedInvitation.inviteUrl)}
+                    onClick={() => selectedInvitationUrl && void handleCopy(selectedInvitationUrl)}
                   >
                     复制
                   </Button>

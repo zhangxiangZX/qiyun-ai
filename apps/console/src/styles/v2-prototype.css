@@ -6,7 +6,7 @@
   --nav: #06152f;
   --nav2: #0b234a;
   --bg: #f6f8fc;
-  --card: #fff;
+  --proto-card: #fff;
   --text: #172b4d;
   --text-secondary: #5a6a85;
   --muted: #8190a8;
@@ -581,7 +581,7 @@ button { cursor: pointer; }
 }
 
 .card {
-  background: var(--card);
+  background: var(--proto-card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -1728,7 +1728,7 @@ button { cursor: pointer; }
 /* ── Dark mode ────────────────────────────────────────────────────── */
 html.dark {
   --bg: #0f172a;
-  --card: #1e293b;
+  --proto-card: #1e293b;
   --text: #e2e8f0;
   --text-secondary: #94a3b8;
   --muted: #64748b;
@@ -1745,12 +1745,12 @@ html.dark .search:focus { background: #1a2744; }
 html.dark .table th { background: #1a2848; color: #94a3b8; }
 html.dark .table tbody tr:hover { background: rgba(18,102,255,0.06); }
 html.dark .table td { color: #cbd5e1; }
-html.dark .donut::after { background: var(--card); color: var(--text); }
+html.dark .donut::after { background: var(--proto-card); color: var(--text); }
 html.dark .chart-lines { background: repeating-linear-gradient(to bottom, transparent 0, transparent 48px, #263353 49px, transparent 50px); }
 html.dark .message.bot { background: #263353; color: var(--text); }
 html.dark .chat-item:hover,
 html.dark .chat-item.active { background: #1e3a5f; border-color: #2a4880; }
-html.dark .chat-main { background: var(--card); }
+html.dark .chat-main { background: var(--proto-card); }
 html.dark .chat-footer input { background: #162032; border-color: var(--line); color: var(--text); }
 html.dark .info-item { background: #1a2848; }
 html.dark .user:hover { background: #1e3350; }
@@ -1758,7 +1758,7 @@ html.dark .tabs button { background: #1e3350; color: #94a3b8; }
 html.dark .tabs button.active { background: var(--primary-light); color: hsl(var(--primary)); }
 html.dark .btn { background: #263353; border-color: #3b4f73; color: #cbd5e1; }
 html.dark .btn:hover { background: #2d3f64; }
-html.dark .modal-card { background: var(--card); }
+html.dark .modal-card { background: var(--proto-card); }
 html.dark .modal-overlay { background: rgba(0,0,0,0.6); }
 html.dark .toast-item { background: #1e293b; color: var(--text); }
 html.dark .dropdown { background: #1e293b; border-color: var(--line); }
@@ -1772,7 +1772,7 @@ html.dark .field textarea:focus,
 html.dark .field select:focus { background: #1a2744; }
 html.dark .plan { background: linear-gradient(145deg, #1e3a5f, #162348); }
 html.dark .sidebar { background: linear-gradient(180deg, #0a1326 0%, #060f1e 100%); }
-html.dark .card { background: var(--card); }
+html.dark .card { background: var(--proto-card); }
 html.dark .channel-card .bubble { background: var(--primary-light); }
 html.dark .bubble.green { background: rgba(34,179,107,0.15); }
 html.dark .bubble.orange { background: rgba(255,156,39,0.15); }

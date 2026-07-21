@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -463,36 +464,30 @@ export function WebsiteWidgetWorkspace() {
 
       <div className={`${styles.statsGrid} ui-stagger-fade-in ui-hover-lift-children`}>
         <div className={styles.statCard}>
-          <div className={styles.statCardTop}>
-            <div>
-              <div className={styles.statLabel}>已接入站点</div>
-              <div className={styles.statValue}>{sites.length}</div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
-              <Globe size={18} />
-            </div>
+          <div className={`${styles.statIcon} ${styles.statIconBlue}`}>
+            <Globe size={22} />
+          </div>
+          <div>
+            <div className={styles.statLabel}>已接入站点</div>
+            <div className={styles.statValue}>{sites.length}</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statCardTop}>
-            <div>
-              <div className={styles.statLabel}>启用中的 Widget</div>
-              <div className={styles.statValue}>{enabledCount}</div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconGreen}`}>
-              <MessageSquare size={18} />
-            </div>
+          <div className={`${styles.statIcon} ${styles.statIconGreen}`}>
+            <MessageSquare size={22} />
+          </div>
+          <div>
+            <div className={styles.statLabel}>启用中的 Widget</div>
+            <div className={styles.statValue}>{enabledCount}</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statCardTop}>
-            <div>
-              <div className={styles.statLabel}>安装异常</div>
-              <div className={styles.statValue}>{pendingCount}</div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconOrange}`}>
-              <AlertTriangle size={18} />
-            </div>
+          <div className={`${styles.statIcon} ${styles.statIconOrange}`}>
+            <AlertTriangle size={22} />
+          </div>
+          <div>
+            <div className={styles.statLabel}>安装异常</div>
+            <div className={styles.statValue}>{pendingCount}</div>
           </div>
         </div>
       </div>
@@ -504,6 +499,12 @@ export function WebsiteWidgetWorkspace() {
             <button type="button" className={styles.btnPrimary} onClick={() => setCreatingSite(true)}>
               <Plus size={14} /> 接入新站点
             </button>
+            <Link href="/dashboard/sites/new" className={styles.btnOutline}>
+              完整接入
+            </Link>
+            <Link href="/dashboard/sites/settings" className={styles.btnLink}>
+              站点设置
+            </Link>
             <button type="button" className={styles.btnOutline} onClick={() => void load()}>
               <RefreshCw size={14} /> 刷新
             </button>
@@ -616,9 +617,9 @@ export function WebsiteWidgetWorkspace() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <h3 className={styles.panelTitle}>安装代码</h3>
-            <button type="button" className={styles.btnLink} title="V2开发中" disabled style={{ opacity: 0.5 }}>
+            <Link href="/dashboard/sites/install" className={styles.btnLink}>
               安装指引
-            </button>
+            </Link>
           </div>
           <p className={styles.panelHint}>将以下代码复制并粘贴到您网站的 &lt;/body&gt; 标签前</p>
           <div className={styles.codeBlock}>
@@ -704,7 +705,12 @@ export function WebsiteWidgetWorkspace() {
 
         <div className={styles.panel}>
           <div className={styles.panelHead}>
+            <div className={styles.panelHead}>
             <h3 className={styles.panelTitle}>外观样式</h3>
+            <Link href="/dashboard/sites/appearance" className={styles.btnLink}>
+              外观设置
+            </Link>
+          </div>
             <div className={styles.modeToggle}>
               <button
                 type="button"

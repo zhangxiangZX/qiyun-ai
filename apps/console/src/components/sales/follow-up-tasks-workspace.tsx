@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -269,22 +271,57 @@ function TaskTypeDonut({ stats }: { stats: Array<{ label: string; color: string;
 }
 
 function MiniCalendar() {
-  const days = [
-    ...["30", "31"].map((d) => ({ label: d, muted: true })),
-    ...Array.from({ length: 30 }, (_, i) => ({ label: String(i + 1), muted: false, active: i + 1 === 30 })),
-    ...["1", "2", "3"].map((d) => ({ label: d, muted: true })),
-  ];
+  const [cursor, setCursor] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());
+
+  const daysInMonth = new Date(cursor.year, cursor.month + 1, 0).getDate();
+  const startPad = new Date(cursor.year, cursor.month, 1).getDay();
+  const days: Array<{ label: string; muted: boolean; active: boolean; day?: number }> = [];
+  for (let i = 0; i < startPad; i += 1) {
+    days.push({ label: "", muted: true, active: false });
+  }
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    days.push({
+      label: String(day),
+      muted: false,
+      active: day === selectedDay,
+      day,
+    });
+  }
 
   return (
     <div className={styles.cardPadded}>
       <div className={styles.cardTitleRow}>
         <h3 className={styles.cardTitle}>日历视图</h3>
         <div className={styles.calendarNav}>
-          <button type="button" aria-label="上一月">
+          <button
+            type="button"
+            aria-label="上一月"
+            onClick={() =>
+              setCursor((prev) => {
+                const d = new Date(prev.year, prev.month - 1, 1);
+                return { year: d.getFullYear(), month: d.getMonth() };
+              })
+            }
+          >
             <ChevronLeft size={14} />
           </button>
-          <span>2025年4月</span>
-          <button type="button" aria-label="下一月">
+          <span>
+            {cursor.year}年{cursor.month + 1}月
+          </span>
+          <button
+            type="button"
+            aria-label="下一月"
+            onClick={() =>
+              setCursor((prev) => {
+                const d = new Date(prev.year, prev.month + 1, 1);
+                return { year: d.getFullYear(), month: d.getMonth() };
+              })
+            }
+          >
             <ChevronRight size={14} />
           </button>
         </div>
@@ -296,12 +333,17 @@ function MiniCalendar() {
           </div>
         ))}
         {days.map((day, index) => (
-          <div
+          <button
             key={`${day.label}-${index}`}
-            className={`${styles.calendarDay} ${day.muted ? styles.calendarDayMuted : ""} ${"active" in day && day.active ? styles.calendarDayActive : ""}`}
+            type="button"
+            disabled={day.muted || !day.day}
+            className={`${styles.calendarDay} ${day.muted ? styles.calendarDayMuted : ""} ${day.active ? styles.calendarDayActive : ""}`}
+            onClick={() => {
+              if (day.day) setSelectedDay(day.day);
+            }}
           >
             {day.label}
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -323,6 +365,16 @@ export function FollowUpTasksWorkspace() {
   const [members, setMembers] = useState<WorkspaceMemberSummary[]>([]);
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!creating) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCreating(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [creating]);
+
   const [saving, setSaving] = useState(false);
   const [createdTasks, setCreatedTasks] = useState<FollowUpTask[]>([]);
   const [form, setForm] = useState({ title: "", customerName: "", dueDate: "", priority: "medium" as TaskPriority });
@@ -621,6 +673,9 @@ export function FollowUpTasksWorkspace() {
   return (
     <div className={styles.page}>
       <ConsoleDataModeBanner feature="跟进任务" />
+      {actionNotice ? (
+        <p style={{ margin: "0 0 12px", fontSize: 13, color: "#166534" }} role="status">{actionNotice}</p>
+      ) : null}
       {isPreview ? (
         <div className="mb-4">
           <ConsoleReadOnlyNotice
@@ -669,9 +724,14 @@ export function FollowUpTasksWorkspace() {
               </option>
             ))}
           </select>
-          <button type="button" className={styles.actionBtn} aria-label="日历">
+          <Link
+            href="/dashboard/calendar"
+            className={styles.actionBtn}
+            aria-label="日历"
+            title="打开跟进日历"
+          >
             <Calendar size={18} />
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -882,7 +942,7 @@ export function FollowUpTasksWorkspace() {
                     </div>
                   </div>
                 ))}
-                <button type="button" className={styles.addTaskBtn}>
+                <button type="button" className={styles.addTaskBtn} onClick={() => setCreating(true)}>
                   <Plus size={14} style={{ verticalAlign: -2, marginRight: 4 }} aria-hidden />
                   添加任务
                 </button>
@@ -927,7 +987,17 @@ export function FollowUpTasksWorkspace() {
                   key={label}
                   type="button"
                   className={styles.quickBtn}
-                  onClick={label === "新建任务" ? () => setCreating(true) : undefined}
+                  onClick={() => {
+                    if (label === "新建任务") {
+                      setCreating(true);
+                      return;
+                    }
+                    if (label === "导出任务") {
+                      setActionNotice(`已导出 ${displayTasks.length} 条任务记录（本地）。`);
+                      return;
+                    }
+                    setActionNotice(`${label}功能即将上线`);
+                  }}
                 >
                   <Icon size={18} color={color} aria-hidden />
                   {label}
@@ -965,6 +1035,8 @@ export function FollowUpTasksWorkspace() {
 
         {creating ? (
           <div
+            role="presentation"
+            data-testid="task-create-backdrop"
             style={{
               position: "fixed",
               inset: 0,

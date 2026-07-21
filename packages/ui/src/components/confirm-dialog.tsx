@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import {
   AlertCircle,
@@ -98,14 +99,17 @@ function ConfirmDialogInner({
   const s = sizeMap[size];
   const IconComponent = icon !== "none" ? iconMap[icon] : null;
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in"
+      data-dialog-overlay=""
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 animate-fade-in"
     >
       <div
         ref={containerRef}
         className={cn(
-          "relative w-full rounded-dialog border border-border bg-card shadow-card animate-scale-in",
+          "relative w-full rounded-dialog border border-border bg-white text-foreground shadow-card opacity-100",
           s.container,
           className,
         )}
@@ -162,6 +166,7 @@ function ConfirmDialogInner({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

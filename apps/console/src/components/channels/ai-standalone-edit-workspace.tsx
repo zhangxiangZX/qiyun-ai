@@ -38,13 +38,14 @@ import { Skeleton } from "@qiyun/ui";
 
 import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/components/console/console-request-error";
 import { SelectionSubmissionsWorkspace } from "@/components/bots/selection-submissions-workspace";
-import { listBots } from "@/lib/bots/data";
+import { getBotDetail, listBots } from "@/lib/bots/data";
 import {
   createSelectionPage,
   getSelectionPageById,
   updateSelectionPage,
 } from "@/lib/bots/selection-pages-api";
 import type { BotListItem } from "@/lib/bots/types";
+import { getPreviewBotContext, syncPreviewBot } from "@/lib/chat/api";
 import {
   AI_STANDALONE_SECTIONS,
   buildAiStandaloneEditHref,
@@ -60,6 +61,7 @@ import { getSelectionPageStorageKey } from "@/lib/channels/ai-selection-page-con
 import {
   mapSelectionPageViewToItem,
   slugifySelectionPageName,
+  buildUniqueSelectionSlug,
 } from "@/lib/channels/selection-page-mapper";
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
 import styles from "@/styles/ai-standalone-edit.module.css";
@@ -225,10 +227,8 @@ function BasicTabPanel({
             </div>
             <div className={styles.domainHint}>
               <Globe size={14} />
-              自定义域名：{pageUrl.replace(/^https?:\/\//, "")}
-              <button type="button" className={styles.btnLink} style={{ marginLeft: 8 }}>
-                修改域名
-              </button>
+              本地预览地址：{pageUrl.replace(/^https?:\/\//, "") || "当前站点"}
+              <span className="ml-2 text-slate-400">（自定义域名后续再配置）</span>
             </div>
           </div>
 
@@ -1173,11 +1173,11 @@ export function AiStandaloneEditWorkspace() {
   const rawSection = searchParams.get("section") ?? searchParams.get("tab");
   const section = parseAiStandaloneSection(rawSection);
   const initialPage = getSelectionPage(pageId);
-  const isNewMode = initialPage.id === NEW_PAGE_ID;
+  const isNewMode = !pageId || pageId === NEW_PAGE_ID;
 
   const [page, setPage] = useState(initialPage);
   const [persistedPageId, setPersistedPageId] = useState<string | null>(
-    isNewMode ? null : initialPage.id,
+    isNewMode ? null : pageId,
   );
   const [apiPreview, setApiPreview] = useState(isNewMode);
 
@@ -1201,6 +1201,8 @@ export function AiStandaloneEditWorkspace() {
   const [selectedFieldId, setSelectedFieldId] = useState(DEMO_FIELDS[0].id);
 
   const [boundBot, setBoundBot] = useState(page.botName);
+  const [boundBotId, setBoundBotId] = useState<string | undefined>();
+  const [boundSiteKey, setBoundSiteKey] = useState<string | undefined>();
   const [knowledgeBase, setKnowledgeBase] = useState("户外机柜知识库（IP65 防护 + 机柜选型）");
   const [rolePrompt, setRolePrompt] = useState(
     "你是库滋玛工业设备的 AI 选型顾问，专注于户外机柜、不锈钢机柜等产品推荐。回答需基于知识库，不确定时引导留资。",
@@ -1258,6 +1260,12 @@ export function AiStandaloneEditWorkspace() {
                 ? "deactivated"
                 : "draft",
           );
+          if (apiPage.botId) {
+            setBoundBotId(apiPage.botId);
+            const matched = nextBots.find((bot) => bot.id === apiPage.botId);
+            if (matched) setBoundBot(matched.name);
+          }
+          if (apiPage.siteKey) setBoundSiteKey(apiPage.siteKey);
           setApiPreview(false);
         } catch {
           setApiPreview(true);
@@ -1302,13 +1310,51 @@ export function AiStandaloneEditWorkspace() {
   }
 
   const publicPageUrl = resolveSelectionPagePublicUrl(getPagePublicSlug(page));
-  const previewUrl = `${publicPageUrl}?preview=1`;
+
+  async function resolveRagBinding(botName: string): Promise<{ botId?: string; siteKey?: string }> {
+    const matched = bots.find((bot) => bot.name === botName);
+    if (!matched) {
+      return { botId: boundBotId, siteKey: boundSiteKey };
+    }
+    try {
+      const context = await getPreviewBotContext(matched.id);
+      return { botId: context.botId, siteKey: context.siteKey };
+    } catch {
+      try {
+        const detail = await getBotDetail(matched.id);
+        const context = await syncPreviewBot({
+          botId: matched.id,
+          name: detail?.name ?? matched.name,
+          status: detail?.status ?? matched.status,
+          knowledgeBaseIds: detail?.knowledgeBaseIds ?? [],
+        });
+        return { botId: context.botId, siteKey: context.siteKey };
+      } catch {
+        return {
+          botId: matched.id,
+          siteKey: boundSiteKey,
+        };
+      }
+    }
+  }
 
   async function handleSave() {
     const published = pageStatus === "published";
     const apiStatus = published ? "published" : pageStatus === "deactivated" ? "disabled" : "draft";
-    const config = buildSelectionPageConfigFromEdit({
-      page,
+    const rag = await resolveRagBinding(boundBot);
+    const botId = rag.botId ?? boundBotId;
+    const siteKey = rag.siteKey ?? boundSiteKey;
+    if (botId) setBoundBotId(botId);
+    if (siteKey) setBoundSiteKey(siteKey);
+
+    const needsFreshSlug =
+      isNewMode && !persistedPageId && (!page.slug || page.slug === "new-selection-page" || page.id === NEW_PAGE_ID);
+    const editSlug = needsFreshSlug
+      ? buildUniqueSelectionSlug(pageName.trim() || page.editName || "selection")
+      : page.slug?.trim() || slugifySelectionPageName(pageName);
+
+    let config = buildSelectionPageConfigFromEdit({
+      page: { ...page, slug: editSlug, enabled: published ? true : page.enabled },
       pageName,
       published,
       defaultProduct,
@@ -1318,6 +1364,9 @@ export function AiStandaloneEditWorkspace() {
       questions: questions.map((q) => q.text),
       successTitle,
       successMessage,
+      botId,
+      siteKey,
+      slug: editSlug,
     });
 
     window.localStorage.setItem(getSelectionPageStorageKey(config.slug), JSON.stringify(config));
@@ -1335,28 +1384,61 @@ export function AiStandaloneEditWorkspace() {
       if (isNewMode && !persistedPageId) {
         const created = await createSelectionPage({
           name: pageName.trim() || page.editName,
-          slug: config.slug || slugifySelectionPageName(pageName),
+          slug: editSlug,
           description: description.trim() || undefined,
           status: apiStatus as "draft" | "published" | "disabled",
           questions: questionPayload,
+          botId,
+          siteKey,
         });
-        savedId = created.id;
-        setPersistedPageId(created.id);
-        setPage(mapSelectionPageViewToItem(created));
+        // Upstream create always starts as draft — publish/disable via PATCH when needed.
+        let finalPage = created;
+        if (created.status !== apiStatus || botId || siteKey) {
+          finalPage = await updateSelectionPage(created.id, {
+            status: apiStatus as "draft" | "published" | "disabled",
+            botId,
+            siteKey,
+            questions: questionPayload,
+          });
+        }
+        savedId = finalPage.id;
+        setPersistedPageId(finalPage.id);
+        const mapped = mapSelectionPageViewToItem(finalPage);
+        setPage(mapped);
         setApiPreview(false);
-        router.replace(buildAiStandaloneEditHref(created.id, section));
+        config = {
+          ...config,
+          pageId: finalPage.id,
+          slug: finalPage.slug || editSlug,
+          botId: finalPage.botId ?? config.botId,
+          siteKey: finalPage.siteKey ?? config.siteKey,
+          published: finalPage.status === "published",
+          enabled: finalPage.status !== "disabled",
+        };
+        window.localStorage.setItem(getSelectionPageStorageKey(config.slug), JSON.stringify(config));
+        router.replace(buildAiStandaloneEditHref(finalPage.id, section));
       } else if (persistedPageId) {
         await updateSelectionPage(persistedPageId, {
           name: pageName.trim() || page.editName,
-          slug: config.slug || slugifySelectionPageName(pageName),
+          slug: editSlug,
           description: description.trim() || null,
           status: apiStatus as "draft" | "published" | "disabled",
           questions: questionPayload,
+          botId,
+          siteKey,
         });
         setApiPreview(false);
+        setPage((current) => ({
+          ...current,
+          slug: editSlug,
+          editName: pageName.trim() || current.editName,
+          name: pageName.trim() || current.name,
+          published,
+          enabled: published ? true : current.enabled,
+        }));
       }
 
-      await fetch(`/api/selection-pages/public/${config.slug}`, {
+      await fetch(`/api/selection-pages/public/${encodeURIComponent(config.slug)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
@@ -1365,10 +1447,14 @@ export function AiStandaloneEditWorkspace() {
         isNewMode && !savedId
           ? "选型页已创建（本地预览）。"
           : isNewMode
-            ? "选型页已创建并保存。"
-            : apiPreview
-              ? "配置已保存到本地，公开页将读取最新内容。"
-              : "配置已保存，公开页将同步更新。",
+            ? botId && siteKey
+              ? "选型页已创建；公开对话已绑定真实 RAG。"
+              : "选型页已创建并保存。"
+            : botId && siteKey
+              ? "配置已保存，公开对话将走真实知识库检索。"
+              : apiPreview
+                ? "配置已保存到本地，公开页将读取最新内容。"
+                : "配置已保存，公开页将同步更新。",
       );
     } catch {
       setNotice(isNewMode ? "选型页已创建（本地预览）。" : "配置已保存到本地，公开页将读取最新内容。");
@@ -1378,8 +1464,37 @@ export function AiStandaloneEditWorkspace() {
     }
   }
 
-  function openPreview() {
-    window.open(previewUrl, "_blank", "noopener,noreferrer");
+  async function openPreview() {
+    const rag = await resolveRagBinding(boundBot);
+    const botId = rag.botId ?? boundBotId;
+    const siteKey = rag.siteKey ?? boundSiteKey;
+    if (botId) setBoundBotId(botId);
+    if (siteKey) setBoundSiteKey(siteKey);
+
+    const needsFreshSlug =
+      isNewMode && !persistedPageId && (!page.slug || page.slug === "new-selection-page" || page.id === NEW_PAGE_ID);
+    const editSlug = needsFreshSlug
+      ? buildUniqueSelectionSlug(pageName.trim() || page.editName || "selection")
+      : page.slug?.trim() || slugifySelectionPageName(pageName);
+
+    const config = buildSelectionPageConfigFromEdit({
+      page: { ...page, slug: editSlug, enabled: pageStatus === "published" ? true : page.enabled },
+      pageName,
+      published: pageStatus === "published",
+      defaultProduct,
+      description,
+      boundBot,
+      openingMessage,
+      questions: questions.map((q) => q.text),
+      successTitle,
+      successMessage,
+      botId,
+      siteKey,
+      slug: editSlug,
+    });
+    window.localStorage.setItem(getSelectionPageStorageKey(config.slug), JSON.stringify(config));
+    const url = `${resolveSelectionPagePublicUrl(config.slug)}?preview=1`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function removeQuestion(id: string) {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Circle, ClipboardCheck, ExternalLink } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardCheck, Database, ExternalLink, ListChecks } from "lucide-react";
 
 import { Alert, Badge, Button, PageHeader, StatCard } from "@qiyun/ui";
 
@@ -110,6 +110,8 @@ export function AcceptanceWorkspace() {
             value={progressLabel}
             description="勾选完成项；刷新页面后进度仍保留于本会话。"
             tone={completedCount === visibleItems.length ? "warning" : "default"}
+            icon={<ClipboardCheck size={22} aria-hidden />}
+            iconTone="brand"
           />
           <StatCard
             emphasis="metric"
@@ -118,12 +120,16 @@ export function AcceptanceWorkspace() {
             description={
               upstream ? "BFF 代理 apps/api，写入会持久化。" : "演示数据，部分写入不会持久化。"
             }
+            icon={<Database size={22} aria-hidden />}
+            iconTone={upstream ? "success" : "warning"}
           />
           <StatCard
             emphasis="metric"
             label="清单项"
             value={`${visibleItems.length} 步`}
             description="覆盖鉴权、知识库、聊天、站点、团队与报表。"
+            icon={<ListChecks size={22} aria-hidden />}
+            iconTone="info"
           />
         </div>
 

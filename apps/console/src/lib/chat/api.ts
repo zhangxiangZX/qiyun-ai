@@ -101,10 +101,25 @@ export async function streamChatMessage(input: ChatStreamInput): Promise<ChatStr
       citations.push(...items);
     }
     if (event.event === "done") {
-      const done = event.data as { messageId: string; needsLeadCapture: boolean };
+      const done = event.data as {
+        messageId: string;
+        needsLeadCapture: boolean;
+        content?: string;
+      };
       messageId = done.messageId;
       needsLeadCapture = done.needsLeadCapture;
+      if ((!content || !content.trim()) && done.content) {
+        content = done.content;
+      }
     }
+    if (event.event === "error") {
+      const err = event.data as { message?: string };
+      throw new ApiError(502, "UPSTREAM_REQUIRED", err.message || "AI 回复失败，请稍后重试。");
+    }
+  }
+
+  if (!content.trim()) {
+    content = "抱歉，暂时无法基于当前知识库给出准确回答。您可以补充更多细节，或留下联系方式由工程师跟进。";
   }
 
   return { conversationId, messageId, content, citations, needsLeadCapture };

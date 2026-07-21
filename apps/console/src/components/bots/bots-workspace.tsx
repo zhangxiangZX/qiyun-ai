@@ -434,15 +434,18 @@ export function BotsWorkspace() {
 
       <div className={`${styles.kpiGrid} ui-stagger-fade-in ui-hover-lift-children`}>
         <article className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "#3b82f6", color: "#fff" }}>
+            <Bot size={22} />
+          </div>
           <div>
             <div className={styles.kpiLabel}>全部助手</div>
             <div className={styles.kpiValue}>{stats.total}</div>
           </div>
-          <div className={styles.kpiIcon} style={{ background: "#3b5eff", color: "#fff" }}>
-            <Bot size={22} />
-          </div>
         </article>
         <article className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "#22c55e", color: "#fff" }}>
+            <Bot size={22} />
+          </div>
           <div>
             <div className={`${styles.kpiLabel} ${styles.kpiLabelOnline}`}>
               <span className={styles.onlineDot} />
@@ -450,26 +453,23 @@ export function BotsWorkspace() {
             </div>
             <div className={styles.kpiValue}>{stats.online}</div>
           </div>
-          <div className={styles.kpiIcon} style={{ background: "#22c55e", color: "#fff" }}>
-            <Bot size={22} />
-          </div>
         </article>
         <article className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "#f59e0b", color: "#fff" }}>
+            <FileText size={22} />
+          </div>
           <div>
             <div className={styles.kpiLabel}>草稿助手</div>
             <div className={styles.kpiValue}>{stats.draft}</div>
           </div>
-          <div className={styles.kpiIcon} style={{ background: "#f97316", color: "#fff" }}>
-            <FileText size={22} />
-          </div>
         </article>
         <article className={styles.kpiCard}>
+          <div className={styles.kpiIcon} style={{ background: "#64748b", color: "#fff" }}>
+            <Ban size={22} />
+          </div>
           <div>
             <div className={styles.kpiLabel}>已停用</div>
             <div className={styles.kpiValue}>{stats.disabled}</div>
-          </div>
-          <div className={styles.kpiIcon} style={{ background: "#64748b", color: "#fff" }}>
-            <Ban size={22} />
           </div>
         </article>
       </div>

@@ -335,7 +335,7 @@ export function InquiryAssignmentWorkspace() {
         <StatCard
           label="今日新增询盘"
           value={String(assignStats.todayNewCount)}
-          icon={<TrendingUp size={18} />}
+          icon={<TrendingUp size={22} />}
           iconTone="warning"
           emphasis="metric"
         />
@@ -349,7 +349,7 @@ export function InquiryAssignmentWorkspace() {
                 )}%`
               : undefined
           }
-          icon={<AlertTriangle size={18} />}
+          icon={<AlertTriangle size={22} />}
           iconTone="warning"
           tone="warning"
           emphasis="metric"
@@ -357,21 +357,21 @@ export function InquiryAssignmentWorkspace() {
         <StatCard
           label="平均分配时长"
           value={assignStats.avgAssignHours != null ? `${assignStats.avgAssignHours} 小时` : "—"}
-          icon={<Clock size={18} />}
+          icon={<Clock size={22} />}
           iconTone="info"
           emphasis="metric"
         />
         <StatCard
           label="已分配"
           value={String(assignStats.assignedOpenCount)}
-          icon={<CheckCircle2 size={18} />}
+          icon={<CheckCircle2 size={22} />}
           iconTone="success"
           emphasis="metric"
         />
         <StatCard
           label="本月分配总计"
           value={String(assignStats.monthAssignedCount)}
-          icon={<UserCheck size={18} />}
+          icon={<UserCheck size={22} />}
           iconTone="purple"
           emphasis="metric"
         />

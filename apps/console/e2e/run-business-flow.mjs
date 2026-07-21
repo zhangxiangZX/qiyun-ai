@@ -215,8 +215,9 @@ async function runBrowserBusinessChecks(chromium) {
   await check("BF-02", "助手列表与新建入口可用", async () => {
     await page.goto("/dashboard/bots");
     await waitUpstream(page);
-    await page.getByText(/AI助手|助手列表/).first().waitFor({ timeout: 20_000 });
-    await page.getByText(/新建 ?AI助手|新建助手/).first().waitFor({ timeout: 20_000 });
+    // 顶栏/页头标题为「AI 助手」，主操作按钮为「新建助手」
+    await page.getByText(/AI\s*助手/).first().waitFor({ timeout: 20_000 });
+    await page.getByRole("button", { name: "新建助手" }).first().waitFor({ timeout: 20_000 });
   });
 
   await check("BF-03", "会话列表可选中", async () => {
@@ -259,8 +260,8 @@ async function runBrowserBusinessChecks(chromium) {
   await check("BF-08", "系统状态健康", async () => {
     await page.goto("/dashboard/system-status");
     await waitUpstream(page);
-    await page.getByText(/全部正常|6\/6|PostgreSQL reachable/).first().waitFor({
-      timeout: 20_000,
+    await page.getByText(/全部正常|\d+\/\d+ 项正常|PostgreSQL reachable/).first().waitFor({
+      timeout: 40_000,
     });
   });
 

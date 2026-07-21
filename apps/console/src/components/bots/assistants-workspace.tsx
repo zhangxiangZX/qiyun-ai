@@ -8,7 +8,6 @@ import {
   Bot,
   Circle,
   MessageSquare,
-  MoreHorizontal,
   Plus,
   RefreshCw,
   Search,
@@ -18,9 +17,12 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
+import { Alert, Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
 
 import { useApiResource } from "@/lib/api/use-api-resource";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { createBot } from "@/lib/bots/data";
+import { CreateBotDialog } from "@/components/bots/create-bot-dialog";
 
 import {
   ConsolePage,
@@ -41,8 +43,7 @@ function buildTypeTabs(assistants: Assistant[]) {
     ...V1_ASSISTANT_TYPES.map((type) => ({
       key: type,
       label: type,
-      count: assistants.filter((item) => item.type === type).length,
-    })),
+      count: assistants.filter((item) => item.type === type).length })),
   ];
 }
 
@@ -70,8 +71,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "产品FAQ知识库",
     todaySessions: 186,
     hitRate: 82.4,
-    satisfaction: 4.6,
-  },
+    satisfaction: 4.6 },
   {
     id: "a2",
     name: "选型助手小Q",
@@ -82,8 +82,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "选型规则知识库",
     todaySessions: 142,
     hitRate: 79.1,
-    satisfaction: 4.5,
-  },
+    satisfaction: 4.5 },
   {
     id: "a3",
     name: "销售外呼助手",
@@ -94,8 +93,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "话术知识库",
     todaySessions: 98,
     hitRate: 76.3,
-    satisfaction: 4.4,
-  },
+    satisfaction: 4.4 },
   {
     id: "a4",
     name: "内部知识助手",
@@ -106,8 +104,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "制度知识库",
     todaySessions: 0,
     hitRate: 0,
-    satisfaction: 0,
-  },
+    satisfaction: 0 },
   {
     id: "a5",
     name: "售前技术支持",
@@ -118,8 +115,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "技术文档知识库",
     todaySessions: 88,
     hitRate: 80.7,
-    satisfaction: 4.7,
-  },
+    satisfaction: 4.7 },
   {
     id: "a6",
     name: "展会引导助手",
@@ -130,8 +126,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "展会资料知识库",
     todaySessions: 0,
     hitRate: 0,
-    satisfaction: 0,
-  },
+    satisfaction: 0 },
   {
     id: "a7",
     name: "户外机柜选型顾问",
@@ -142,8 +137,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "机柜产品知识库",
     todaySessions: 76,
     hitRate: 74.2,
-    satisfaction: 4.3,
-  },
+    satisfaction: 4.3 },
   {
     id: "a8",
     name: "渠道合作助手",
@@ -154,8 +148,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "渠道资料知识库",
     todaySessions: 54,
     hitRate: 72.8,
-    satisfaction: 4.2,
-  },
+    satisfaction: 4.2 },
   {
     id: "a9",
     name: "售后工单助手",
@@ -166,8 +159,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "售后FAQ知识库",
     todaySessions: 62,
     hitRate: 81.1,
-    satisfaction: 4.5,
-  },
+    satisfaction: 4.5 },
   {
     id: "a10",
     name: "报价引导助手",
@@ -178,8 +170,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "报价话术库",
     todaySessions: 41,
     hitRate: 70.5,
-    satisfaction: 4.1,
-  },
+    satisfaction: 4.1 },
   {
     id: "a11",
     name: "工控机选型页助手",
@@ -190,8 +181,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "工控产品库",
     todaySessions: 58,
     hitRate: 62.5,
-    satisfaction: 3.9,
-  },
+    satisfaction: 3.9 },
   {
     id: "a12",
     name: "培训答疑助手",
@@ -202,8 +192,7 @@ const MOCK_ASSISTANTS: Assistant[] = [
     knowledgeBase: "培训资料库",
     todaySessions: 0,
     hitRate: 0,
-    satisfaction: 0,
-  },
+    satisfaction: 0 },
 ];
 
 const TOP_QUESTIONS = [
@@ -254,6 +243,9 @@ export function AssistantsWorkspace() {
   const [typeTab, setTypeTab] = useState<AssistantType | "全部">("全部");
   const [statusFilter, setStatusFilter] = useState<OnlineStatus | "全部">("全部");
   const [page, setPage] = useState(1);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const { data: assistants, loading, isPreview, refetch } = useApiResource<Assistant[]>(
     "/bots",
@@ -266,8 +258,7 @@ export function AssistantsWorkspace() {
     }
     return assistants.map((item) => ({
       ...item,
-      scenes: item.scenes ?? [item.type],
-    }));
+      scenes: item.scenes ?? [item.type] }));
   }, [assistants, isPreview]);
 
   const typeTabs = useMemo(() => buildTypeTabs(displayAssistants), [displayAssistants]);
@@ -294,6 +285,20 @@ export function AssistantsWorkspace() {
     setPage(1);
   }, [query, typeTab, statusFilter]);
 
+  async function handleCreate(name: string) {
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const bot = await createBot(name);
+      setDialogOpen(false);
+      router.push(`/dashboard/bots/${bot.id}/basics`);
+    } catch (error) {
+      setCreateError(getApiErrorMessage(error, "创建助手失败，请稍后重试。"));
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const kpis = [
     { label: "助手总数", value: "12", trend: "9.1%", icon: <Bot className="h-5 w-5" />, tone: "brand" as const },
     { label: "在线中", value: "8", trend: "14.3%", icon: <Circle className="h-5 w-5 fill-current" />, tone: "success" as const },
@@ -308,17 +313,32 @@ export function AssistantsWorkspace() {
         title="AI 助手"
         description="管理企业专属 AI 助手，配置知识与能力，持续优化客户对话体验。"
         actions={
-          <Button asChild variant="default">
-            <Link href="/dashboard/bots/config">
-              <Plus className="h-4 w-4" aria-hidden />
-              新建助手
-            </Link>
+          <Button type="button" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden />
+            新建助手
           </Button>
         }
       />
 
+      <CreateBotDialog
+        open={dialogOpen}
+        loading={creating}
+        onClose={() => {
+          if (!creating) {
+            setDialogOpen(false);
+            setCreateError(null);
+          }
+        }}
+        onCreate={(name) => void handleCreate(name)}
+      />
+
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="AI助手" />
+        {createError ? (
+          <Alert variant="warning" title="新建助手失败">
+            {createError}
+          </Alert>
+        ) : null}
 
         {loading && !isPreview ? (
           <div className="space-y-3">
@@ -384,11 +404,9 @@ export function AssistantsWorkspace() {
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                   刷新
                 </Button>
-                <Button asChild size="sm">
-                  <Link href="/dashboard/bots/config">
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    新建助手
-                  </Link>
+                <Button size="sm" type="button" onClick={() => setDialogOpen(true)}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  新建助手
                 </Button>
               </div>
             </div>
@@ -453,7 +471,7 @@ export function AssistantsWorkspace() {
 
                     <div className="mt-3 flex items-center gap-1">
                       <Button asChild variant="outline" size="sm">
-                        <Link href="/dashboard/bots/config">
+                        <Link href={`/dashboard/bots/${a.id}/basics`}>
                           <Settings2 className="h-4 w-4" aria-hidden /> 配置
                         </Link>
                       </Button>
@@ -468,9 +486,6 @@ export function AssistantsWorkspace() {
                         onClick={() => router.push("/dashboard/conversations")}
                       >
                         <Wrench className="h-4 w-4" aria-hidden /> 查看会话
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => undefined}>
-                        <MoreHorizontal className="h-4 w-4" aria-hidden />
                       </Button>
                     </div>
                   </div>

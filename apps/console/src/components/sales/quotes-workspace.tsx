@@ -336,7 +336,7 @@ export function QuotesWorkspace() {
 
         <div className={styles.kpiGrid}>
           <div className={styles.kpiCard}>
-            <div className={styles.kpiIcon} style={{ background: "#eab308" }}>
+            <div className={styles.kpiIcon} style={{ background: "#f59e0b" }}>
               <FileText size={22} color="#fff" aria-hidden />
             </div>
             <div className={styles.kpiInfo}>
@@ -349,7 +349,7 @@ export function QuotesWorkspace() {
             <MiniSparkline color="#f59e0b" seed={kpis.pendingCreate} />
           </div>
           <div className={styles.kpiCard}>
-            <div className={styles.kpiIcon} style={{ background: "#3b5eff" }}>
+            <div className={styles.kpiIcon} style={{ background: "#3b82f6" }}>
               <Send size={22} color="#fff" aria-hidden />
             </div>
             <div className={styles.kpiInfo}>

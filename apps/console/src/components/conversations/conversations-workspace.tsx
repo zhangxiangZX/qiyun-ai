@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Info, List } from "lucide-react";
+import { Filter, Info, List, MessageCircle, UserRound } from "lucide-react";
 
 import {
   Alert,
@@ -714,6 +714,8 @@ export function ConversationsWorkspace() {
             label={t(defaultLocale, "conversations.stats.filteredTitle")}
             value={`${items.length} 条`}
             description={t(defaultLocale, "conversations.stats.filteredDescription")}
+            icon={<Filter size={22} aria-hidden />}
+            iconTone="brand"
           />
           <StatCard
             emphasis="metric"
@@ -721,12 +723,16 @@ export function ConversationsWorkspace() {
             value={`${unresolvedCount} 条`}
             description={t(defaultLocale, "conversations.stats.followUpDescription")}
             tone={unresolvedCount ? "warning" : "default"}
+            icon={<MessageCircle size={22} aria-hidden />}
+            iconTone="warning"
           />
           <StatCard
             emphasis="metric"
             label={t(defaultLocale, "conversations.stats.leadsTitle")}
             value={`${leadCount} 条`}
             description={t(defaultLocale, "conversations.stats.leadsDescription")}
+            icon={<UserRound size={22} aria-hidden />}
+            iconTone="success"
           />
         </div>
       ) : null}

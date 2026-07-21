@@ -94,10 +94,6 @@ export function LoginForm({
     }
   }, [inviteEmail]);
 
-  function handleForgotPassword() {
-    router.push("/forgot-password");
-  }
-
   function validateForm() {
     const nextErrors: { account?: string; password?: string; terms?: string } = {};
 
@@ -160,7 +156,7 @@ export function LoginForm({
 
   return (
     <section className={styles.formPanel} aria-label="登录区域">
-      <form className={styles.form} id="loginForm" onSubmit={handleSubmit} noValidate>
+      <form className={styles.form} id="loginForm" method="post" onSubmit={handleSubmit} noValidate>
         <header className={styles.header}>
           <span className={styles.eyebrow}>邮箱密码登录</span>
           <h2>欢迎登录</h2>
@@ -225,9 +221,9 @@ export function LoginForm({
             />
             <span>记住邮箱</span>
           </label>
-          <button type="button" className={styles.authLinkButton} title="通过邮箱验证码重置密码" onClick={handleForgotPassword}>
+          <a href="/forgot-password" className={styles.authLinkButton} title="通过邮箱验证码重置密码">
             忘记密码？重置密码
-          </button>
+          </a>
         </div>
 
         <label className={styles.agreement}>

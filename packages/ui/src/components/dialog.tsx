@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { cn } from "../lib/utils";
@@ -88,20 +89,21 @@ export function Dialog({
     if (closeOnOverlayClick && e.target === e.currentTarget) onClose();
   }
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <DialogContext.Provider value={{ open, onClose }}>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in"
+        data-dialog-overlay=""
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4"
         onClick={handleOverlayClick}
         role="presentation"
       >
         <div
           ref={containerRef}
           className={cn(
-            "relative w-full rounded-dialog border border-border bg-card p-6 shadow-card animate-scale-in",
+            "relative w-full rounded-dialog border border-border bg-white p-6 text-foreground shadow-card opacity-100",
             sizeClasses[size],
             className,
           )}
@@ -112,7 +114,8 @@ export function Dialog({
           {children}
         </div>
       </div>
-    </DialogContext.Provider>
+    </DialogContext.Provider>,
+    document.body,
   );
 }
 

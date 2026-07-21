@@ -72,8 +72,9 @@ test("preview seed detects existing runtime data", async () => {
   );
 });
 
-test("embedding provider reuses chat key only when embedding base matches chat provider", async () => {
+test("embedding provider reuses LLM_API_KEY when dedicated embedding key is absent", async () => {
   const previousEnv = { ...process.env };
+  const previousFetch = globalThis.fetch;
 
   process.env.LLM_PROVIDER = "openai-compatible";
   process.env.LLM_BASE_URL = "https://api.deepseek.com/v1";
@@ -84,14 +85,21 @@ test("embedding provider reuses chat key only when embedding base matches chat p
   process.env.LLM_EMBEDDING_MODEL = "text-embedding-3-small";
   process.env.LLM_EMBEDDING_ENABLED = "true";
   process.env.QDRANT_VECTOR_SIZE = "1536";
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        data: [{ embedding: Array.from({ length: 1536 }, () => 0.1) }],
+      }),
+      { status: 200 },
+    )) as typeof fetch;
 
   try {
     const provider = runtimeInternals.createEmbeddingProvider();
     const health = await provider.healthCheck();
-    assert.equal(health.driver, "simple");
-    assert.equal(health.status, "error");
-    assert.match(health.detail, /LLM_EMBEDDING_API_KEY or OPENAI_API_KEY/i);
+    assert.equal(health.driver, "openai-compatible");
+    assert.equal(health.status, "ok");
   } finally {
+    globalThis.fetch = previousFetch;
     process.env = previousEnv;
   }
 });

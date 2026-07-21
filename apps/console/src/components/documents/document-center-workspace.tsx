@@ -222,45 +222,45 @@ export function DocumentCenterWorkspace() {
       <div className={`${styles.kpiGrid} ui-stagger-fade-in ui-hover-lift-children`}>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#3b82f6] text-white`}>
+              <Files size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "documents.kpi.total")}</div>
               <div className={styles.kpiValue}>{kpis.total}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#3b5eff] text-white`}>
-              <Files size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#06b6d4] text-white`}>
+              <ImageIcon size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "documents.kpi.images")}</div>
               <div className={styles.kpiValue}>{kpis.images}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#0ea5e9] text-white`}>
-              <ImageIcon size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#f59e0b] text-white`}>
+              <ShieldCheck size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "documents.kpi.watermarkable")}</div>
               <div className={styles.kpiValue}>{kpis.watermarkable}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#f97316] text-white`}>
-              <ShieldCheck size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#22c55e] text-white`}>
+              <BadgeCheck size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "documents.kpi.watermarked")}</div>
               <div className={styles.kpiValue}>{kpis.watermarked}</div>
-            </div>
-            <div className={`${styles.kpiIcon} bg-[#22c55e] text-white`}>
-              <BadgeCheck size={20} aria-hidden />
             </div>
           </div>
         </article>

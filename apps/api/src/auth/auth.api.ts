@@ -200,6 +200,10 @@ export class AuthApi {
     return this.service.activateWorkspace(context.userId, workspaceId);
   }
 
+  activateWorkspaceForUser(userId: string, workspaceId: string) {
+    return this.service.activateWorkspace(userId, workspaceId);
+  }
+
   listWorkspaceMembers(context: RequestContext) {
     return this.service.listWorkspaceMembers(context.userId, context.workspaceId);
   }

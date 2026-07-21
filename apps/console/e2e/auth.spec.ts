@@ -64,7 +64,7 @@ test.describe("登录", () => {
 
   test("忘记密码跳转到重置页", async ({ page }) => {
     await gotoHydrated(page, "/login");
-    await page.getByRole("button", { name: /忘记密码/ }).click();
+    await page.getByLabel("登录区域").getByRole("link", { name: "忘记密码？重置密码" }).click();
     await expect(page).toHaveURL(/\/forgot-password/);
     await expect(page.getByRole("heading", { name: "找回密码" })).toBeVisible();
   });

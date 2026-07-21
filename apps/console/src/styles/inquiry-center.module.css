@@ -190,6 +190,7 @@
 
 .dataTable {
   width: 100%;
+  min-width: 1040px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -223,6 +224,7 @@
 .companyName {
   font-weight: 600;
   color: var(--foreground);
+  white-space: nowrap;
 }
 
 .companyContact {
@@ -599,14 +601,27 @@
   }
 }
 
-/* 1280–1440：收窄右栏，保持左右并排，避免主表与快捷操作被拆开 */
+/* 1280–1440：辅助卡片下沉，为高密度询盘表保留完整可读宽度。 */
 @media (max-width: 1440px) {
+  .page {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .main {
+    width: 100%;
+  }
+
   .sidebar {
-    width: 260px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
   }
 
   .kpiGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -627,6 +642,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     align-items: start;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

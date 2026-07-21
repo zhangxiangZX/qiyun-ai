@@ -22,7 +22,7 @@ for (const viewport of [
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
     for (const target of [
-      { name: "dashboard", route: "/dashboard" },
+      { name: "dashboard", route: "/dashboard/boss" },
       { name: "inquiries", route: "/dashboard/inquiries" },
       { name: "knowledge", route: "/dashboard/knowledge-bases" },
     ]) {
@@ -30,7 +30,9 @@ for (const viewport of [
         await page.goto(target.route);
         await stabilise(page);
         await expect(page).toHaveScreenshot(`${target.name}-${viewport.name}.png`, {
-          fullPage: true,
+          // Role dashboards contain live, variable-length activity lists. Keep their
+          // regression contract to the stable first viewport; content pages remain full-page.
+          fullPage: target.name !== "dashboard",
         });
       });
     }

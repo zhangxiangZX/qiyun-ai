@@ -48,6 +48,15 @@
     animation: ui-fade-in-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
 
+  /* 弹层挂到 body 后一般不受影响；若仍作为 page-stack 子节点渲染，禁止入场动画
+     以免 transform/opacity 把 fixed 遮罩锁成半透明并与下层重叠。 */
+  .page-stack > [data-dialog-overlay],
+  .page-stack > [aria-modal="true"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
   .page-stack > *:nth-child(1) { animation-delay: 0ms; }
   .page-stack > *:nth-child(2) { animation-delay: 40ms; }
   .page-stack > *:nth-child(3) { animation-delay: 80ms; }
@@ -110,14 +119,14 @@
     font-weight: 700;
     line-height: var(--lh-snug);
     letter-spacing: -0.01em;
-    color: var(--foreground);
+    color: hsl(var(--foreground));
   }
 
   .page-head__subtitle {
     margin: var(--sp-1) 0 0;
     font-size: var(--fs-sm);
     line-height: var(--lh-snug);
-    color: var(--muted-foreground);
+    color: hsl(var(--muted-foreground));
   }
 
   /* Canonical card title row (replaces per-page .cardHeader) */
@@ -127,11 +136,11 @@
     justify-content: space-between;
     gap: var(--sp-3);
     padding: var(--card-pad-sm) var(--card-pad);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid hsl(var(--border));
     font-size: var(--fs-h3);
     font-weight: 700;
     line-height: var(--lh-snug);
-    color: var(--foreground);
+    color: hsl(var(--foreground));
   }
 
   .card-head h2,
@@ -141,7 +150,7 @@
     font-weight: inherit;
   }
 
-  /* Canonical KPI grid + tile (replaces per-page .kpiGrid/.kpiCard) */
+  /* Canonical KPI tile — 询盘中心同款：左色块白图标 + 右文案 */
   .kpi-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -150,13 +159,13 @@
 
   .kpi-tile {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 120px;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    min-height: 0;
     padding: var(--card-pad);
-    border: 1px solid var(--border);
+    border: 1px solid hsl(var(--border));
     border-radius: var(--radius-card);
-    background: var(--card);
+    background: hsl(var(--card));
     box-shadow: var(--shadow-card);
     transition:
       transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
@@ -170,6 +179,43 @@
     box-shadow:
       0 8px 24px hsl(var(--primary) / 0.1),
       0 2px 8px hsl(var(--primary) / 0.06);
+  }
+
+  .kpi-tile__icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    place-items: center;
+    border-radius: 12px;
+    color: #fff;
+    background: #3b82f6;
+  }
+
+  .kpi-tile__icon svg {
+    width: 22px;
+    height: 22px;
+    color: #fff;
+  }
+
+  .kpi-tile__label {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .kpi-tile__value {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: hsl(var(--foreground));
+  }
+
+  .kpi-tile__trend {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #22c55e;
   }
 
   /* Main content canvas — light grey field + white cards (design mockup) */

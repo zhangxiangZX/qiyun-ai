@@ -167,10 +167,9 @@ export function QuotationEditWorkspace() {
             href="/dashboard/quotes"
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
           >
-            <ArrowLeft size={12} /> 询盘与报价 / 报价管理 / 报价编辑
+            <ArrowLeft size={12} /> 返回报价列表
           </Link>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">报价编辑</h1>
             <span className="text-sm text-muted-foreground">
               报价单号 {quote?.id.slice(0, 12).toUpperCase() ?? "—"}
             </span>
@@ -189,7 +188,7 @@ export function QuotationEditWorkspace() {
           <Button variant="default" leftIcon={<Pencil size={16} />} onClick={() => void handleSave()} disabled={saving || loading}>
             {saving ? "保存中…" : "保存修改"}
           </Button>
-          <Button variant="outline" leftIcon={<Download size={16} />}>
+          <Button variant="outline" leftIcon={<Download size={16} />} type="button" disabled title="另存版本暂未开放">
             另存版本
           </Button>
           <Button variant="default" leftIcon={<Send size={16} />}>

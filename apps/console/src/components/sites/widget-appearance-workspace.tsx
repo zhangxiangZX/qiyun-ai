@@ -24,14 +24,14 @@ function Toggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
+        "relative inline-block h-6 w-11 shrink-0 overflow-hidden rounded-full transition-colors",
         checked ? "bg-primary" : "bg-muted",
       )}
     >
       <span
         className={cn(
-          "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
-          checked ? "translate-x-[22px]" : "translate-x-0.5",
+          "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left]",
+          checked ? "left-[22px]" : "left-0.5",
         )}
       />
     </button>

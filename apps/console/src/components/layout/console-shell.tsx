@@ -6,7 +6,6 @@ import { Suspense, useState } from "react";
 
 import { ConsoleTopbar } from "./console-topbar";
 import { SidebarNav } from "./sidebar-nav";
-import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 
 function ConsoleShellContent({
   children,
@@ -36,7 +35,7 @@ function ConsoleShellContent({
         />
       </div>
 
-      <div className="console-main-slot min-h-dvh">
+      <div className="console-main-slot relative min-h-dvh">
         <ConsoleTopbar pathname={pathname} search={search} platformRole={platformRole} />
         <main id="main-content" className="main console-main-canvas w-full">
           <div className="content w-full">{children}</div>

@@ -9,7 +9,7 @@ import type {
 import type { SalesLinkView } from "@/lib/channels/api";
 import type { SiteConfig } from "@/lib/sites/types";
 import { resolveSalesLinkPublicUrl } from "@/lib/channels/api";
-import type { DashboardSnapshot, TrendRange } from "@/lib/dashboard/types";
+import type { DashboardSnapshot, TrendPoint, TrendRange } from "@/lib/dashboard/types";
 import { formatAmount } from "@/lib/sales/api";
 import type {
   ChannelAttributionItem,
@@ -153,27 +153,87 @@ export function mapSalesKpis(
   ];
 }
 
+function eachDateInclusive(from: string, to: string): string[] {
+  const days: string[] = [];
+  const cursor = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+  if (Number.isNaN(cursor.getTime()) || Number.isNaN(end.getTime()) || cursor > end) {
+    return days;
+  }
+  while (cursor <= end) {
+    days.push(
+      `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`,
+    );
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+}
+
+function formatTrendLabel(isoDate: string): string {
+  const [, month, day] = isoDate.split("-");
+  return `${month}-${day}`;
+}
+
 export function mapTrendSeries(
   snapshot: DashboardSnapshot,
-  range: TrendRange,
+  range: TrendRange | { from: string; to: string },
   overview: SalesOverviewMetrics | null,
+  /** 传入则按所选日期聚合；空数组表示区间内无数据，显示 0 */
+  inquiries?: InquiryListItem[],
 ): { labels: string[]; inquiries: number[]; deals: number[] } {
-  const points = range === 7 ? snapshot.trend7 : snapshot.trend30;
+  const bounds =
+    typeof range === "number"
+      ? (() => {
+          const to = new Date();
+          const from = new Date();
+          from.setDate(to.getDate() - (range - 1));
+          const fmt = (d: Date) =>
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          return { from: fmt(from), to: fmt(to) };
+        })()
+      : range;
+
+  const days = eachDateInclusive(bounds.from, bounds.to);
+  const sourcePoints = [
+    ...(snapshot.trend30 ?? []),
+    ...(snapshot.trend7 ?? []),
+  ];
+  const byDate = new Map(sourcePoints.map((point) => [point.date.slice(0, 10), point]));
+
+  const inquiryByDate = new Map<string, number>();
+  const dealByDate = new Map<string, number>();
+  for (const item of inquiries ?? []) {
+    const day = item.createdAt.slice(0, 10);
+    inquiryByDate.set(day, (inquiryByDate.get(day) ?? 0) + 1);
+    if (item.quoteStatus === "won") {
+      dealByDate.set(day, (dealByDate.get(day) ?? 0) + 1);
+    }
+  }
+
+  const useInquirySeries = inquiries !== undefined;
   const winRate =
     overview && overview.effectiveInquiries > 0
       ? overview.wonCount / overview.effectiveInquiries
       : 0.12;
+
   return {
-    labels: points.map((point) => point.label),
-    inquiries: points.map((point) => point.leads),
-    deals: points.map((point) => Math.max(0, Math.round(point.leads * winRate))),
+    labels: days.map(formatTrendLabel),
+    inquiries: days.map((day) =>
+      useInquirySeries ? (inquiryByDate.get(day) ?? 0) : (byDate.get(day)?.leads ?? 0),
+    ),
+    deals: days.map((day) => {
+      if (useInquirySeries) return dealByDate.get(day) ?? 0;
+      const leads = byDate.get(day)?.leads ?? 0;
+      return Math.max(0, Math.round(leads * winRate));
+    }),
   };
 }
 
 export function mapSalesTrendSeries(
   snapshot: DashboardSnapshot,
+  days: 7 | 30 = 7,
 ): { labels: string[]; newInquiries: number[]; followed: number[] } {
-  const points = snapshot.trend7;
+  const points = days === 30 ? (snapshot.trend30 ?? snapshot.trend7) : snapshot.trend7;
   return {
     labels: points.map((point) => point.label),
     newInquiries: points.map((point) => point.leads),
@@ -242,29 +302,53 @@ export function mapHotOpportunities(inquiries: InquiryListItem[]): HotOpportunit
     }));
 }
 
-export function mapSalesRanking(inquiries: InquiryListItem[]): SalesRankingItem[] {
-  const grouped = new Map<string, { name: string; inquiries: number; won: number; amount: number }>();
+export type SalesRankingMetric = "amount" | "inquiries" | "lost";
+
+export function mapSalesRanking(
+  inquiries: InquiryListItem[],
+  metric: SalesRankingMetric = "amount",
+): SalesRankingItem[] {
+  const grouped = new Map<
+    string,
+    { name: string; inquiries: number; won: number; lost: number; amount: number }
+  >();
   for (const item of inquiries) {
     const key = item.ownerId ?? "unassigned";
     const name = item.ownerId?.replace(/^sales_/, "") ?? "未分配";
-    const entry = grouped.get(key) ?? { name, inquiries: 0, won: 0, amount: 0 };
+    const entry = grouped.get(key) ?? { name, inquiries: 0, won: 0, lost: 0, amount: 0 };
     entry.inquiries += 1;
     if (item.quoteStatus === "won") {
       entry.won += 1;
       entry.amount += 10000;
     }
+    if (item.quoteStatus === "lost") {
+      entry.lost += 1;
+    }
     grouped.set(key, entry);
   }
+
+  const metricValue = (item: { inquiries: number; won: number; lost: number; amount: number }) => {
+    if (metric === "inquiries") return item.inquiries;
+    if (metric === "lost") return item.lost;
+    return item.amount;
+  };
+
+  const metricLabel = (item: { inquiries: number; won: number; lost: number; amount: number }) => {
+    if (metric === "inquiries") return String(item.inquiries);
+    if (metric === "lost") return String(item.lost);
+    return formatAmount(item.amount);
+  };
+
   return [...grouped.values()]
     .filter((item) => item.name !== "未分配")
-    .sort((a, b) => b.amount - a.amount || b.inquiries - a.inquiries)
+    .sort((a, b) => metricValue(b) - metricValue(a) || b.inquiries - a.inquiries)
     .slice(0, 5)
     .map((item, index) => ({
       rank: index + 1,
       name: item.name,
       avatar: item.name.slice(0, 1),
       deals: item.won,
-      amount: formatAmount(item.amount),
+      amount: metricLabel(item),
       targetRate: Math.min(100, Math.round((item.won / Math.max(item.inquiries, 1)) * 100)),
       monthOverMonth: "—",
       momDirection: "up" as const,

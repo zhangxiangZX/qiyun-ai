@@ -13,7 +13,7 @@ const variantStyles = {
     icon: CheckCircle2,
   },
   warning: {
-    container: "border-warning/30 bg-warning/5 text-warning",
+    container: "border-warning/30 bg-warning/5 text-[#92400e]",
     icon: TriangleAlert,
   },
   info: {

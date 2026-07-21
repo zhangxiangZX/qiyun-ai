@@ -120,13 +120,13 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
     >
       <span className="text-sm text-foreground">{label}</span>
       <span
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+        className={`relative inline-block h-5 w-9 shrink-0 overflow-hidden rounded-full transition-colors ${
           checked ? "bg-primary" : "bg-muted-foreground/30"
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? "translate-x-4" : "translate-x-0.5"
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-[left] ${
+            checked ? "left-[18px]" : "left-0.5"
           }`}
         />
       </span>
@@ -196,10 +196,10 @@ export function WidgetConfigWorkspace() {
 
       {/* KPI row + mini chart */}
       <div className="mt-4 grid gap-3 md:grid-cols-5 ui-stagger-fade-in ui-hover-lift-children">
-        <StatCard label="已安装站点" value="8" trend={<span className="text-success text-sm">+1</span>} icon={<Globe size={18} />} iconTone="brand" />
-        <StatCard label="今日会话" value="268" trend={<span className="text-success text-sm">+18.7%</span>} icon={<MessageCircle size={18} />} iconTone="success" />
-        <StatCard label="留资数" value="42" trend={<span className="text-success text-sm">+21.4%</span>} icon={<UserPlus size={18} />} iconTone="purple" />
-        <StatCard label="平均首响" value="18.6秒" trend={<span className="text-warning text-sm">+3.2%</span>} icon={<Clock size={18} />} iconTone="warning" />
+        <StatCard label="已安装站点" value="8" trend={<span className="text-success text-sm">+1</span>} icon={<Globe size={22} />} iconTone="brand" />
+        <StatCard label="今日会话" value="268" trend={<span className="text-success text-sm">+18.7%</span>} icon={<MessageCircle size={22} />} iconTone="success" />
+        <StatCard label="留资数" value="42" trend={<span className="text-success text-sm">+21.4%</span>} icon={<UserPlus size={22} />} iconTone="purple" />
+        <StatCard label="平均首响" value="18.6秒" trend={<span className="text-warning text-sm">+3.2%</span>} icon={<Clock size={22} />} iconTone="warning" />
         <section className="rounded-card border border-border bg-card p-4 shadow-card">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">今日会话趋势</span>

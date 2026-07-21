@@ -10,6 +10,10 @@ import type {
   ParsedDocumentChunk,
 } from "./document.types";
 import type { DocumentStorage } from "./document-storage";
+import {
+  createDifyDocumentCleanerFromEnv,
+  type DocumentChunkCleaner,
+} from "../dify/dify-document-cleaner";
 
 export interface DocumentJob {
   documentId: string;
@@ -39,6 +43,7 @@ export interface DocumentProcessingResult {
 export async function processDocumentJob(
   job: DocumentJob,
   storage: DocumentStorage,
+  cleaner: DocumentChunkCleaner = createDifyDocumentCleanerFromEnv(),
 ): Promise<DocumentProcessingResult> {
   const baseTransitions: DocumentProcessingUpdate[] = [
     { status: "uploaded" },
@@ -98,6 +103,13 @@ export async function processDocumentJob(
     throw error;
   }
 
+  const cleanedChunks = await cleaner.cleanChunks({
+    workspaceId: job.workspaceId,
+    documentId: job.documentId,
+    fileName: job.filename,
+    chunks,
+  });
+
   return {
     documentId: job.documentId,
     workspaceId: job.workspaceId,
@@ -105,9 +117,9 @@ export async function processDocumentJob(
       ...baseTransitions,
       {
         status: "ready",
-        chunkCount: chunks.length,
+        chunkCount: cleanedChunks.length,
       },
     ],
-    chunks,
+    chunks: cleanedChunks,
   };
 }

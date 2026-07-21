@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { TrendingUp } from "lucide-react";
 
 import { DataCenterToolbar } from "@/components/data-center/data-center-toolbar";
+import {
+  defaultDateRange,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
 import styles from "@/styles/channel-analysis.module.css";
 
 function PlaceholderPage({ title, description, iconBg, iconColor }: {
@@ -11,15 +16,11 @@ function PlaceholderPage({ title, description, iconBg, iconColor }: {
   iconBg: string;
   iconColor: string;
 }) {
-  const to = new Date();
-  const from = new Date(to);
-  from.setDate(from.getDate() - 29);
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const [range, setRange] = useState<DateRangeValue>(() => defaultDateRange("30d"));
 
   return (
     <div className={styles.page}>
-      <DataCenterToolbar dateLabel={`${fmt(from)} ~ ${fmt(to)}`} />
+      <DataCenterToolbar range={range} onRangeChange={setRange} />
       <div className={`${styles.card} ${styles.placeholderPage}`}>
         <span className={styles.placeholderPageIcon} style={{ background: iconBg }}>
           <TrendingUp size={28} color={iconColor} />

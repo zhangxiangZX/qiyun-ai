@@ -206,10 +206,10 @@ export function AiSelectionWorkspace() {
         ) : (
           <>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard emphasis="metric" label="页面总数" value={`${metrics.total}`} icon={<LayoutGrid className="h-5 w-5" />} iconTone="brand" />
-              <StatCard emphasis="metric" label="已发布" value={`${metrics.published}`} icon={<Sparkles className="h-5 w-5" />} iconTone="success" />
-              <StatCard emphasis="metric" label="草稿中" value={`${metrics.draft}`} icon={<Settings2 className="h-5 w-5" />} iconTone="warning" />
-              <StatCard emphasis="metric" label="问题总数" value={`${metrics.totalQuestions}`} icon={<ClipboardList className="h-5 w-5" />} iconTone="purple" />
+              <StatCard emphasis="metric" label="页面总数" value={`${metrics.total}`} icon={<LayoutGrid size={22} />} iconTone="brand" />
+              <StatCard emphasis="metric" label="已发布" value={`${metrics.published}`} icon={<Sparkles size={22} />} iconTone="success" />
+              <StatCard emphasis="metric" label="草稿中" value={`${metrics.draft}`} icon={<Settings2 size={22} />} iconTone="warning" />
+              <StatCard emphasis="metric" label="问题总数" value={`${metrics.totalQuestions}`} icon={<ClipboardList size={22} />} iconTone="purple" />
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">

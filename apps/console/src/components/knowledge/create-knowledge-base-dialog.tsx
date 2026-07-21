@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Button, Input, Label, useFocusTrap } from "@qiyun/ui";
 
@@ -40,7 +41,7 @@ export function CreateKnowledgeBaseDialog({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -49,14 +50,15 @@ export function CreateKnowledgeBaseDialog({
     onCreate(trimmed);
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      data-dialog-overlay=""
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
     >
       <form
         ref={containerRef}
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-dialog border border-border bg-card p-6 shadow-card"
+        className="w-full max-w-md rounded-dialog border border-border bg-card p-6 shadow-card opacity-100"
         role="dialog"
         aria-modal="true"
         aria-label="创建知识库"
@@ -88,6 +90,7 @@ export function CreateKnowledgeBaseDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

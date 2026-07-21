@@ -90,17 +90,17 @@ export function SheetContent({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-[200]">
       <button
         type="button"
         aria-label="Close sidebar"
-        className="absolute inset-0 bg-foreground/20 backdrop-blur-[2px] ui-fade-in"
+        className="absolute inset-0 bg-black/50 backdrop-blur-[2px] ui-fade-in"
         onClick={() => setOpen(false)}
       />
       <aside
         ref={panelRef}
         className={cn(
-          "absolute top-0 flex h-full w-[min(100vw,20rem)] flex-col border-border bg-card shadow-card",
+          "absolute top-0 flex h-full w-[min(100vw,20rem)] flex-col border-border bg-card shadow-card opacity-100",
           side === "left" ? "left-0 border-r ui-slide-in-left" : "right-0 border-l ui-slide-in-right",
           className,
         )}

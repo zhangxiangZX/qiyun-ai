@@ -257,7 +257,7 @@ export function RolePermissionsWorkspace() {
               </>
             ) : null}
             <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/team/invite">
+              <Link href="/dashboard/team">
                 管理成员角色
                 <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
               </Link>
@@ -493,7 +493,7 @@ export function RolePermissionsWorkspace() {
                           {member.avatar}
                         </span>
                       ))}
-                      <Link href="/dashboard/team/invite" className="text-xs text-primary">
+                      <Link href="/dashboard/team" className="text-xs text-primary">
                         共 {selectedRole.memberCount} 人 &gt;
                       </Link>
                     </div>
@@ -510,7 +510,7 @@ export function RolePermissionsWorkspace() {
                   在「邀请成员」页可修改成员为管理员、销售成员或只读访客。企业所有者仅可通过转移所有权变更。
                 </p>
                 <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-                  <Link href="/dashboard/team/invite">前往成员管理</Link>
+                  <Link href="/dashboard/team">前往成员管理</Link>
                 </Button>
               </section>
 

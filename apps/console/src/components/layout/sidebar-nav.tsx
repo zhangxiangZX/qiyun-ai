@@ -65,6 +65,7 @@ function SidebarNavGroup({
       return (
         <Link
           href={group.href}
+          prefetch={false}
           onClick={onNavigate}
           className={cn("nav-standalone-link", isActive && "active")}
         >
@@ -79,6 +80,7 @@ function SidebarNavGroup({
     return (
       <Link
         href={group.href}
+        prefetch={false}
         onClick={onNavigate}
         className={cn(
           "flex items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition-colors",
@@ -116,6 +118,7 @@ function SidebarNavGroup({
                 <Link
                   key={child.id}
                   href={child.href}
+                  prefetch={false}
                   onClick={onNavigate}
                   className={cn("nav-subitem", isActive && "active")}
                 >
@@ -149,6 +152,7 @@ function SidebarNavGroup({
               <Link
                 key={child.id}
                 href={child.href}
+                prefetch={false}
                 onClick={onNavigate}
                 className={cn(
                   "flex items-center rounded-control px-3 py-2 text-sm transition-colors",

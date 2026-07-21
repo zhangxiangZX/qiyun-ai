@@ -2948,7 +2948,7 @@ test("platform admin provisions customer workspace and admin invitation", { conc
   );
   assert.equal(createResponse.status, 201);
   const created = (await createResponse.json()) as {
-    workspace: { name: string; plan: string };
+    workspace: { id: string; name: string; plan: string };
     invitation: { email: string; status: string; inviteUrl: string };
   };
   assert.equal(created.workspace.name, "库滋玛演示工作区");
@@ -2956,6 +2956,19 @@ test("platform admin provisions customer workspace and admin invitation", { conc
   assert.equal(created.invitation.email, "admin@kuzuma.example.com");
   assert.equal(created.invitation.status, "pending");
   assert.match(created.invitation.inviteUrl, /accept-invite\?token=/);
+
+  // A platform admin starts without an active tenant. Provisioning grants
+  // ownership, so the first activation must work with bearer auth alone.
+  const activateResponse = await handleApiRequest(
+    new Request(`http://localhost:3001/workspaces/${created.workspace.id}/activate`, {
+      method: "POST",
+      headers: {
+        ...jsonHeaders,
+        authorization: `Bearer ${platform.tokens.accessToken}`,
+      },
+    }),
+  );
+  assert.equal(activateResponse.status, 200);
 
   const listResponse = await handleApiRequest(
     new Request("http://localhost:3001/platform/workspaces", {

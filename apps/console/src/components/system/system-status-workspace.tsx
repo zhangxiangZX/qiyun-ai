@@ -294,12 +294,16 @@ export function SystemStatusWorkspace() {
                 : `${summary.healthy}/${summary.total} 项正常`
             }
             tone={healthTone === "danger" ? "warning" : healthTone === "warning" ? "warning" : "default"}
+            icon={<Activity size={22} aria-hidden />}
+            iconTone={healthTone === "danger" || healthTone === "warning" ? "warning" : "success"}
           />
           <StatCard
             emphasis="metric"
             label="运行模式"
             value={snapshot.mode === "upstream" ? "真实 API" : "演示模式"}
             description={snapshot.modeMessage}
+            icon={<Server size={22} aria-hidden />}
+            iconTone="brand"
           />
           <StatCard
             emphasis="metric"
@@ -321,6 +325,12 @@ export function SystemStatusWorkspace() {
                 ? "warning"
                 : "default"
             }
+            icon={<Database size={22} aria-hidden />}
+            iconTone={
+              snapshot.upstreamReachable === false && snapshot.mode === "upstream"
+                ? "warning"
+                : "info"
+            }
           />
           <StatCard
             emphasis="metric"
@@ -331,6 +341,8 @@ export function SystemStatusWorkspace() {
                 ? `${memberRoleLabel(workspaceRole)} · ${snapshot.workspaceNote}`
                 : snapshot.workspaceNote
             }
+            icon={<HardDrive size={22} aria-hidden />}
+            iconTone="purple"
           />
         </div>
 

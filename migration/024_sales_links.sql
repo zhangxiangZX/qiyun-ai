@@ -16,6 +16,6 @@ create table if not exists sales_links (
   deleted_at timestamp with time zone
 );
 
-create index idx_sales_links_workspace on sales_links(workspace_id) where deleted_at is null;
-create index idx_sales_links_slug on sales_links(slug) where deleted_at is null;
-create unique index idx_sales_links_slug_active on sales_links(slug) where deleted_at is null;
+create index if not exists idx_sales_links_workspace on sales_links(workspace_id) where deleted_at is null;
+create index if not exists idx_sales_links_slug on sales_links(slug) where deleted_at is null;
+create unique index if not exists idx_sales_links_slug_active on sales_links(slug) where deleted_at is null;

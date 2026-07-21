@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Calendar,
   Copy,
   Download,
   Eye,
@@ -152,7 +151,7 @@ export function SalesLinksWorkspace() {
     <MessageSquare key="msg" size={20} />,
     <TrendingUp key="trend" size={20} />,
   ];
-  const kpiColors = ["#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
+  const kpiColors = ["#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6"];
 
   return (
     <ConsolePage>
@@ -177,11 +176,6 @@ export function SalesLinksWorkspace() {
       </ConsolePageAlerts>
 
       <div className={`${styles.page}`}>
-        <div className={styles.pageHeader}>
-          <h1>销售链接 / 二维码</h1>
-          <p>创建与管理渠道销售链接，支持多渠道发布与数据追踪</p>
-        </div>
-
         {loading ? (
           <>
             <div className={styles.statsGrid}>
@@ -196,10 +190,6 @@ export function SalesLinksWorkspace() {
         ) : (
           <>
             <div className={styles.toolbarRow}>
-              <span className={styles.dateRange}>
-                <Calendar size={14} />
-                2024-06-01 ~ 2024-06-30
-              </span>
               <button type="button" className={styles.btnOutline}>
                 <Download size={14} />
                 导出数据
@@ -209,15 +199,15 @@ export function SalesLinksWorkspace() {
             <div className={styles.statsGrid}>
               {SALES_LINKS_KPIS.map((kpi, index) => (
                 <div key={kpi.label} className={styles.statCard}>
-                  <div className={styles.statTop}>
-                    <span className={styles.statLabel}>{kpi.label}</span>
-                    <span className={styles.statIcon} style={{ background: kpiColors[index] }}>
-                      {kpiIcons[index]}
-                    </span>
-                  </div>
-                  <div className={styles.statValue}>{kpi.value}</div>
-                  <div className={styles.statTrend}>
-                    <span className={styles.trendUp}>{kpi.trend}</span>
+                  <span className={styles.statIcon} style={{ background: kpiColors[index] }}>
+                    {kpiIcons[index]}
+                  </span>
+                  <div>
+                    <div className={styles.statLabel}>{kpi.label}</div>
+                    <div className={styles.statValue}>{kpi.value}</div>
+                    <div className={styles.statTrend}>
+                      <span className={styles.trendUp}>{kpi.trend}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -351,7 +341,7 @@ export function SalesLinksWorkspace() {
                             </td>
                             <td>
                               <div className={styles.shortLink}>
-                                <span>{resolveSalesLinkPublicUrl(link).replace(/^https:\/\//, "")}</span>
+                                <span>{resolveSalesLinkPublicUrl(link).replace(/^https?:\/\//, "")}</span>
                                 <button
                                   type="button"
                                   className={styles.btnLink}

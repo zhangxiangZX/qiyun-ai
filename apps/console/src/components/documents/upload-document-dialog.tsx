@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FileUp, Loader2, Upload, X } from "lucide-react";
 
 import { Button, Label, Select, useFocusTrap } from "@qiyun/ui";
@@ -44,7 +45,7 @@ export function UploadDocumentDialog({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   function stageFile(fileList: FileList | null) {
     if (!fileList?.length || loading) return;
@@ -56,13 +57,14 @@ export function UploadDocumentDialog({
     onUpload(staged, category);
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      data-dialog-overlay=""
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
     >
       <div
         ref={containerRef}
-        className="w-full max-w-lg rounded-dialog border border-border bg-card p-6 shadow-card"
+        className="w-full max-w-lg rounded-dialog border border-border bg-card p-6 shadow-card opacity-100"
         role="dialog"
         aria-modal="true"
         aria-label={t(defaultLocale, "documents.uploadTitle")}
@@ -174,6 +176,7 @@ export function UploadDocumentDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

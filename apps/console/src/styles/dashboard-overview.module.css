@@ -92,9 +92,9 @@
 
 .kpiCard {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 120px;
+  align-items: flex-start;
+  gap: 16px;
+  min-height: 0;
   padding: var(--card-pad);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
@@ -155,9 +155,9 @@
 
 .kpiCard strong {
   display: block;
-  margin-top: 11px;
+  margin-top: 4px;
   color: var(--foreground);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -198,23 +198,23 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  margin-left: 12px;
+  margin-left: 0;
   border-radius: 12px;
   color: #fff;
-  background: var(--primary);
+  background: #3b82f6;
 }
 
 .kpiIcon svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   color: #fff;
 }
 
-.blue { background: var(--primary); color: #fff; }
+.blue { background: #3b82f6; color: #fff; }
 .green { background: #22c55e; color: #fff; }
 .purple { background: #8b5cf6; color: #fff; }
-.orange { background: #f97316; color: #fff; }
-.gray { background: var(--muted-foreground); color: #fff; }
+.orange { background: #f59e0b; color: #fff; }
+.gray { background: #64748b; color: #fff; }
 
 .midGrid {
   display: grid;

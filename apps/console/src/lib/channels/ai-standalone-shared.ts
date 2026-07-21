@@ -1,4 +1,4 @@
-import { PUBLIC_ENTRY_URL } from "@/lib/brand";
+import { CONSOLE_URL } from "@/lib/brand";
 
 export type SelectionPageIcon = "shield" | "qrcode" | "quote";
 
@@ -133,9 +133,26 @@ export function buildAiStandaloneNewHref(section: AiStandaloneSection = "basic")
   return buildAiStandaloneEditHref(NEW_PAGE_ID, section);
 }
 
-export function resolveSelectionPagePublicUrl(slug: string): string {
+export function resolveSelectionPagePublicUrl(slug: string, origin?: string): string {
   const path = `/s/${slug}`;
-  return `${PUBLIC_ENTRY_URL}${path}`;
+  if (origin) return `${origin.replace(/\/$/, "")}${path}`;
+
+  // Selection pages are served by Console — prefer current local origin.
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}${path}`;
+  }
+
+  const entry = process.env.NEXT_PUBLIC_ENTRY_URL?.replace(/\/$/, "");
+  if (entry) return `${entry}${path}`;
+
+  const app = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (app) return `${app}${path}`;
+
+  // Avoid baking production go.* domain into local SSR; relative path is safer.
+  if (CONSOLE_URL.includes("localhost") || CONSOLE_URL.includes("127.0.0.1")) {
+    return `${CONSOLE_URL}${path}`;
+  }
+  return path;
 }
 
 export function getPagePublicSlug(page: SelectionPageItem): string {

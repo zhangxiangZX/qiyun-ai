@@ -17,6 +17,7 @@
     "test:ui-quality": "node e2e/node_modules/playwright/cli.js test --config e2e/playwright.config.mjs e2e/auth.spec.ts e2e/accessibility.spec.ts e2e/layout-contract.spec.ts e2e/visual-regression.spec.ts",
     "test:business-flow": "node e2e/run-business-flow.mjs",
     "test:customer-journey": "node e2e/run-customer-journey.mjs",
+    "test:page-clicks": "node e2e/run-page-click-audit.mjs",
     "test:all": "pnpm test && pnpm test:e2e"
   },
   "dependencies": {

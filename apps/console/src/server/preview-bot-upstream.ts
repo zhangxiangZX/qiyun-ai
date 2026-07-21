@@ -112,8 +112,9 @@ export async function resolveUpstreamPreviewBotContext(
         knowledgeBaseIds: sync.knowledgeBaseIds,
       }),
     });
+    // Preview chat only needs a siteKey; bot patch failures should not block RAG.
     if (!patch.ok) {
-      throw new Error(patch.message ?? "Failed to sync bot for preview.");
+      console.warn("[preview-bot] sync patch skipped:", patch.message ?? patch.status);
     }
   }
 
@@ -127,9 +128,9 @@ export async function resolveUpstreamPreviewBotContext(
     throw new Error(sitesResult.message ?? "Failed to load sites for preview.");
   }
 
-  const previewSite = sitesResult.data.find(
-    (site) => site.botId === botId && site.name.startsWith(PREVIEW_SITE_PREFIX),
-  );
+  const previewSite =
+    sitesResult.data.find((site) => site.botId === botId && site.name.startsWith(PREVIEW_SITE_PREFIX)) ??
+    sitesResult.data.find((site) => site.botId === botId);
 
   if (previewSite) {
     const rotated = await upstreamJson<SiteSecretPayload>(

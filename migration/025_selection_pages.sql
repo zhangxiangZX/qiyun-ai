@@ -22,6 +22,6 @@ create table if not exists selection_submissions (
   created_at timestamp with time zone not null default now()
 );
 
-create index idx_selection_pages_workspace on selection_pages(workspace_id) where deleted_at is null;
-create index idx_selection_pages_slug on selection_pages(slug) where deleted_at is null;
-create index idx_selection_submissions_page on selection_submissions(selection_page_id);
+create index if not exists idx_selection_pages_workspace on selection_pages(workspace_id) where deleted_at is null;
+create index if not exists idx_selection_pages_slug on selection_pages(slug) where deleted_at is null;
+create index if not exists idx_selection_submissions_page on selection_submissions(selection_page_id);

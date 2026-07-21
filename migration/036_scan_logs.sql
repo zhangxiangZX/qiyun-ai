@@ -10,5 +10,5 @@ create table if not exists scan_logs (
   scanned_at timestamp with time zone not null default now()
 );
 
-create index idx_scan_logs_workspace on scan_logs(workspace_id);
-create index idx_scan_logs_link on scan_logs(workspace_id, sales_link_id, scanned_at desc);
+create index if not exists idx_scan_logs_workspace on scan_logs(workspace_id);
+create index if not exists idx_scan_logs_link on scan_logs(workspace_id, sales_link_id, scanned_at desc);

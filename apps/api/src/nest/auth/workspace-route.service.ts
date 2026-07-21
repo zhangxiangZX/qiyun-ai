@@ -8,6 +8,7 @@ import { buildRateLimitMessage, checkNamedRateLimit } from "../../http/rate-limi
 import type { RateLimitPolicyName } from "../../http/rate-limit";
 import { getClientIp } from "../../http/request-context";
 import { NestAuthContextService } from "./auth-context.service";
+import { BearerAuthGuard } from "./guards/bearer-auth.guard";
 import { API_RUNTIME } from "../runtime/runtime.tokens";
 import { NotificationValidationError } from "../../notifications/notification.service";
 import { runWithBypassRls } from "../../db/tenant-context";
@@ -35,6 +36,7 @@ export class WorkspaceRouteService {
   constructor(
     @Inject(API_RUNTIME) private readonly runtime: ApiRuntime,
     @Inject(NestAuthContextService) private readonly authContext: NestAuthContextService,
+    @Inject(BearerAuthGuard) private readonly bearerAuthGuard: BearerAuthGuard,
   ) {}
 
   async handle(request: Request, pathname: string): Promise<ApiResult | null> {
@@ -127,8 +129,13 @@ export class WorkspaceRouteService {
 
     const activateMatch = matchPath("/workspaces/:id/activate", pathname);
     if (activateMatch && method === "POST") {
-      const ctx = await this.authContext.resolve(request.headers);
-      const result = await this.runtime.authApi.activateWorkspace(ctx, activateMatch.params.id);
+      // Activating the first workspace must not require an already-active
+      // workspace. Membership of the target is still checked by AuthService.
+      const user = await this.bearerAuthGuard.assertBearerToken(request.headers);
+      const result = await this.runtime.authApi.activateWorkspaceForUser(
+        user.id,
+        activateMatch.params.id,
+      );
       await this.runtime.persist();
       return ok(result);
     }

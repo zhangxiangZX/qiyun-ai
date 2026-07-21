@@ -16,17 +16,17 @@ import {
   Plus,
   QrCode,
   Search,
-  TrendingUp,
   Users,
 } from "lucide-react";
 
-import { Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
+import { Badge, Button, Skeleton } from "@qiyun/ui";
 
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
-import { listSalesLinks, type SalesLinkView } from "@/lib/channels/api";
+import { QrcodeTutorialDialog } from "@/components/channels/qrcode-tutorial-dialog";
+import { listSalesLinks, resolveSalesLinkPublicUrl, type SalesLinkView } from "@/lib/channels/api";
 import {
   countByStatus,
   mockQrcodeEntries,
@@ -96,7 +96,7 @@ function mapApiLinkToEntry(link: SalesLinkView, index: number): QrcodeEntry {
     name: link.name,
     remark: link.channelLabel,
     kind,
-    linkedContent: link.targetUrl ?? `https://${link.shortUrl}`,
+    linkedContent: link.targetUrl ?? resolveSalesLinkPublicUrl(link),
     creator: link.creator,
     todayVisits: Math.max(1, Math.round(link.visits * 0.05)),
     totalVisits: link.visits,
@@ -106,15 +106,6 @@ function mapApiLinkToEntry(link: SalesLinkView, index: number): QrcodeEntry {
     createdAt: link.createdAt,
     linkId: link.id,
   };
-}
-
-function GrowthBadge({ value }: { value: number }) {
-  return (
-    <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
-      <TrendingUp className="h-3 w-3" />
-      {value.toFixed(1)}%
-    </span>
-  );
 }
 
 function KindIcon({ kind }: { kind: QrcodeEntryKind }) {
@@ -150,38 +141,102 @@ function StatusCell({ status, note }: { status: QrcodeEntryStatus; note: string 
   );
 }
 
-function OverviewPanel({ stats }: { stats: QrcodeOverviewStats }) {
+const EMPTY_OVERVIEW: QrcodeOverviewStats = {
+  qrcodeVisits: 0,
+  qrcodeVisitsGrowth: 0,
+  salesLinkVisits: 0,
+  salesLinkVisitsGrowth: 0,
+  uniqueVisitors: 0,
+  uniqueVisitorsGrowth: 0,
+  inquiryConversions: 0,
+  inquiryConversionsGrowth: 0,
+};
+
+function OverviewMetric({
+  label,
+  value,
+  growth,
+  icon: Icon,
+  iconClass,
+}: {
+  label: string;
+  value: number;
+  growth: number;
+  icon: typeof QrCode;
+  iconClass: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
+        <Icon className="h-5 w-5 text-white" aria-hidden />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs leading-snug text-muted-foreground">{label}</p>
+        <p className="mt-0.5 text-xl font-bold leading-tight text-foreground">
+          {(value ?? 0).toLocaleString("zh-CN")}
+        </p>
+        <p className="mt-1 text-[11px] font-medium text-emerald-600">
+          较上月 ↑ {(growth ?? 0).toFixed(1)}%
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DataOverviewCard({ stats }: { stats?: QrcodeOverviewStats | null }) {
+  const data: QrcodeOverviewStats = {
+    ...EMPTY_OVERVIEW,
+    ...(stats && typeof stats === "object" ? stats : {}),
+  };
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-foreground">数据概览 (近 30 天)</h2>
+        <Link
+          href="/dashboard/reports"
+          className="shrink-0 text-sm font-medium text-primary hover:underline"
+        >
+          更多数据
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+        <OverviewMetric
+          label="二维码访问次数"
+          value={Number(data.qrcodeVisits) || 0}
+          growth={Number(data.qrcodeVisitsGrowth) || 0}
+          icon={QrCode}
+          iconClass="bg-[#60a5fa]"
+        />
+        <OverviewMetric
+          label="销售链接访问次数"
+          value={Number(data.salesLinkVisits) || 0}
+          growth={Number(data.salesLinkVisitsGrowth) || 0}
+          icon={Link2}
+          iconClass="bg-[#4ade80]"
+        />
+        <OverviewMetric
+          label="独立访客 (UV)"
+          value={Number(data.uniqueVisitors) || 0}
+          growth={Number(data.uniqueVisitorsGrowth) || 0}
+          icon={Users}
+          iconClass="bg-[#a78bfa]"
+        />
+        <OverviewMetric
+          label="线索转化数"
+          value={Number(data.inquiryConversions) || 0}
+          growth={Number(data.inquiryConversionsGrowth) || 0}
+          icon={Megaphone}
+          iconClass="bg-[#fb923c]"
+        />
+      </div>
+    </section>
+  );
+}
+
+function OverviewPanel({ stats }: { stats?: QrcodeOverviewStats | null }) {
   return (
     <aside className="space-y-4">
-      <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">数据概览</h2>
-          <span className="text-xs text-muted-foreground">近 30 天</span>
-        </div>
-        <div className="space-y-3">
-          {[
-            { label: "二维码访问量", value: stats.qrcodeVisits, growth: stats.qrcodeVisitsGrowth },
-            { label: "销售链接访问量", value: stats.salesLinkVisits, growth: stats.salesLinkVisitsGrowth },
-            { label: "独立访客 UV", value: stats.uniqueVisitors, growth: stats.uniqueVisitorsGrowth },
-            { label: "询盘转化", value: stats.inquiryConversions, growth: stats.inquiryConversionsGrowth },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">{item.label}</p>
-                  <p className="mt-1 text-lg font-semibold text-foreground">
-                    {item.value.toLocaleString("zh-CN")}
-                  </p>
-                </div>
-                <GrowthBadge value={item.growth} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <DataOverviewCard stats={stats} />
 
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold text-foreground">快速创建</h2>
@@ -191,7 +246,7 @@ function OverviewPanel({ stats }: { stats: QrcodeOverviewStats }) {
             className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
-              <QrCode className="h-5 w-5" />
+              <QrCode size={22} />
             </span>
             <span>
               <span className="block text-sm font-medium text-foreground">创建二维码</span>
@@ -205,7 +260,7 @@ function OverviewPanel({ stats }: { stats: QrcodeOverviewStats }) {
             className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
-              <Link2 className="h-5 w-5" />
+              <Link2 size={22} />
             </span>
             <span>
               <span className="block text-sm font-medium text-foreground">创建销售链接</span>
@@ -284,7 +339,9 @@ export function QrcodeManagementWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(true);
   const [entries, setEntries] = useState<QrcodeEntry[]>(mockQrcodeEntries);
-  const [overview, setOverview] = useState(mockQrcodeOverview);
+  const [overview, setOverview] = useState<QrcodeOverviewStats>(
+    () => mockQrcodeOverview ?? EMPTY_OVERVIEW,
+  );
 
   const [statusTab, setStatusTab] = useState<QrcodeStatusTab>("all");
   const [typeFilter, setTypeFilter] = useState<"all" | QrcodeEntryKind>("all");
@@ -294,6 +351,7 @@ export function QrcodeManagementWorkspace() {
   const [dateTo, setDateTo] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -302,7 +360,7 @@ export function QrcodeManagementWorkspace() {
       const links = await listSalesLinks();
       if (links.length > 0) {
         setEntries(links.map(mapApiLinkToEntry));
-        setOverview(buildQrcodeOverviewFromLinks(links));
+        setOverview(buildQrcodeOverviewFromLinks(links) ?? mockQrcodeOverview);
         setIsPreview(false);
       } else {
         setEntries(mockQrcodeEntries);
@@ -381,30 +439,24 @@ export function QrcodeManagementWorkspace() {
 
   return (
     <ConsolePage>
-      <PageHeader
-        title="二维码管理"
-        description="创建和管理企业二维码与销售链接，支持多渠道投放与数据追踪"
-        actions={
-          <>
-            <Button variant="outline" size="sm" type="button">
-              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-              使用教程
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/dashboard/channels/links/new?type=qrcode">
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                创建二维码
-              </Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/dashboard/channels/links/new">
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                创建销售链接
-              </Link>
-            </Button>
-          </>
-        }
-      />
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <Button variant="outline" size="sm" type="button" onClick={() => setTutorialOpen(true)}>
+          <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+          使用教程
+        </Button>
+        <Button asChild size="sm">
+          <Link href="/dashboard/channels/links/new?type=qrcode">
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            创建二维码
+          </Link>
+        </Button>
+        <Button asChild size="sm">
+          <Link href="/dashboard/channels/links/new">
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            创建销售链接
+          </Link>
+        </Button>
+      </div>
 
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="二维码管理" />
@@ -412,7 +464,7 @@ export function QrcodeManagementWorkspace() {
 
       <div className="pb-6">
         {loading ? (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-4">
               <Skeleton className="h-12 w-full rounded-xl" />
               <Skeleton className="h-96 w-full rounded-2xl" />
@@ -422,7 +474,7 @@ export function QrcodeManagementWorkspace() {
         ) : error ? (
           <ConsoleRequestError message={error} onRetry={() => void load()} />
         ) : (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-4">
               <div className="rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex flex-wrap gap-1 border-b border-border px-4 pt-3">
@@ -662,28 +714,14 @@ export function QrcodeManagementWorkspace() {
           </div>
         )}
 
-        <div className="mt-4 space-y-4 xl:hidden">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatCard
-              label="二维码访问量"
-              value={overview.qrcodeVisits.toLocaleString("zh-CN")}
-              trend={<GrowthBadge value={overview.qrcodeVisitsGrowth} />}
-              icon={<QrCode className="h-5 w-5" />}
-              iconTone="purple"
-              emphasis="metric"
-            />
-            <StatCard
-              label="销售链接访问量"
-              value={overview.salesLinkVisits.toLocaleString("zh-CN")}
-              trend={<GrowthBadge value={overview.salesLinkVisitsGrowth} />}
-              icon={<Link2 className="h-5 w-5" />}
-              iconTone="brand"
-              emphasis="metric"
-            />
+        {!loading && !error ? (
+          <div className="mt-4 space-y-4 xl:hidden">
+            <OverviewPanel stats={overview} />
           </div>
-          <OverviewPanel stats={overview} />
-        </div>
+        ) : null}
       </div>
+
+      <QrcodeTutorialDialog open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </ConsolePage>
   );
 }

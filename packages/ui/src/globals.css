@@ -77,9 +77,9 @@
   --card-pad: 20px;
   --card-pad-sm: 16px;
   --card-radius: var(--radius-card);
-  --card-border: var(--border);
+  --card-border: hsl(var(--border));
   --card-shadow: var(--shadow-card);
-  --card-bg: var(--card);
+  --card-bg: hsl(var(--card));
 
   /* Neutral text shortcuts (semantic, theme-aware) */
   --text-strong: var(--foreground);

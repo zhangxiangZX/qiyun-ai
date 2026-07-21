@@ -18,20 +18,30 @@ export interface SelectionPageEditSnapshot {
   successTitle: string;
   successMessage: string;
   sourceId?: string;
+  botId?: string;
+  siteKey?: string;
+  /** Override slug (required for new pages so we don't stick on new-selection-page). */
+  slug?: string;
 }
 
 export function buildSelectionPageConfigFromEdit(
   snapshot: SelectionPageEditSnapshot,
 ): SelectionPagePublicConfig {
-  const slug = getSelectionPageSlug(snapshot.page.id);
+  const slug =
+    snapshot.slug?.trim() ||
+    snapshot.page.slug?.trim() ||
+    getSelectionPageSlug(snapshot.page.id);
+  const enabled = snapshot.published ? true : snapshot.page.enabled;
   const base =
     getDefaultSelectionPageConfig(slug) ??
     ({
       pageId: snapshot.page.id,
       slug,
-      enabled: snapshot.page.enabled,
+      enabled,
       published: snapshot.published,
       sourceId: snapshot.sourceId ?? `${snapshot.page.id}_v1`,
+      botId: snapshot.botId,
+      siteKey: snapshot.siteKey,
       header: {
         title: snapshot.boundBot,
         subtitle: "智能问答 · 参数追问 · 需求提交",
@@ -67,9 +77,13 @@ export function buildSelectionPageConfigFromEdit(
     } satisfies SelectionPagePublicConfig);
 
   return mergeSelectionPageConfig(base, {
+    pageId: snapshot.page.id,
+    slug,
     published: snapshot.published,
-    enabled: snapshot.page.enabled,
+    enabled,
     sourceId: snapshot.sourceId ?? base.sourceId,
+    botId: snapshot.botId ?? base.botId,
+    siteKey: snapshot.siteKey ?? base.siteKey,
     header: {
       ...base.header,
       title: snapshot.boundBot || snapshot.pageName,

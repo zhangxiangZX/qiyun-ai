@@ -152,6 +152,9 @@ export function DashboardOverviewView({
       <section className={`${styles.kpiSection} ${styles.kpiGrid}`}>
         {kpis.map((item) => (
           <article className={styles.kpiCard} key={item.id}>
+            <span className={`${styles.kpiIcon} ${styles[item.tone]}`}>
+              <DashboardOverviewIcon name={item.icon} />
+            </span>
             <div className={styles.kpiBody}>
               <p>{item.title}</p>
               <strong className={item.value === "—" ? styles.kpiEmpty : undefined}>{item.value}</strong>
@@ -159,9 +162,6 @@ export function DashboardOverviewView({
                 {item.trend}
               </small>
             </div>
-            <span className={`${styles.kpiIcon} ${styles[item.tone]}`}>
-              <DashboardOverviewIcon name={item.icon} />
-            </span>
           </article>
         ))}
       </section>

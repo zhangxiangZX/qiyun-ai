@@ -107,45 +107,45 @@ export function GeoDistributionWorkspace() {
       <div className={`${styles.kpiGrid} ui-stagger-fade-in ui-hover-lift-children`}>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#3b82f6] text-white`}>
+              <MapPin size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "geo.kpi.provinces")}</div>
               <div className={styles.kpiValue}>{summary.provinces}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#3b5eff] text-white`}>
-              <MapPin size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#06b6d4] text-white`}>
+              <Globe2 size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "geo.kpi.total")}</div>
               <div className={styles.kpiValue}>{summary.total}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#0ea5e9] text-white`}>
-              <Globe2 size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#f59e0b] text-white`}>
+              <Target size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "geo.kpi.coreShare")}</div>
               <div className={styles.kpiValue}>{summary.coreShare}%</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#f97316] text-white`}>
-              <Target size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#64748b] text-white`}>
+              <MapIcon size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "geo.kpi.untapped")}</div>
               <div className={styles.kpiValue}>{summary.untapped}</div>
-            </div>
-            <div className={`${styles.kpiIcon} bg-[#64748b] text-white`}>
-              <MapIcon size={20} aria-hidden />
             </div>
           </div>
         </article>

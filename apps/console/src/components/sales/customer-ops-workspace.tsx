@@ -200,18 +200,20 @@ export function CustomerOpsWorkspace() {
         {[
           { icon: Users, color: "#3b82f6", label: "客户总数", value: kpis.total.toLocaleString("zh-CN"), trend: null },
           { icon: UserCheck, color: "#22c55e", label: "活跃客户", value: kpis.active.toLocaleString("zh-CN"), trend: null },
-          { icon: Crown, color: "#eab308", label: "高价值客户", value: kpis.highValue.toLocaleString("zh-CN"), trend: null },
-          { icon: UserPlus, color: "#3b82f6", label: "新增客户", value: kpis.newCustomers.toLocaleString("zh-CN"), trend: null },
+          { icon: Crown, color: "#f59e0b", label: "高价值客户", value: kpis.highValue.toLocaleString("zh-CN"), trend: null },
+          { icon: UserPlus, color: "#06b6d4", label: "新增客户", value: kpis.newCustomers.toLocaleString("zh-CN"), trend: null },
           { icon: Handshake, color: "#22c55e", label: "成交客户", value: kpis.won.toLocaleString("zh-CN"), trend: null },
-          { icon: Percent, color: "#3b82f6", label: "客户转化率", value: kpis.conversionRate, trend: null },
+          { icon: Percent, color: "#8b5cf6", label: "客户转化率", value: kpis.conversionRate, trend: null },
         ].map(({ icon: Icon, color, label, value, trend }) => (
           <div key={label} className={styles.kpiCard}>
-            <div className={styles.kpiHead}>
-              <Icon size={14} color={color} aria-hidden />
-              {label}
+            <div className={styles.kpiIcon} style={{ background: color }}>
+              <Icon size={22} color="#fff" aria-hidden />
             </div>
-            <div className={styles.kpiValue}>{value}</div>
-            <div className={styles.kpiTrend}>{trend ? `↑ ${trend}` : "—"}</div>
+            <div>
+              <div className={styles.kpiHead}>{label}</div>
+              <div className={styles.kpiValue}>{value}</div>
+              <div className={styles.kpiTrend}>{trend ? `↑ ${trend}` : "—"}</div>
+            </div>
           </div>
         ))}
       </div>

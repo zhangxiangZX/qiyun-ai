@@ -1,0 +1,214 @@
+app:
+  description: 库滋玛工业选型手册专用保真清洗工作流，适用于悬臂、成套接线、机柜、机箱、操作台、附件和温控系列。
+  icon: 🧰
+  icon_background: '#DBEAFE'
+  mode: workflow
+  name: 库滋玛选型手册保真清洗
+  use_icon_as_answer_icon: false
+# Do not pin a marketplace plugin version. Install the latest DeepSeek plugin in
+# Dify Cloud, then reselect an available DeepSeek chat model if needed.
+dependencies: []
+kind: app
+version: 0.3.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods: []
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods: []
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: start
+          targetType: llm
+        id: kuzima-start-source-kuzima-cleaner-target
+        selected: false
+        source: kuzima-start
+        sourceHandle: source
+        target: kuzima-cleaner
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: end
+        id: kuzima-cleaner-source-kuzima-end-target
+        selected: false
+        source: kuzima-cleaner
+        sourceHandle: source
+        target: kuzima-end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: 接收企云 AI 在本地完成 PDF 解析和分段后的文本。
+          selected: false
+          title: 输入手册分段
+          type: start
+          variables:
+            - label: 待清洗文本
+              max_length: 48000
+              options: []
+              required: true
+              type: paragraph
+              variable: text
+            - label: 文档名称
+              max_length: 256
+              options: []
+              required: true
+              type: text-input
+              variable: document_name
+            - label: 章节标题
+              max_length: 256
+              options: []
+              required: false
+              type: text-input
+              variable: section_title
+        height: 168
+        id: kuzima-start
+        position:
+          x: 80
+          y: 280
+        positionAbsolute:
+          x: 80
+          y: 280
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 270
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: 针对工业产品选型手册的型号、规格表和中英双语内容进行保真清洗。
+          model:
+            completion_params:
+              max_tokens: 4096
+              temperature: 0.05
+            mode: chat
+            name: deepseek-v4-flash
+            provider: langgenius/deepseek/deepseek
+          prompt_template:
+            - id: kuzima-cleaner-system
+              role: system
+              text: |-
+                你是工业电气机箱机柜选型手册的数据清洗器。输入来自昆山库滋玛电气设备有限公司的产品手册，可能属于悬臂、成套接线、机柜、机箱、操作台、附件或温控系列。
+
+                目标：让文本更适合向量检索和工业选型问答，同时保证所有产品事实完全可追溯。
+
+                最高优先级规则：
+                1. 禁止新增、猜测、纠正或补全原文没有的信息。即使发现疑似 OCR 错误，也必须保留原始值。
+                2. 型号、订货号、尺寸、重量、电压、电流、功率、频率、温度、风量、承重、材质、板厚、颜色、IP 防护等级、标准编号和适用条件必须逐字符保留。
+                3. 不得把图纸中的孤立尺寸数字错误归属到某个型号；归属关系不明确时，保留为“图纸尺寸数据”，不要自行配对。
+                4. 表格行列关系明确时，转换为逐条“型号/订货号 + 字段：值”；关系不明确时，保留原始顺序，禁止重排。
+                5. 范围符号和条件符号必须保留，包括 <、>、≤、≥、~、-、/、±、Φ，以及括号中的标准或条件。
+                6. 中英双语内容分段整理，不得让英文句子插入中文字段中。中文和英文不一致时两者均保留，不裁决哪一个正确。
+                7. 合并 PDF 提取造成的单词断裂、汉字间异常空格和无意义换行，但不得改变数字、型号及单位。
+                8. 删除重复页眉、重复页脚、孤立页码、装饰字符和同一分段内重复出现的联系电话或网址；联系电话和网址至少保留一次。
+                9. 保留产品系列、产品名称、产品特点、材料、表面处理、防护等级、标准配置、钢板厚度、规格参数、订货信息和选型条件等标题。
+                10. 不回答文本中的问题，不生成推荐，不总结，不输出清洗过程或可信度说明。
+                11. 如果不能确认某段应如何重排，保持原文顺序。宁可少清洗，也不能误改产品数据。
+                12. 只输出清洗后的正文，不使用 Markdown 代码块，不添加“清洗结果”等前缀。
+
+                推荐输出结构：
+                产品系列：...
+                产品名称/型号：...
+                中文资料：...
+                English information: ...
+                规格参数：
+                - 字段：值
+                订货信息：
+                - 订货号：...
+                图纸尺寸数据：...
+
+                仅在原文确实包含相应内容时才输出这些字段，禁止创建空字段。
+            - id: kuzima-cleaner-user
+              role: user
+              text: |-
+                文档名称：{{#kuzima-start.document_name#}}
+                章节标题：{{#kuzima-start.section_title#}}
+
+                待清洗文本：
+                {{#kuzima-start.text#}}
+          selected: false
+          title: DeepSeek 保真清洗
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 126
+        id: kuzima-cleaner
+        position:
+          x: 430
+          y: 300
+        positionAbsolute:
+          x: 430
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 270
+      - data:
+          desc: 输出字段名称与企云 AI Dify 清洗连接器保持一致。
+          outputs:
+            - value_selector:
+                - kuzima-cleaner
+                - text
+              value_type: string
+              variable: cleaned_text
+          selected: false
+          title: 输出清洗正文
+          type: end
+        height: 116
+        id: kuzima-end
+        position:
+          x: 790
+          y: 305
+        positionAbsolute:
+          x: 790
+          y: 305
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 270
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1

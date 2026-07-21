@@ -38,6 +38,7 @@ import {
   type DemoChatMessage,
   type SelectionPagePublicConfig,
 } from "@/lib/channels/ai-selection-page-config";
+import { streamChatMessage } from "@/lib/chat/api";
 import styles from "@/styles/ai-selection-public.module.css";
 
 interface ChatMessage extends DemoChatMessage {}
@@ -115,35 +116,40 @@ const PRODUCT_FOLLOWUP: Record<string, string[]> = {
 
 async function loadConfig(slug: string, preview: boolean): Promise<SelectionPagePublicConfig | null> {
   const defaults = getDefaultSelectionPageConfig(slug);
-  if (!defaults) return null;
+  let local: SelectionPagePublicConfig | null = defaults;
 
-  let merged = defaults;
   if (typeof window !== "undefined") {
     const raw = window.localStorage.getItem(getSelectionPageStorageKey(slug));
     if (raw) {
       try {
-        merged = mergeSelectionPageConfig(defaults, JSON.parse(raw) as Partial<SelectionPagePublicConfig>);
+        const parsed = JSON.parse(raw) as SelectionPagePublicConfig;
+        local = defaults ? mergeSelectionPageConfig(defaults, parsed) : parsed;
       } catch {
-        merged = defaults;
+        local = defaults;
       }
     }
   }
 
-  if (preview) return merged;
+  // Preview of local drafts (including newly created pages without demo defaults).
+  if (preview && local?.slug) return local;
 
   try {
-    const response = await fetch(`/api/selection-pages/public/${slug}`, { cache: "no-store" });
+    const response = await fetch(`/api/selection-pages/public/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+    });
     if (response.ok) {
       return unwrapEnvelope<SelectionPagePublicConfig>(await response.json());
     }
     if (response.status === 403 || response.status === 404) {
-      return null;
+      return preview && local?.slug ? local : null;
     }
   } catch {
-    return merged.published && merged.enabled ? merged : null;
+    if (local?.published && local.enabled) return local;
+    return preview && local?.slug ? local : null;
   }
 
-  return merged.published && merged.enabled ? merged : null;
+  if (local?.published && local.enabled) return local;
+  return preview && local?.slug ? local : null;
 }
 
 function formatFileSize(bytes: number): string {
@@ -166,10 +172,13 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+  const [leadHint, setLeadHint] = useState<string | null>(null);
 
   const chatListRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const completenessRef = useRef<HTMLDivElement>(null);
+  const formSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -183,11 +192,16 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
         setConfig(next);
         setActiveProduct(next.defaultProduct);
         setMessages(next.demoMessages);
-        setUploadedFiles([{ id: "sample", name: next.upload.sampleFileName, size: next.upload.sampleFileSize }]);
+        setUploadedFiles(
+          next.upload.sampleFileName
+            ? [{ id: "sample", name: next.upload.sampleFileName, size: next.upload.sampleFileSize }]
+            : [],
+        );
         const initial: Record<string, string> = {};
         next.form.fields.forEach((field) => {
-          if (field.id === "name") initial[field.id] = "张先生";
-          else if (field.id === "phone") initial[field.id] = "138 8888 8888";
+          // Only prefill demo contacts in preview mode — never on real visitor pages.
+          if (preview && field.id === "name") initial[field.id] = "张先生";
+          else if (preview && field.id === "phone") initial[field.id] = "138 8888 8888";
           else initial[field.id] = "";
         });
         setFormValues(initial);
@@ -211,12 +225,39 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     return new URLSearchParams(window.location.search).get("source") ?? "";
   }, []);
 
-  function appendBot(content: string, followUpList?: string[]) {
+  function appendBot(
+    content: string,
+    followUpList?: string[],
+    extras?: { citations?: ChatMessage["citations"]; needsLeadCapture?: boolean },
+  ) {
     const id = `bot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setMessages((current) => [...current, { id, role: "assistant", content, followUpList }]);
+    setMessages((current) => [
+      ...current,
+      {
+        id,
+        role: "assistant",
+        content,
+        followUpList,
+        citations: extras?.citations,
+        needsLeadCapture: extras?.needsLeadCapture,
+      },
+    ]);
   }
 
-  function handleSend() {
+  function getVisitorId() {
+    if (typeof window === "undefined") return `v_selection_${slug}`;
+    const key = `qy_selection_visitor_${slug}`;
+    const existing = window.localStorage.getItem(key);
+    if (existing) return existing;
+    const next =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `v_${crypto.randomUUID()}`
+        : `v_${Date.now().toString(36)}`;
+    window.localStorage.setItem(key, next);
+    return next;
+  }
+
+  async function handleSend() {
     const text = input.trim();
     if (!text || botThinking) return;
     const userMsg: ChatMessage = {
@@ -227,13 +268,56 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     setMessages((current) => [...current, userMsg]);
     setInput("");
     setBotThinking(true);
+    setLeadHint(null);
+
+    const botId = config?.botId?.trim();
+    const siteKey = config?.siteKey?.trim();
+
+    if (botId && siteKey) {
+      try {
+        const result = await streamChatMessage({
+          botId,
+          siteKey,
+          visitorId: getVisitorId(),
+          conversationId,
+          message: text,
+          origin: window.location.origin,
+        });
+        if (result.conversationId) setConversationId(result.conversationId);
+        appendBot(result.content, undefined, {
+          citations: result.citations.map((item) => ({
+            title: item.title,
+            snippet: item.snippet,
+          })),
+          needsLeadCapture: result.needsLeadCapture,
+        });
+        if (result.needsLeadCapture) {
+          setLeadHint("该问题涉及报价/交期等关键信息，建议留下联系方式，工程师将尽快跟进。");
+          (formSectionRef.current ?? completenessRef.current)?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      } catch (error) {
+        appendBot(
+          error instanceof Error
+            ? `暂时无法完成智能回答：${error.message}`
+            : "暂时无法完成智能回答，请稍后重试，或直接提交需求由工程师联系您。",
+        );
+      } finally {
+        setBotThinking(false);
+      }
+      return;
+    }
+
+    // Fallback demo reply when bot/site not bound (local draft without RAG).
     window.setTimeout(() => {
       const productHint = activeProduct ? `关于「${activeProduct}」，` : "";
       appendBot(
-        `${productHint}已收到您的信息。为给您更精准的方案，建议补充：使用环境、尺寸要求、预计数量，以及是否需要防护或散热设计。我们的工程师会结合您的图纸尽快给出报价。`,
+        `${productHint}当前页面尚未绑定可用的 AI 助手与站点密钥，暂无法检索企业知识库。请在选型页编辑中绑定助手并保存后重试；或直接填写下方表单提交需求。`,
       );
       setBotThinking(false);
-    }, 600);
+    }, 400);
   }
 
   function handleProductClick(label: string, id: string) {
@@ -271,26 +355,76 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     const phone = formValues["phone"]?.trim();
     if (!name || !phone) {
       setFormError("请填写联系人和手机号，方便工程师与您联系");
-      completenessRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      (formSectionRef.current ?? completenessRef.current)?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setFormError(null);
-    setSubmitted(true);
-    // Best-effort lead submission (no-op in preview / offline)
-    void fetch(`/api/selection-pages/public/${slug}/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        phone,
-        source: sourceQuery || config?.sourceId,
-        product: activeProduct,
-        message: messages.map((m) => `${m.role === "user" ? "客户" : "助手"}：${m.content}`).join("\n"),
-        files: uploadedFiles.map((f) => f.name),
-      }),
-    }).catch(() => {
-      /* preview mode has no backend; local success UI is enough */
-    });
+
+    const answers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(formValues)) {
+      if (key === "name" || key === "phone" || key === "email") continue;
+      const trimmed = value?.trim();
+      if (trimmed) answers[key] = trimmed;
+    }
+    if (activeProduct) answers.product = activeProduct;
+    const source = sourceQuery || config?.sourceId;
+    if (source) answers.source = source;
+    if (messages.length) {
+      answers.message = messages
+        .map((m) => `${m.role === "user" ? "客户" : "助手"}：${m.content}`)
+        .join("\n");
+    }
+    if (uploadedFiles.length) {
+      answers.files = uploadedFiles.map((f) => f.name).join(", ");
+    }
+
+    const payload = {
+      contactName: name,
+      contactPhone: phone,
+      contactEmail: formValues["email"]?.trim() || undefined,
+      answers,
+      // Keep legacy aliases for older BFF / offline tooling
+      name,
+      phone,
+      source,
+      product: activeProduct,
+      message: answers.message,
+      files: uploadedFiles.map((f) => f.name),
+    };
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/selection-pages/public/${encodeURIComponent(slug)}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (response.ok) {
+          setSubmitted(true);
+          return;
+        }
+        // Preview / unpublished local demos: still show success UI when upstream has no page.
+        if (preview && (response.status === 404 || response.status === 403)) {
+          setSubmitted(true);
+          return;
+        }
+        let detail = "提交失败，请稍后重试";
+        try {
+          const body = (await response.json()) as { message?: string };
+          if (body?.message) detail = body.message;
+        } catch {
+          /* ignore parse errors */
+        }
+        setFormError(detail);
+        (formSectionRef.current ?? completenessRef.current)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch {
+        if (preview) {
+          setSubmitted(true);
+          return;
+        }
+        setFormError("网络异常，提交失败，请稍后重试");
+      }
+    })();
   }
 
   if (loading) {
@@ -379,6 +513,22 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
                         ))}
                       </ol>
                     ) : null}
+                    {message.citations && message.citations.length > 0 ? (
+                      <div className={styles.citations}>
+                        <div className={styles.citationsTitle}>参考来源</div>
+                        <ul className={styles.citationsList}>
+                          {message.citations.slice(0, 3).map((item) => (
+                            <li key={`${message.id}-${item.title}`}>
+                              <strong>{item.title}</strong>
+                              {item.snippet ? <span>{item.snippet}</span> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {message.needsLeadCapture ? (
+                      <p className={styles.leadCaptureHint}>涉及报价/交期等，建议提交下方联系方式。</p>
+                    ) : null}
                   </div>
                 </div>
               ),
@@ -399,6 +549,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
             ) : null}
           </div>
 
+          {config.completeness.items.length > 0 ? (
           <section className={styles.card} ref={completenessRef}>
             <div className={styles.cardHead}>
               <div className={styles.cardTitle}>
@@ -441,6 +592,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
               ))}
             </div>
           </section>
+          ) : null}
 
           <section className={styles.card}>
             <div className={styles.uploadHead}>
@@ -482,7 +634,8 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
             ) : null}
           </section>
 
-          <section className={styles.card}>
+          <section className={styles.card} ref={formSectionRef}>
+            {leadHint ? <p className={styles.leadBanner}>{leadHint}</p> : null}
             <div className={styles.formGrid}>
               {config.form.fields.map((field) => (
                 <div

@@ -2,8 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Clock3,
+  MessageSquare,
+  Users,
+  Zap,
+} from "lucide-react";
 
-import { Alert } from "@qiyun/ui";
+import { Alert, StatCard } from "@qiyun/ui";
 
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
@@ -16,6 +22,16 @@ import { formatUserDisplayName } from "@/lib/auth/display-name";
 import { loadDashboardSnapshot } from "@/lib/dashboard/data";
 import { dashboardWithBots } from "@/lib/dashboard/mock-data";
 import type { DashboardSnapshot, RecentLead } from "@/lib/dashboard/types";
+
+const KPI_VISUAL: Record<
+  string,
+  { icon: typeof Users; tone: "brand" | "success" | "warning" | "info" | "purple" }
+> = {
+  leads: { icon: MessageSquare, tone: "brand" },
+  visitors: { icon: Users, tone: "info" },
+  sessions: { icon: Zap, tone: "purple" },
+  response: { icon: Clock3, tone: "warning" },
+};
 
 const QUICK_LINKS = [
   { title: "询盘中心", description: "查看客户咨询并进入跟进流程", href: INQUIRY_LIST_PATH },
@@ -163,13 +179,20 @@ export function HomeOverviewWorkspace() {
           </div>
         ) : (
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {highlightKpis.map((item) => (
-              <article key={item.id} className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-                <p className="text-sm text-muted-foreground">{item.label}</p>
-                <div className="mt-3 text-3xl font-semibold text-foreground">{item.value}</div>
-                <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
-              </article>
-            ))}
+            {highlightKpis.map((item) => {
+              const visual = KPI_VISUAL[item.id] ?? { icon: MessageSquare, tone: "brand" as const };
+              const Icon = visual.icon;
+              return (
+                <StatCard
+                  key={item.id}
+                  label={item.label}
+                  value={item.value}
+                  description={item.description}
+                  icon={<Icon size={22} aria-hidden />}
+                  iconTone={visual.tone}
+                />
+              );
+            })}
           </section>
         )}
 

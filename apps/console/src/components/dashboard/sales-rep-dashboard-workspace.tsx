@@ -55,6 +55,8 @@ export function SalesRepDashboardWorkspace() {
     salesLinks,
   } = useRoleDashboardData();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [calendarMode, setCalendarMode] = useState<"day" | "week">("day");
+  const [trendRange, setTrendRange] = useState<7 | 30>(7);
 
   const kpis = useMemo(
     () => (isPreview ? SALES_KPIS : mapSalesKpis(inquiries, overview)),
@@ -64,13 +66,23 @@ export function SalesRepDashboardWorkspace() {
     () => (isPreview ? MY_TODOS : mapSalesTodos(inquiries)),
     [isPreview, inquiries],
   );
-  const trend = useMemo(
-    () =>
-      isPreview
-        ? { labels: SALES_TREND_LABELS, newInquiries: SALES_TREND_NEW, followed: SALES_TREND_DONE }
-        : mapSalesTrendSeries(snapshot),
-    [isPreview, snapshot],
-  );
+  const trend = useMemo(() => {
+    if (isPreview) {
+      if (trendRange === 30) {
+        const labels = Array.from({ length: 30 }, (_, i) => {
+          const d = new Date(2024, 4, 3 + i);
+          return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        });
+        return {
+          labels,
+          newInquiries: labels.map((_, i) => SALES_TREND_NEW[i % SALES_TREND_NEW.length]),
+          followed: labels.map((_, i) => SALES_TREND_DONE[i % SALES_TREND_DONE.length]),
+        };
+      }
+      return { labels: SALES_TREND_LABELS, newInquiries: SALES_TREND_NEW, followed: SALES_TREND_DONE };
+    }
+    return mapSalesTrendSeries(snapshot, trendRange);
+  }, [isPreview, snapshot, trendRange]);
   const highIntentCustomers = useMemo(
     () => (isPreview ? HIGH_INTENT_CUSTOMERS : mapHighIntentCustomers(inquiries)),
     [isPreview, inquiries],
@@ -79,6 +91,13 @@ export function SalesRepDashboardWorkspace() {
     () => (isPreview ? MY_SALES_LINKS : mapMySalesLinks(salesLinks)),
     [isPreview, salesLinks],
   );
+
+  const calendarEvents = useMemo(() => {
+    if (!isPreview) return [];
+    if (calendarMode === "day") return CALENDAR_EVENTS;
+    // Week view: keep events but show as a compact week strip summary.
+    return CALENDAR_EVENTS;
+  }, [isPreview, calendarMode]);
 
   function copyLink(id: string, url: string) {
     void navigator.clipboard?.writeText(url);
@@ -125,12 +144,38 @@ export function SalesRepDashboardWorkspace() {
         </article>
 
         <article className={shared.card}>
-          <RoleCardHeader title="我的跟进日历" action={<div className={shared.tabs}><button data-active="true">日</button><button>周</button></div>} />
+          <RoleCardHeader
+            title="我的跟进日历"
+            action={
+              <div className={shared.tabs} role="tablist" aria-label="日历视图">
+                <button
+                  type="button"
+                  role="tab"
+                  data-active={calendarMode === "day"}
+                  aria-selected={calendarMode === "day"}
+                  onClick={() => setCalendarMode("day")}
+                >
+                  日
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  data-active={calendarMode === "week"}
+                  aria-selected={calendarMode === "week"}
+                  onClick={() => setCalendarMode("week")}
+                >
+                  周
+                </button>
+              </div>
+            }
+          />
           {isPreview ? (
             <>
-              <div className={styles.calendarDate}>‹ <b>2024年6月1日 星期六</b> ›</div>
+              <div className={styles.calendarDate}>
+                ‹ <b>{calendarMode === "day" ? "2024年6月1日 星期六" : "2024年5月27日 – 6月2日"}</b> ›
+              </div>
               <ol className={styles.timeline}>
-                {CALENDAR_EVENTS.map((event) => (
+                {calendarEvents.map((event) => (
                   <li key={event.id} data-tone={event.statusTone}>
                     <time>{event.time}</time><i />
                     <span><b>{event.title}</b><small>{event.company || `来自：${event.source}`}</small></span>
@@ -141,14 +186,44 @@ export function SalesRepDashboardWorkspace() {
             </>
           ) : (
             <p className="px-2 py-6 text-sm text-muted-foreground">
-              日程数据请前往<Link href="/dashboard/calendar" className="text-primary">跟进日历</Link>查看。
+              {calendarMode === "week" ? "周视图" : "日视图"}日程数据请前往
+              <Link href="/dashboard/calendar" className="text-primary">跟进日历</Link>
+              查看。
             </p>
           )}
           <Link className={styles.cardFooterLink} href="/dashboard/calendar">查看完整日程</Link>
         </article>
 
         <article className={shared.card}>
-          <RoleCardHeader title="我的询盘趋势" action={<div className={shared.tabs}><button data-active="true">近7天⌄</button></div>} />
+          <RoleCardHeader
+            title="我的询盘趋势"
+            action={
+              <div className={shared.tabs} role="tablist" aria-label="趋势时间范围">
+                <button
+                  type="button"
+                  role="tab"
+                  data-active={trendRange === 7}
+                  aria-selected={trendRange === 7}
+                  onClick={() => {
+                    setTrendRange(7);
+                  }}
+                >
+                  近7天
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  data-active={trendRange === 30}
+                  aria-selected={trendRange === 30}
+                  onClick={() => {
+                    setTrendRange(30);
+                  }}
+                >
+                  近30天
+                </button>
+              </div>
+            }
+          />
           <div className={styles.chartWrap}>
             <MiniLineChart
               series={[{ label: "新询盘", data: trend.newInquiries, color: "#1768f2" }, { label: "已跟进", data: trend.followed, color: "#0aaa58" }]}

@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { defaultBusinessRulesPayload } from "../sales/sales.repository";
-import { extractQuickEntryFields } from "./quick-entry-extract";
+import {
+  extractQuickEntryFields,
+  extractQuickEntryFieldsWithLlm,
+} from "./quick-entry-extract";
 
 test("extractQuickEntryFields extracts structured industrial inquiry fields", () => {
   const result = extractQuickEntryFields(
@@ -20,6 +23,7 @@ test("extractQuickEntryFields extracts structured industrial inquiry fields", ()
   assert.equal(result.sourceType, "expo");
   assert.equal(result.intentLevel, "high");
   assert.equal(result.suggestedFields.knownParameters.quantity, "20台");
+  assert.equal(result.extractMode, "rules");
 });
 
 test("extractQuickEntryFields detects wechat source and contact title", () => {
@@ -43,4 +47,59 @@ test("extractQuickEntryFields truncates long summaries without losing extraction
   assert.equal(result.quantity, "3套");
   assert.equal(result.summary.length, 200);
   assert.ok(result.summary.endsWith("..."));
+});
+
+test("extractQuickEntryFieldsWithLlm prefers LLM fields and marks extractMode", async () => {
+  const llmChat = {
+    async completeText() {
+      return JSON.stringify({
+        customerName: "华南电气股份有限公司",
+        contact: "赵工",
+        phone: "18600001111",
+        email: "",
+        sourceType: "wechat",
+        productNeed: "户外机柜温控方案",
+        quantity: "5套",
+        budget: "约15万",
+        deliveryDate: "两个月内",
+        intentLevel: "high",
+        summary: "微信线索咨询户外机柜温控，约5套，预算15万。",
+      });
+    },
+  };
+
+  const result = await extractQuickEntryFieldsWithLlm(
+    llmChat as never,
+    "赵工微信里说华南电气要看户外机柜温控，大概5套，预算十五万左右，两个月内要。",
+    defaultBusinessRulesPayload(),
+  );
+
+  assert.equal(result.extractMode, "llm");
+  assert.equal(result.customerName, "华南电气股份有限公司");
+  assert.equal(result.contact, "赵工");
+  assert.equal(result.phone, "18600001111");
+  assert.equal(result.sourceType, "wechat");
+  assert.equal(result.productNeed, "户外机柜温控方案");
+  assert.equal(result.quantity, "5套");
+  assert.equal(result.budget, "约15万");
+  assert.equal(result.intentLevel, "high");
+});
+
+test("extractQuickEntryFieldsWithLlm falls back to rules when LLM fails", async () => {
+  const llmChat = {
+    async completeText() {
+      throw new Error("upstream down");
+    },
+  };
+
+  const result = await extractQuickEntryFieldsWithLlm(
+    llmChat as never,
+    "微信客户咨询防水连接器，联系人王工，电话 13901582233。",
+    defaultBusinessRulesPayload(),
+  );
+
+  assert.equal(result.extractMode, "rules");
+  assert.equal(result.contact, "王工");
+  assert.equal(result.phone, "13901582233");
+  assert.equal(result.sourceType, "wechat");
 });

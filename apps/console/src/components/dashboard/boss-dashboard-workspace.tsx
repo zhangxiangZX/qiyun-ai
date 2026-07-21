@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BellRing,
-  CalendarDays,
   ChevronDown,
   ChevronRight,
   CircleDollarSign,
@@ -35,6 +34,12 @@ import {
 } from "@/components/dashboard/mocks/boss-data";
 import { useRoleDashboardData } from "@/components/dashboard/role-dashboard-shared";
 import {
+  DateRangePicker,
+  defaultDateRange,
+  resolveDateRangeBounds,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
+import {
   mapBossKpis,
   mapChannelDistribution,
   mapHotOpportunities,
@@ -64,7 +69,36 @@ function RankBadge({ rank }: { rank: number }) {
   return <span className={styles.rankBadge} data-rank={rank <= 3 ? rank : undefined}>{rank}</span>;
 }
 
-type DateRangeMode = "7d" | "30d" | "custom";
+type TrendGranularity = "day" | "week";
+
+const GRANULARITY_OPTIONS: { value: TrendGranularity; label: string }[] = [
+  { value: "day", label: "按日" },
+  { value: "week", label: "按周" },
+];
+
+/** 将按日序列聚合成按周（每 7 天一段，末段不足也保留） */
+function aggregateTrendByWeek(series: {
+  labels: string[];
+  inquiries: number[];
+  deals: number[];
+}): { labels: string[]; inquiries: number[]; deals: number[] } {
+  const labels: string[] = [];
+  const inquiries: number[] = [];
+  const deals: number[] = [];
+  for (let i = 0; i < series.labels.length; i += 7) {
+    const end = Math.min(i + 6, series.labels.length - 1);
+    const sliceInquiries = series.inquiries.slice(i, end + 1);
+    const sliceDeals = series.deals.slice(i, end + 1);
+    labels.push(
+      series.labels[i] === series.labels[end]
+        ? series.labels[i]
+        : `${series.labels[i]}~${series.labels[end]}`,
+    );
+    inquiries.push(sliceInquiries.reduce((sum, n) => sum + n, 0));
+    deals.push(sliceDeals.reduce((sum, n) => sum + n, 0));
+  }
+  return { labels, inquiries, deals };
+}
 
 export function BossDashboardWorkspace() {
   const {
@@ -79,24 +113,31 @@ export function BossDashboardWorkspace() {
     sites,
   } = useRoleDashboardData();
 
-  const today = new Date().toISOString().slice(0, 10);
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-  const [range, setRange] = useState<{ mode: DateRangeMode; from: string; to: string }>({
-    mode: "7d",
-    from: sevenDaysAgo,
-    to: today,
-  });
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [range, setRange] = useState<DateRangeValue>(() => defaultDateRange("7d"));
+  const [granularity, setGranularity] = useState<TrendGranularity>("day");
+  const [granularityOpen, setGranularityOpen] = useState(false);
+  const granularityRef = useRef<HTMLDivElement>(null);
   const [rankingMetric, setRankingMetric] = useState<"amount" | "inquiries" | "lost">("amount");
 
-  const rangeBounds = useMemo(() => {
-    if (range.mode === "7d") return { from: sevenDaysAgo, to: today, days: 7, label: "近7天" };
-    if (range.mode === "30d") return { from: thirtyDaysAgo, to: today, days: 30, label: "近30天" };
-    const days = Math.max(7, Math.ceil((Date.parse(range.to) - Date.parse(range.from)) / 86400000) + 1);
-    return { from: range.from, to: range.to, days, label: `${range.from} ~ ${range.to}` };
-  }, [range, today, sevenDaysAgo, thirtyDaysAgo]);
+  useEffect(() => {
+    if (!granularityOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!granularityRef.current?.contains(event.target as Node)) {
+        setGranularityOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGranularityOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [granularityOpen]);
+
+  const rangeBounds = useMemo(() => resolveDateRangeBounds(range), [range]);
 
   const filteredInquiries = useMemo(() => {
     if (isPreview) return inquiries;
@@ -112,17 +153,51 @@ export function BossDashboardWorkspace() {
     () => (isPreview ? BOSS_KPIS : mapBossKpis(overview, filteredInquiries)),
     [isPreview, overview, filteredInquiries],
   );
-  const trend = useMemo(
-    () =>
-      isPreview
-        ? { labels: TREND_7D_LABELS, inquiries: TREND_7D_INQUIRIES, deals: TREND_7D_DEALS }
-        : mapTrendSeries(snapshot, rangeBounds.days as 7 | 30, overview),
-    [isPreview, snapshot, rangeBounds.days, overview],
-  );
-  const salesRanking = useMemo(
-    () => (isPreview ? SALES_RANKING : mapSalesRanking(filteredInquiries)),
-    [isPreview, filteredInquiries],
-  );
+  const trend = useMemo(() => {
+    const daily = isPreview
+      ? { labels: TREND_7D_LABELS, inquiries: TREND_7D_INQUIRIES, deals: TREND_7D_DEALS }
+      : mapTrendSeries(
+          snapshot,
+          { from: rangeBounds.from, to: rangeBounds.to },
+          overview,
+          filteredInquiries,
+        );
+    return granularity === "week" ? aggregateTrendByWeek(daily) : daily;
+  }, [
+    isPreview,
+    snapshot,
+    rangeBounds.from,
+    rangeBounds.to,
+    overview,
+    filteredInquiries,
+    granularity,
+  ]);
+  const salesRanking = useMemo(() => {
+    if (isPreview) {
+      const sorted = [...SALES_RANKING].sort((a, b) => {
+        if (rankingMetric === "inquiries") return b.deals - a.deals;
+        if (rankingMetric === "lost") {
+          // Preview mock has no lost count — keep amount order with slight shuffle by rank.
+          return a.rank - b.rank;
+        }
+        const amountA = Number(a.amount.replace(/[^\d.]/g, "")) || 0;
+        const amountB = Number(b.amount.replace(/[^\d.]/g, "")) || 0;
+        return amountB - amountA;
+      });
+      return sorted.map((item, index) => ({
+        ...item,
+        rank: index + 1,
+        amount:
+          rankingMetric === "inquiries"
+            ? String(item.deals)
+            : rankingMetric === "lost"
+              ? "—"
+              : item.amount,
+      }));
+    }
+    return mapSalesRanking(filteredInquiries, rankingMetric);
+  }, [isPreview, filteredInquiries, rankingMetric]);
+
   const hotOpportunities = useMemo(
     () => (isPreview ? HOT_OPPORTUNITIES : mapHotOpportunities(filteredInquiries)),
     [isPreview, filteredInquiries],
@@ -164,93 +239,7 @@ export function BossDashboardWorkspace() {
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
-        <div className={styles.datePicker}>
-          <button
-            type="button"
-            className={styles.dateButton}
-            onClick={() => setPickerOpen((open) => !open)}
-            aria-expanded={pickerOpen}
-            aria-haspopup="true"
-          >
-            <CalendarDays size={17} aria-hidden />
-            <span>{rangeBounds.label}</span>
-            <ChevronDown size={16} className={styles.chevron} aria-hidden />
-          </button>
-          {pickerOpen ? (
-            <div className={styles.datePickerPanel}>
-              <div className={styles.presetList}>
-                <button
-                  type="button"
-                  className={range.mode === "7d" ? styles.presetActive : styles.preset}
-                  onClick={() => {
-                    setRange({ mode: "7d", from: sevenDaysAgo, to: today });
-                    setPickerOpen(false);
-                  }}
-                >
-                  近7天
-                </button>
-                <button
-                  type="button"
-                  className={range.mode === "30d" ? styles.presetActive : styles.preset}
-                  onClick={() => {
-                    setRange({ mode: "30d", from: thirtyDaysAgo, to: today });
-                    setPickerOpen(false);
-                  }}
-                >
-                  近30天
-                </button>
-                <button
-                  type="button"
-                  className={range.mode === "custom" ? styles.presetActive : styles.preset}
-                  onClick={() => setRange((r) => ({ ...r, mode: "custom" }))}
-                >
-                  自定义
-                </button>
-              </div>
-              {range.mode === "custom" ? (
-                <div className={styles.customRange}>
-                  <label>
-                    开始日期
-                    <input
-                      type="date"
-                      value={range.from}
-                      max={range.to}
-                      onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
-                    />
-                  </label>
-                  <label>
-                    结束日期
-                    <input
-                      type="date"
-                      value={range.to}
-                      min={range.from}
-                      onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
-                    />
-                  </label>
-                </div>
-              ) : null}
-              <div className={styles.pickerActions}>
-                <button
-                  type="button"
-                  className={styles.pickerReset}
-                  onClick={() => {
-                    setRange({ mode: "7d", from: sevenDaysAgo, to: today });
-                    setPickerOpen(false);
-                  }}
-                >
-                  重置
-                </button>
-                <button
-                  type="button"
-                  className={styles.pickerConfirm}
-                  onClick={() => setPickerOpen(false)}
-                >
-                  确定
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
+        <DateRangePicker value={range} onChange={setRange} />
         <button type="button" className={styles.refreshButton} onClick={refresh} disabled={refreshing}>
           <RefreshCw size={17} className={refreshing ? styles.spinning : undefined} aria-hidden />
           刷新
@@ -263,7 +252,7 @@ export function BossDashboardWorkspace() {
           return (
             <article className={styles.kpiCard} key={kpi.label}>
               <span className={styles.kpiIcon} data-tone={KPI_TONES[index]}>
-                <Icon size={24} aria-hidden />
+                <Icon size={22} aria-hidden />
               </span>
               <div className={styles.kpiContent}>
                 <p>{kpi.label}</p>
@@ -284,18 +273,88 @@ export function BossDashboardWorkspace() {
       <section className={styles.primaryGrid}>
         <article className={styles.card}>
           <div className={styles.cardHeader}>
-            <h2>{rangeBounds.label}询盘与成交趋势 <span title="统计口径说明">ⓘ</span></h2>
+            <h2>
+              {range.mode === "7d" ? "7日" : range.mode === "30d" ? "30日" : `${rangeBounds.days}日`}
+              询盘与成交趋势{" "}
+              <span title={granularity === "week" ? "按周汇总询盘数与成交数" : "按日统计询盘数与成交数"}>
+                ⓘ
+              </span>
+            </h2>
+            <div className={styles.chartControls}>
+              <div className={styles.tabs} role="tablist" aria-label="趋势时间范围">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={range.mode === "7d"}
+                  data-active={range.mode === "7d"}
+                  onClick={() => {
+                    setRange(defaultDateRange("7d"));
+                    setGranularityOpen(false);
+                  }}
+                >
+                  近7天
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={range.mode === "30d"}
+                  data-active={range.mode === "30d"}
+                  onClick={() => {
+                    setRange(defaultDateRange("30d"));
+                    setGranularityOpen(false);
+                  }}
+                >
+                  近30天
+                </button>
+              </div>
+              <div className={styles.granularityWrap} ref={granularityRef}>
+                <button
+                  type="button"
+                  className={styles.granularity}
+                  aria-expanded={granularityOpen}
+                  aria-haspopup="listbox"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setGranularityOpen((open) => !open);
+                  }}
+                >
+                  <span>{GRANULARITY_OPTIONS.find((item) => item.value === granularity)?.label}</span>
+                  <ChevronDown size={14} aria-hidden />
+                </button>
+                {granularityOpen ? (
+                  <ul className={styles.granularityMenu} role="listbox" aria-label="统计粒度">
+                    {GRANULARITY_OPTIONS.map((option) => (
+                      <li key={option.value}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={granularity === option.value}
+                          data-active={granularity === option.value}
+                          onClick={() => {
+                            setGranularity(option.value);
+                            setGranularityOpen(false);
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </div>
           </div>
           <div className={styles.chartPanel}>
             <MiniLineChart
               series={[
-                { label: "询盘数", data: trend.inquiries, color: "#2468f2" },
-                { label: "成交数", data: trend.deals, color: "#15aa5d" },
+                { label: "询盘数", data: trend.inquiries, color: "#3b82f6" },
+                { label: "成交数", data: trend.deals, color: "#22c55e" },
               ]}
               labels={trend.labels}
-              width={680}
-              height={230}
+              width={720}
+              height={300}
               showYAxis
+              showValueLabels
             />
           </div>
         </article>
@@ -311,7 +370,17 @@ export function BossDashboardWorkspace() {
           </div>
           <div className={styles.rankingTable}>
             <div className={styles.rankingHead}>
-              <span>排名</span><span>销售</span><span>成交额</span><span>目标完成率</span><span>较上月</span>
+              <span>排名</span>
+              <span>销售</span>
+              <span>
+                {rankingMetric === "inquiries"
+                  ? "询盘数"
+                  : rankingMetric === "lost"
+                    ? "丢单数"
+                    : "成交额"}
+              </span>
+              <span>目标完成率</span>
+              <span>较上月</span>
             </div>
             {salesRanking.length === 0 ? (
               <p className="px-4 py-6 text-sm text-muted-foreground">暂无销售排行数据</p>

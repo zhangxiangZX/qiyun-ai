@@ -206,7 +206,7 @@ export function MembersWorkspace() {
                 <UserPlus size={14} /> 邀请成员
               </Link>
             </Button>
-            <Button variant="outline" size="sm" type="button">
+            <Button variant="outline" size="sm" type="button" disabled title="批量导入暂未开放">
               <Download size={14} /> 批量导入
             </Button>
             <Button variant="outline" size="sm" asChild>
@@ -219,15 +219,25 @@ export function MembersWorkspace() {
       />
 
       <div className="mt-4 grid gap-3 md:grid-cols-4 ui-stagger-fade-in ui-hover-lift-children">
-        <StatCard label="成员总数" value={String(members.length)} trend={<span className="text-success text-sm">实时</span>} icon={<Users size={18} />} iconTone="brand" />
-        <StatCard label="在线成员" value="23" description="当前在线占 26.7%" icon={<Wifi size={18} />} iconTone="success" />
-        <StatCard label="本周新增" value="7" trend={<span className="text-warning text-sm">+3 · 79%</span>} icon={<UserPlus size={18} />} iconTone="warning" />
+        <StatCard label="成员总数" value={String(members.length)} trend={<span className="text-success text-sm">实时</span>} icon={<Users size={22} />} iconTone="brand" />
+        <StatCard label="在线成员" value="23" description="当前在线占 26.7%" icon={<Wifi size={22} />} iconTone="success" />
+        <StatCard label="本周新增" value="7" trend={<span className="text-warning text-sm">+3 · 79%</span>} icon={<UserPlus size={22} />} iconTone="warning" />
         <StatCard
           label="待审批邀请"
           value="4"
-          icon={<Clock size={18} />}
+          icon={<Clock size={22} />}
           iconTone="purple"
-          trend={<button className="text-primary text-sm hover:underline">去审批 &gt;</button>}
+          trend={
+            <button
+              type="button"
+              className="text-primary text-sm hover:underline"
+              onClick={() => {
+                document.getElementById("pending-invites")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              去审批 &gt;
+            </button>
+          }
         />
       </div>
 
@@ -247,10 +257,10 @@ export function MembersWorkspace() {
         <div className="relative flex-1 min-w-[200px]">
           <Input placeholder="搜索成员..." className="h-9" />
         </div>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" type="button" disabled title="成员筛选即将完善">
           <Filter size={14} /> 筛选
         </Button>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" type="button" onClick={() => void refetch()}>
           <RefreshCw size={14} /> 刷新
         </Button>
       </div>
@@ -299,14 +309,22 @@ export function MembersWorkspace() {
                       <td className="px-4 py-3 text-foreground">{m.tasks}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 text-sm text-primary">
-                          <Link
-                            href="/dashboard/team/invite"
-                            className="inline-flex items-center gap-1 hover:underline"
-                            aria-label="编辑"
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 opacity-50"
+                            aria-label="编辑成员"
+                            title="成员编辑即将上线"
+                            disabled
                           >
                             <Pencil size={14} />
-                          </Link>
-                          <button className="inline-flex items-center gap-1 hover:underline" aria-label="更多">
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 opacity-50"
+                            aria-label="更多"
+                            title="更多操作即将上线"
+                            disabled
+                          >
                             <MoreHorizontal size={14} />
                           </button>
                         </div>
@@ -317,28 +335,17 @@ export function MembersWorkspace() {
               </table>
             </div>
             <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-              <span>共 {members.length} 条 · 1-5 页</span>
+              <span>共 {members.length} 条</span>
               <div className="flex flex-wrap items-center justify-end gap-1">
-                <Button variant="outline" size="sm" disabled>
+                <Button variant="outline" size="sm" disabled title="当前页已全部展示">
                   上一页
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled aria-current="page">
                   1
                 </Button>
-                <Button variant="outline" size="sm">
-                  2
-                </Button>
-                <Button variant="outline" size="sm">
-                  3
-                </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled title="当前页已全部展示">
                   下一页
                 </Button>
-                <Select defaultValue="10条/页" className="h-9 w-24 text-sm">
-                  <option>10条/页</option>
-                  <option>20条/页</option>
-                  <option>50条/页</option>
-                </Select>
               </div>
             </div>
           </section>
@@ -346,10 +353,13 @@ export function MembersWorkspace() {
 
         {/* Sidebar */}
         <div className="min-w-0 space-y-4 lg:col-span-4">
+          <div id="pending-invites">
           <SidePanel
             title="待审批邀请 (4)"
             action={
-              <button className="text-xs text-primary hover:underline">查看全部</button>
+              <Link href="/dashboard/team/invite" className="text-xs text-primary hover:underline">
+                查看全部
+              </Link>
             }
           >
             <ul className="space-y-3">
@@ -365,10 +375,10 @@ export function MembersWorkspace() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                    <Button size="sm" variant="outline" className="h-7 px-2 text-xs" type="button" disabled title="邀请审批即将上线">
                       批准
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" type="button" disabled title="邀请审批即将上线">
                       拒绝
                     </Button>
                   </div>
@@ -376,11 +386,14 @@ export function MembersWorkspace() {
               ))}
             </ul>
           </SidePanel>
+          </div>
 
           <SidePanel
             title="角色分布"
             action={
-              <button className="text-xs text-primary hover:underline">查看详情</button>
+              <Link href="/dashboard/team/roles" className="text-xs text-primary hover:underline">
+                查看详情
+              </Link>
             }
           >
             <Donut data={ROLE_DISTRIBUTION} />

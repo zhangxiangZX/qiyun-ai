@@ -19,6 +19,12 @@ export interface NavigationLink {
   matchPrefixes?: string[];
   /** When set, only `matchPrefixes` activate this item, not the bare `href` path. */
   matchPrefixesOnly?: boolean;
+  /** Pathname must end with this suffix (e.g. `/preview`) after prefix match. */
+  matchPathEndsWith?: string;
+  /** Pathname must not end with any of these suffixes after prefix match. */
+  excludePathEndsWith?: string[];
+  /** Pathname must not start with any of these prefixes after prefix match. */
+  excludePathPrefixes?: string[];
 }
 
 export interface NavigationGroup {
@@ -225,6 +231,8 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
     href: "/dashboard/quotes/detail/preview",
     matchPrefixes: ["/dashboard/quotes/"],
     matchPrefixesOnly: true,
+    matchPathEndsWith: "/preview",
+    excludePathPrefixes: ["/dashboard/quotes/templates"],
   },
   {
     groupId: "quote-management",
@@ -233,6 +241,8 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
     href: "/dashboard/quotes/detail/customer",
     matchPrefixes: ["/dashboard/quotes/"],
     matchPrefixesOnly: true,
+    matchPathEndsWith: "/customer",
+    excludePathPrefixes: ["/dashboard/quotes/templates"],
   },
   {
     groupId: "customer-opportunity",
@@ -263,6 +273,9 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
     href: "/dashboard/quotes/detail",
     matchPrefixes: ["/dashboard/quotes/"],
     matchPrefixesOnly: true,
+    // 详情页与 PDF/客户页共用 /dashboard/quotes/[id] 前缀，需排除子页与模板路由
+    excludePathEndsWith: ["/preview", "/customer", "/edit"],
+    excludePathPrefixes: ["/dashboard/quotes/templates", "/dashboard/quotes/new"],
   },
   {
     groupId: "quote-management",
@@ -523,6 +536,10 @@ function requiredSearchMatches(required: URLSearchParams, actual: URLSearchParam
   return true;
 }
 
+function pathnameEndsWith(pathname: string, suffix: string): boolean {
+  return pathname === suffix || pathname.endsWith(suffix) || pathname.endsWith(`${suffix}/`);
+}
+
 function pathMatchesLink(link: NavigationLink, pathname: string): boolean {
   const hrefPath = parseNavHref(link.href).path;
 
@@ -534,6 +551,21 @@ function pathMatchesLink(link: NavigationLink, pathname: string): boolean {
         pathname.startsWith(prefix),
     );
     if (prefixMatched) {
+      if (link.matchPathEndsWith && !pathnameEndsWith(pathname, link.matchPathEndsWith)) {
+        return false;
+      }
+      if (
+        link.excludePathEndsWith?.some((suffix) => pathnameEndsWith(pathname, suffix))
+      ) {
+        return false;
+      }
+      if (
+        link.excludePathPrefixes?.some(
+          (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+        )
+      ) {
+        return false;
+      }
       return true;
     }
     if (link.matchPrefixesOnly) {
@@ -633,7 +665,9 @@ function linkMatchScore(
       pathname.startsWith(candidate),
   );
   if (prefix) {
-    return 5_000 + prefix.length;
+    // Prefer suffix-specific routes (preview/customer) over generic detail.
+    const suffixBonus = link.matchPathEndsWith ? 500 : 0;
+    return 5_000 + prefix.length + suffixBonus;
   }
 
   return hrefPath.length;

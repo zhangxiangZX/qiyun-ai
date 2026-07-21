@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FileText, X } from "lucide-react";
 import { Button, Select } from "@qiyun/ui";
 
@@ -34,7 +35,7 @@ export function ReportExportModal({
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const handleExport = async () => {
     if (exporting) return;
@@ -56,9 +57,12 @@ export function ReportExportModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-10">
-      <div className="w-full max-w-2xl rounded-2xl bg-card shadow-xl">
+  return createPortal(
+    <div
+      data-dialog-overlay=""
+      className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-10"
+    >
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl opacity-100">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold">导出报表</h2>
           <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted" aria-label="关闭">
@@ -120,6 +124,7 @@ export function ReportExportModal({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

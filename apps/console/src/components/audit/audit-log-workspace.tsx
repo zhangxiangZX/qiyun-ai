@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Search, X } from "lucide-react";
+import { Activity, CheckCircle2, Download, Search, Users, X, XCircle } from "lucide-react";
 import { Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
 
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
@@ -244,12 +244,15 @@ export function AuditLogWorkspace() {
               emphasis="metric"
               label="操作总数"
               value={`${isPreview ? AUDIT_STATS.total.value : stats.total.value} 次`}
+              icon={<Activity size={22} aria-hidden />}
+              iconTone="brand"
               trend={<TrendBadge value={isPreview ? AUDIT_STATS.total.trend : stats.total.trend} up={stats.total.up} />}
             />
             <StatCard
               emphasis="metric"
               label="成功操作"
               value={`${isPreview ? AUDIT_STATS.success.value : stats.success.value} 次`}
+              icon={<CheckCircle2 size={22} aria-hidden />}
               iconTone="success"
               trend={<TrendBadge value={isPreview ? AUDIT_STATS.success.trend : stats.success.trend} up={stats.success.up} />}
             />
@@ -257,6 +260,7 @@ export function AuditLogWorkspace() {
               emphasis="metric"
               label="失败操作"
               value={`${isPreview ? AUDIT_STATS.failure.value : stats.failure.value} 次`}
+              icon={<XCircle size={22} aria-hidden />}
               iconTone="warning"
               trend={<TrendBadge value={isPreview ? AUDIT_STATS.failure.trend : stats.failure.trend} up={stats.failure.up} />}
             />
@@ -264,6 +268,7 @@ export function AuditLogWorkspace() {
               emphasis="metric"
               label="活跃用户"
               value={`${isPreview ? AUDIT_STATS.activeUsers.value : stats.activeUsers.value} 人`}
+              icon={<Users size={22} aria-hidden />}
               iconTone="brand"
               trend={<TrendBadge value={isPreview ? AUDIT_STATS.activeUsers.trend : stats.activeUsers.trend} up={stats.activeUsers.up} />}
             />

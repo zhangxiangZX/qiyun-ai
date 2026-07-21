@@ -190,21 +190,20 @@ export function NewQuotationWorkspace() {
       </ConsolePageAlerts>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            href="/dashboard/quotes"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft size={12} /> 询盘与报价 / 新建报价
-          </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">新建报价</h1>
+        <Link
+          href="/dashboard/quotes"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          <ArrowLeft size={12} /> 返回报价列表
+        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" leftIcon={<Sparkles size={16} />}>
+            AI 报价建议
+          </Button>
+          <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => setPickerOpen(true)}>
+            {appliedTemplate ?? "选择模板"}
+          </Button>
         </div>
-        <Button variant="outline" leftIcon={<Sparkles size={16} />}>
-          AI 报价建议
-        </Button>
-        <Button variant="outline" leftIcon={<FileText size={16} />} onClick={() => setPickerOpen(true)}>
-          {appliedTemplate ?? "选择模板"}
-        </Button>
       </div>
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
@@ -328,10 +327,10 @@ export function NewQuotationWorkspace() {
                   <Button size="sm" variant="outline" leftIcon={<Plus size={14} />}>
                     添加服务
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" type="button" disabled title="批量导入暂未开放">
                     批量导入
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" type="button" disabled title="从模板导入暂未开放">
                     ← 从模板导入
                   </Button>
                   <button className="inline-flex items-center gap-1 text-xs text-destructive hover:underline">
@@ -455,9 +454,15 @@ export function NewQuotationWorkspace() {
 
           <Card>
             <CardTitle>附件</CardTitle>
-            <button className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              <Upload size={14} /> 上传附件
-            </button>
+            <Button
+              variant="outline"
+              leftIcon={<Upload size={14} />}
+              type="button"
+              disabled
+              title="附件上传暂未开放"
+            >
+              上传附件
+            </Button>
             <p className="mt-2 text-xs text-muted-foreground">支持格式：PDF / Word / Excel / 图片，单文件不超过 20MB。</p>
           </Card>
         </div>
@@ -531,9 +536,15 @@ export function NewQuotationWorkspace() {
 
           <Card>
             <CardTitle>附件</CardTitle>
-            <button className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              <Upload size={14} /> 上传附件
-            </button>
+            <Button
+              variant="outline"
+              leftIcon={<Upload size={14} />}
+              type="button"
+              disabled
+              title="附件上传暂未开放"
+            >
+              上传附件
+            </Button>
           </Card>
 
           <div className="flex flex-col gap-2">
@@ -541,8 +552,14 @@ export function NewQuotationWorkspace() {
               {submitting ? "生成中…" : "生成报价"}
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" asChild>
-                <Link href="/dashboard/quotes/new">预览报价</Link>
+              <Button
+                variant="outline"
+                className="flex-1"
+                type="button"
+                disabled
+                title="请先生成报价，再在详情页打开 PDF 预览"
+              >
+                预览报价
               </Button>
               <Button variant="outline" className="flex-1" disabled={isPreview}>
                 保存草稿

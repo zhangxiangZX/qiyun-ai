@@ -82,13 +82,13 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+      className={`relative inline-flex h-5 w-9 shrink-0 overflow-hidden rounded-full transition-colors ${
         on ? "bg-primary" : "bg-muted"
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-          on ? "translate-x-4" : "translate-x-0.5"
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-[left] ${
+          on ? "left-[18px]" : "left-0.5"
         }`}
       />
     </button>

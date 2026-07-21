@@ -189,15 +189,6 @@ export function EnterpriseProfileWorkspace() {
         ) : null}
       </ConsolePageAlerts>
 
-      <nav className={styles.breadcrumb} aria-label="面包屑">
-        团队
-        <span className={styles.breadcrumbSep}>/</span>
-        企业资料
-      </nav>
-      <div className={styles.pageTitle}>
-        <h1>企业资料</h1>
-      </div>
-
       <section className={styles.summaryCard}>
         <div className={styles.summaryLeft}>
           <div className={styles.logoBox}>{companyInitial}</div>
@@ -222,7 +213,15 @@ export function EnterpriseProfileWorkspace() {
                 <span className={styles.metaLabel}>企业 ID</span>
                 <span className={styles.metaValue}>
                   {workspaceId}
-                  <button type="button" className={styles.metaLink} aria-label="复制企业 ID">
+                  <button
+                    type="button"
+                    className={styles.metaLink}
+                    aria-label="复制企业 ID"
+                    title="复制企业 ID"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(workspaceId).catch(() => undefined);
+                    }}
+                  >
                     <Copy size={12} />
                   </button>
                 </span>
@@ -239,7 +238,7 @@ export function EnterpriseProfileWorkspace() {
                 <span className={styles.metaLabel}>订购状态</span>
                 <span className={styles.metaValue}>
                   按年订阅
-                  <button type="button" className={styles.metaLink}>
+                  <button type="button" className={styles.metaLink} disabled title="订购详情即将上线">
                     查看详情
                   </button>
                 </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileCode2,
   FileSpreadsheet,
@@ -17,7 +17,7 @@ import { Badge, Button, PageHeader } from "@qiyun/ui";
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
-import { UploadZone } from "@/components/knowledge/upload-zone";
+import { UploadZone, type UploadZoneHandle } from "@/components/knowledge/upload-zone";
 import { listKnowledgeBases, uploadDocumentFiles } from "@/lib/knowledge/api";
 import { formatFileSize } from "@/lib/knowledge/format";
 import type { KnowledgeDocument } from "@/lib/knowledge/types";
@@ -151,6 +151,7 @@ export function KnowledgeUploadWorkspace() {
   const [parseMode, setParseMode] = useState<"smart" | "fast" | "custom">("smart");
   const [tags, setTags] = useState(["产品文档", "解决方案", "使用指南", "技术文档"]);
   const [selectedBaseId, setSelectedBaseId] = useState("");
+  const uploadZoneRef = useRef<UploadZoneHandle>(null);
 
   const loadBases = useCallback(async () => {
     try {
@@ -206,13 +207,30 @@ export function KnowledgeUploadWorkspace() {
         description="上传产品手册、方案与 FAQ，配置解析规则后供 AI 助手检索引用。"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" type="button">
-              批量导入
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              disabled={!selectedBaseId || uploading}
+              onClick={() => uploadZoneRef.current?.openFilePicker()}
+            >
+              选择文件
             </Button>
-            <Button variant="outline" size="sm" type="button">
-              保存到知识库
-            </Button>
-            <Button size="sm" type="button">
+            <Button
+              size="sm"
+              type="button"
+              loading={uploading}
+              disabled={!selectedBaseId || uploading}
+              onClick={() => {
+                const zone = uploadZoneRef.current;
+                if (!zone) return;
+                if (zone.stagedCount > 0) {
+                  zone.uploadStaged();
+                  return;
+                }
+                zone.openFilePicker();
+              }}
+            >
               开始上传
             </Button>
           </div>
@@ -229,6 +247,7 @@ export function KnowledgeUploadWorkspace() {
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="mb-3 text-sm font-semibold text-foreground">上传文件</h2>
             <UploadZone
+              ref={uploadZoneRef}
               loading={uploading}
               disabled={!selectedBaseId}
               disabledReason={!selectedBaseId ? "请先创建知识库后再上传文档。" : undefined}

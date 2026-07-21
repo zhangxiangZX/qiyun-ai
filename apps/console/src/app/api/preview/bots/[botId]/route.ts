@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { getUpstreamApiBaseUrl } from "@/server/api-config";
 import { runtime } from "@/server/runtime";
 import { getWorkspaceContext } from "@/server/workspace";
-import { toChatErrorResponse } from "@/server/chat-http";
 import {
   resolvePreviewOrigin,
   resolveUpstreamPreviewBotContext,
@@ -28,7 +27,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       const payload = await resolveUpstreamPreviewBotContext(request, botId);
       return NextResponse.json(payload);
     } catch (error) {
-      return toChatErrorResponse(error);
+      const message = error instanceof Error ? error.message : "Unexpected error.";
+      return NextResponse.json({ code: "INTERNAL_ERROR", message }, { status: 500 });
     }
   }
 
@@ -49,7 +49,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       origin: resolvePreviewOrigin(request),
     });
   } catch (error) {
-    return toChatErrorResponse(error);
+    const message = error instanceof Error ? error.message : "Unexpected error.";
+    return NextResponse.json({ code: "INTERNAL_ERROR", message }, { status: 500 });
   }
 }
 
@@ -66,7 +67,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const payload = await resolveUpstreamPreviewBotContext(request, botId, body);
       return NextResponse.json(payload);
     } catch (error) {
-      return toChatErrorResponse(error);
+      const message = error instanceof Error ? error.message : "Unexpected error.";
+      return NextResponse.json({ code: "INTERNAL_ERROR", message }, { status: 500 });
     }
   }
 
@@ -103,6 +105,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       origin: resolvePreviewOrigin(request),
     });
   } catch (error) {
-    return toChatErrorResponse(error);
+    const message = error instanceof Error ? error.message : "Unexpected error.";
+    return NextResponse.json({ code: "INTERNAL_ERROR", message }, { status: 500 });
   }
 }

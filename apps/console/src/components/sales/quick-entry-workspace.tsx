@@ -46,6 +46,19 @@ import { INTENT_LABELS, SOURCE_TYPE_LABELS, type InquiryListItem, type IntentLev
 
 type Priority = IntentLevel;
 
+/** Single-border focus — avoid border + ring stacking into a double box. */
+const FIELD_CONTROL =
+  "h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none";
+
+const FIELD_TEXTAREA =
+  "w-full resize-none rounded-control border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none";
+
+const PHONE_GROUP =
+  "flex h-10 items-center gap-2 rounded-control border border-input bg-background px-3 shadow-sm transition-colors focus-within:border-primary";
+
+const PHONE_INPUT =
+  "min-w-0 w-full border-0 bg-transparent p-0 text-sm shadow-none outline-none ring-0 placeholder:text-muted-foreground focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0";
+
 const CHANNEL_OPTIONS = [
   "官网表单",
   "销售链接",
@@ -69,7 +82,7 @@ const NEED_OPTIONS = [
 const BUDGET_OPTIONS = ["5万以下", "5-10万", "10-20万", "20-50万", "50万以上", "待确认"];
 
 const SOURCE_SHORTCUTS = [
-  { label: "电话", icon: Phone, color: "#22c55e" },
+  { label: "电话", icon: Phone, color: "#22c55e", channel: "电话呼入" },
   { label: "微信", icon: MessageCircle, color: "#07c160" },
   { label: "抖音", icon: Youtube, color: "#fe2c55" },
   { label: "展会", icon: CalendarDays, color: "#3b5eff" },
@@ -121,6 +134,7 @@ export function QuickEntryWorkspace() {
     Object.fromEntries(AI_FIELD_KEYS.map((key) => [key, ""])) as Record<QuickEntryFieldKey, string>,
   );
   const [hasExtracted, setHasExtracted] = useState(false);
+  const [extractMode, setExtractMode] = useState<"llm" | "rules" | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -173,6 +187,12 @@ export function QuickEntryWorkspace() {
       const result = await aiExtractQuickEntry(rawText.trim());
       setExtracted(mapExtractResponseToFields(result));
       setHasExtracted(true);
+      setExtractMode(result.extractMode === "llm" ? "llm" : "rules");
+      setActionMessage(
+        result.extractMode === "llm"
+          ? "已通过大模型提取字段，请核对后一键应用。"
+          : "大模型暂不可用，已使用规则提取；配置 LLM 后可获得更好效果。",
+      );
     } catch (err: unknown) {
       if (isPreviewModeError(err)) {
         setActionError("预览模式下无法调用 AI 提取，请配置 API_BASE_URL。");
@@ -196,7 +216,7 @@ export function QuickEntryWorkspace() {
     else setPriority("medium");
   };
 
-  const clearDraft = () => {
+  const clearDraft = (options?: { preserveActionMessage?: boolean }) => {
     const reset = resetFormFields();
     setCustomer(reset.customer);
     setContact(reset.contact);
@@ -210,9 +230,12 @@ export function QuickEntryWorkspace() {
     setRawText(reset.rawText);
     setExtracted(reset.extracted);
     setHasExtracted(reset.hasExtracted);
+    setExtractMode(null);
     setDuplicate(null);
     setActionError(null);
-    setActionMessage(null);
+    if (!options?.preserveActionMessage) {
+      setActionMessage(null);
+    }
   };
 
   const saveInquiry = async (createAnother: boolean) => {
@@ -247,7 +270,7 @@ export function QuickEntryWorkspace() {
       setActionMessage(`询盘已保存：${created.customerName}`);
       await loadRecent();
       if (createAnother || keepOpen) {
-        clearDraft();
+        clearDraft({ preserveActionMessage: true });
       } else {
         router.push(`/dashboard/inquiries/${created.id}`);
       }
@@ -300,7 +323,7 @@ export function QuickEntryWorkspace() {
             <Badge variant="info" className="ml-auto">
               AI 增强
             </Badge>
-            <Button variant="outline" size="sm" leftIcon={<RefreshCw size={14} />} onClick={clearDraft}>
+            <Button variant="outline" size="sm" leftIcon={<RefreshCw size={14} />} onClick={() => clearDraft()}>
               清空草稿
             </Button>
           </div>
@@ -311,7 +334,7 @@ export function QuickEntryWorkspace() {
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
                 placeholder="如：浙江迅达通信技术有限公司"
-                className="h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={FIELD_CONTROL}
               />
             </Field>
             <Field label="联系人">
@@ -319,13 +342,13 @@ export function QuickEntryWorkspace() {
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
                 placeholder="如：李经理"
-                className="h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={FIELD_CONTROL}
               />
             </Field>
 
             <Field label="手机号" required>
-              <div className="flex h-10 items-center gap-2 rounded-control border border-input bg-background px-3 shadow-sm focus-within:ring-2 focus-within:ring-ring">
-                <select className="bg-transparent text-sm outline-none">
+              <div className={PHONE_GROUP}>
+                <select className="bg-transparent text-sm outline-none focus:outline-none">
                   <option>+86</option>
                   <option>+852</option>
                   <option>+1</option>
@@ -339,16 +362,16 @@ export function QuickEntryWorkspace() {
                     void checkDuplicate(value);
                   }}
                   placeholder="138 0000 0000"
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  className={PHONE_INPUT}
                 />
-                <MessageCircle size={16} className="text-[#07c160]" />
+                <MessageCircle size={16} className="shrink-0 text-[#07c160]" />
               </div>
             </Field>
             <Field label="来源渠道" required>
               <select
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
-                className="h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={FIELD_CONTROL}
               >
                 <option value="">请选择</option>
                 {CHANNEL_OPTIONS.map((c) => (
@@ -363,7 +386,7 @@ export function QuickEntryWorkspace() {
               <select
                 value={need}
                 onChange={(e) => setNeed(e.target.value)}
-                className="h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={FIELD_CONTROL}
               >
                 <option value="">请选择</option>
                 {NEED_OPTIONS.map((n) => (
@@ -377,7 +400,7 @@ export function QuickEntryWorkspace() {
               <select
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
-                className="h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={FIELD_CONTROL}
               >
                 <option value="">请选择</option>
                 {BUDGET_OPTIONS.map((b) => (
@@ -395,7 +418,7 @@ export function QuickEntryWorkspace() {
                     key={p}
                     type="button"
                     onClick={() => setPriority(p)}
-                    className={`h-10 flex-1 rounded-control border text-sm font-medium transition-colors ${
+                    className={`h-10 flex-1 rounded-control border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:border-primary ${
                       priority === p
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-input text-muted-foreground hover:text-foreground"
@@ -411,7 +434,7 @@ export function QuickEntryWorkspace() {
                 type="date"
                 value={followUp}
                 onChange={(e) => setFollowUp(e.target.value)}
-                className="h-10 w-full rounded-control border border-input bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={FIELD_CONTROL}
               />
             </Field>
 
@@ -422,7 +445,7 @@ export function QuickEntryWorkspace() {
                   onChange={(e) => setRemark(e.target.value.slice(0, 1000))}
                   rows={3}
                   placeholder="客户初步诉求、关键背景、特殊要求等"
-                  className="w-full resize-none rounded-control border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={FIELD_TEXTAREA}
                 />
                 <p className="mt-1 text-right text-xs text-muted-foreground">{remarkCount}/1000</p>
               </Field>
@@ -440,7 +463,7 @@ export function QuickEntryWorkspace() {
           </label>
 
           <div className="mt-4 flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={clearDraft}>
+            <Button variant="outline" onClick={() => clearDraft()}>
               重置
             </Button>
             <Button
@@ -470,14 +493,14 @@ export function QuickEntryWorkspace() {
               <h2 className="text-base font-semibold text-foreground">AI 辅助整理</h2>
             </div>
             <p className="mb-3 text-xs text-muted-foreground">
-              粘贴邮件、聊天记录等非结构化文本，由 AI 自动提取客户与需求信息。
+              粘贴邮件、聊天记录等非结构化文本，由大模型提取客户与需求信息（仅整理原文，不编造参数/报价）。
             </p>
             <textarea
               value={rawText}
               onChange={(e) => setRawText(e.target.value.slice(0, 2000))}
               rows={8}
               placeholder="粘贴客户沟通记录、邮件正文、微信聊天内容…"
-              className="w-full resize-none rounded-control border border-purple-100 bg-white px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+              className="w-full resize-none rounded-control border border-purple-100 bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors focus-visible:border-purple-400 focus-visible:outline-none"
             />
             <p className="mt-1 text-right text-xs text-muted-foreground">{rawCount}/2000</p>
             <Button
@@ -486,13 +509,20 @@ export function QuickEntryWorkspace() {
               onClick={() => void handleExtract()}
               disabled={extracting || !rawText.trim()}
             >
-              {extracting ? "提取中…" : "智能提取信息"}
+              {extracting ? "大模型提取中…" : "智能提取信息"}
             </Button>
           </section>
 
           <section className="rounded-card border border-border bg-card p-5 shadow-card">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-foreground">AI 提取结果（可编辑）</h2>
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 className="text-base font-semibold text-foreground">AI 提取结果（可编辑）</h2>
+                {extractMode === "llm" ? (
+                  <Badge variant="success">大模型</Badge>
+                ) : extractMode === "rules" ? (
+                  <Badge variant="secondary">规则兜底</Badge>
+                ) : null}
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -544,7 +574,7 @@ export function QuickEntryWorkspace() {
                   <button
                     key={s.label}
                     type="button"
-                    onClick={() => setChannel(s.label)}
+                    onClick={() => setChannel(s.channel ?? s.label)}
                     className="flex flex-col items-center gap-1.5 rounded-control border border-border bg-muted/20 py-3 text-xs text-foreground transition-colors hover:bg-accent/40"
                   >
                     <Icon size={18} style={{ color: s.color }} />

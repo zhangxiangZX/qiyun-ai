@@ -386,14 +386,10 @@ export function AfterSalesWorkspace() {
 
   return (
     <div className={styles.page}>
-      <nav className={styles.breadcrumb}>
-        <button type="button" className={styles.btnOutline} onClick={backToList} style={{ padding: "4px 8px" }}>
-          <ArrowLeft size={14} aria-hidden />
-          售后咨询
-        </button>
-        <span>/</span>
-        <span style={{ color: "#0f172a", fontWeight: 500 }}>工单详情</span>
-      </nav>
+      <button type="button" className={styles.btnOutline} onClick={backToList} style={{ padding: "4px 8px", marginBottom: 12 }}>
+        <ArrowLeft size={14} aria-hidden />
+        返回售后咨询
+      </button>
 
       <ConsoleDataModeBanner feature="会话" />
       {actionMessage ? (

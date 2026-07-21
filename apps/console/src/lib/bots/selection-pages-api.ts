@@ -20,6 +20,8 @@ export interface SelectionPageView {
   requiredQuestionCount: number;
   questions: SelectionQuestionView[];
   primaryColor: string | null;
+  botId?: string | null;
+  siteKey?: string | null;
 }
 
 interface SelectionPageApiItem {
@@ -33,6 +35,8 @@ interface SelectionPageApiItem {
   config?: {
     questions?: SelectionQuestionView[];
     theme?: { primaryColor?: string };
+    botId?: string;
+    siteKey?: string;
   };
 }
 
@@ -50,6 +54,8 @@ export function mapSelectionPageApiItem(item: SelectionPageApiItem): SelectionPa
     requiredQuestionCount: questions.filter((question) => question.required).length,
     questions,
     primaryColor: item.config?.theme?.primaryColor ?? null,
+    botId: item.config?.botId ?? null,
+    siteKey: item.config?.siteKey ?? null,
   };
 }
 
@@ -70,6 +76,8 @@ export async function createSelectionPage(input: {
   status?: SelectionPageView["status"];
   questions?: SelectionQuestionView[];
   primaryColor?: string | null;
+  botId?: string | null;
+  siteKey?: string | null;
 }): Promise<SelectionPageView> {
   const item = await apiRequest<SelectionPageApiItem>("/selection-pages", {
     method: "POST",
@@ -81,6 +89,8 @@ export async function createSelectionPage(input: {
       config: {
         questions: input.questions ?? [],
         theme: input.primaryColor ? { primaryColor: input.primaryColor } : undefined,
+        ...(input.botId ? { botId: input.botId } : {}),
+        ...(input.siteKey ? { siteKey: input.siteKey } : {}),
       },
     },
   });
@@ -96,6 +106,8 @@ export async function updateSelectionPage(
     status?: SelectionPageView["status"];
     questions?: SelectionQuestionView[];
     primaryColor?: string | null;
+    botId?: string | null;
+    siteKey?: string | null;
   },
 ): Promise<SelectionPageView> {
   const body: Record<string, unknown> = {};
@@ -103,10 +115,19 @@ export async function updateSelectionPage(
   if (input.slug !== undefined) body.slug = input.slug;
   if (input.description !== undefined) body.description = input.description;
   if (input.status !== undefined) body.status = input.status;
-  if (input.questions !== undefined || input.primaryColor !== undefined) {
+  if (
+    input.questions !== undefined ||
+    input.primaryColor !== undefined ||
+    input.botId !== undefined ||
+    input.siteKey !== undefined
+  ) {
     body.config = {
       ...(input.questions !== undefined ? { questions: input.questions } : {}),
-      ...(input.primaryColor !== undefined ? { theme: { primaryColor: input.primaryColor } } : {}),
+      ...(input.primaryColor !== undefined
+        ? { theme: input.primaryColor ? { primaryColor: input.primaryColor } : undefined }
+        : {}),
+      ...(input.botId !== undefined ? { botId: input.botId || undefined } : {}),
+      ...(input.siteKey !== undefined ? { siteKey: input.siteKey || undefined } : {}),
     };
   }
   const item = await apiRequest<SelectionPageApiItem>(`/selection-pages/${encodeURIComponent(id)}`, {

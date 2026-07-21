@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, MessageSquare, RefreshCw, Target, Wallet } from "lucide-react";
 
 import {
   Badge,
@@ -168,12 +168,43 @@ export function SalesOverviewPanel() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard label="有效询盘" value={String(overview?.effectiveInquiries ?? 0)} />
-        <StatCard label="高意向" value={String(overview?.highIntentCount ?? 0)} />
-        <StatCard label="待报价" value={String(overview?.pendingQuoteCount ?? 0)} />
-        <StatCard label="已报价" value={String(overview?.quotedCount ?? 0)} />
-        <StatCard label="已成交" value={String(overview?.wonCount ?? 0)} />
-        <StatCard label="成交金额" value={formatAmount(overview?.wonAmountTotal)} description="仅统计已录入的成交金额" />
+        <StatCard
+          label="有效询盘"
+          value={String(overview?.effectiveInquiries ?? 0)}
+          icon={<MessageSquare size={22} aria-hidden />}
+          iconTone="brand"
+        />
+        <StatCard
+          label="高意向"
+          value={String(overview?.highIntentCount ?? 0)}
+          icon={<Target size={22} aria-hidden />}
+          iconTone="warning"
+        />
+        <StatCard
+          label="待报价"
+          value={String(overview?.pendingQuoteCount ?? 0)}
+          icon={<FileText size={22} aria-hidden />}
+          iconTone="purple"
+        />
+        <StatCard
+          label="已报价"
+          value={String(overview?.quotedCount ?? 0)}
+          icon={<FileText size={22} aria-hidden />}
+          iconTone="info"
+        />
+        <StatCard
+          label="已成交"
+          value={String(overview?.wonCount ?? 0)}
+          icon={<CheckCircle2 size={22} aria-hidden />}
+          iconTone="success"
+        />
+        <StatCard
+          label="成交金额"
+          value={formatAmount(overview?.wonAmountTotal)}
+          description="仅统计已录入的成交金额"
+          icon={<Wallet size={22} aria-hidden />}
+          iconTone="brand"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

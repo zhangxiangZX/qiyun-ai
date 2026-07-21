@@ -310,26 +310,26 @@ export function AiStandaloneWorkspace() {
 
       <div className={styles.statsGrid}>
         {[
-          { label: "已创建选型页", value: stats.total, icon: <FileText size={16} color="#fff" />, bg: "#3b5eff", trend: "1 20.0%" },
-          { label: "启用中", value: stats.enabled, icon: <Play size={16} color="#fff" />, bg: "#22c55e", trend: "1 25.0%" },
-          { label: "今日访问", value: stats.visitsToday, icon: <Eye size={16} color="#fff" />, bg: "#8b5cf6", trend: "28 28.0%" },
-          { label: "已提交需求", value: stats.submitted, icon: <MessageSquare size={16} color="#fff" />, bg: "#f97316", trend: "6 35.3%" },
-          { label: "有效询盘", value: stats.validInquiries, icon: <User size={16} color="#fff" />, bg: "#06b6d4", trend: "4 33.3%" },
-          { label: "报价机会", value: stats.quoteOps, icon: <Wallet size={16} color="#fff" />, bg: "#3b5eff", trend: "1 14.3%" },
+          { label: "已创建选型页", value: stats.total, icon: <FileText size={22} color="#fff" />, bg: "#3b82f6", trend: "1 20.0%" },
+          { label: "启用中", value: stats.enabled, icon: <Play size={22} color="#fff" />, bg: "#22c55e", trend: "1 25.0%" },
+          { label: "今日访问", value: stats.visitsToday, icon: <Eye size={22} color="#fff" />, bg: "#8b5cf6", trend: "28 28.0%" },
+          { label: "已提交需求", value: stats.submitted, icon: <MessageSquare size={22} color="#fff" />, bg: "#f59e0b", trend: "6 35.3%" },
+          { label: "有效询盘", value: stats.validInquiries, icon: <User size={22} color="#fff" />, bg: "#06b6d4", trend: "4 33.3%" },
+          { label: "报价机会", value: stats.quoteOps, icon: <Wallet size={22} color="#fff" />, bg: "#3b82f6", trend: "1 14.3%" },
         ].map((item) => (
           <div key={item.label} className={styles.statCard}>
-            <div className={styles.statTop}>
-              <div className={styles.statLabel}>{item.label}</div>
-              <div className={styles.statIcon} style={{ background: item.bg }}>
-                {item.icon}
-              </div>
+            <div className={styles.statIcon} style={{ background: item.bg }}>
+              {item.icon}
             </div>
-            <div className={styles.statValue}>{item.value}</div>
-            <div className={styles.statTrend}>
-              较昨日{" "}
-              <span className={styles.trendUp}>
-                <ArrowUp size={12} style={{ display: "inline", verticalAlign: -2 }} /> {item.trend}
-              </span>
+            <div>
+              <div className={styles.statLabel}>{item.label}</div>
+              <div className={styles.statValue}>{item.value}</div>
+              <div className={styles.statTrend}>
+                较昨日{" "}
+                <span className={styles.trendUp}>
+                  <ArrowUp size={12} style={{ display: "inline", verticalAlign: -2 }} /> {item.trend}
+                </span>
+              </div>
             </div>
           </div>
         ))}

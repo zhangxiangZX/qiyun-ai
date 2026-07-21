@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Building2,
   Check,
@@ -431,10 +432,9 @@ export function InviteMemberWorkspace() {
           <ConsoleDataModeBanner feature="邀请成员" />
         </ConsolePageAlerts>
         <div className={styles.pageTitle}>
-          <p className={styles.breadcrumb}>
-            团队成员<span className={styles.breadcrumbSep}>/</span>邀请成员
-          </p>
-          <h1>邀请成员 / 编辑成员</h1>
+          <Link href="/dashboard/team" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+            ← 返回团队成员
+          </Link>
         </div>
         <div className={styles.feedback}>加载中…</div>
       </ConsolePage>
@@ -454,10 +454,9 @@ export function InviteMemberWorkspace() {
       </ConsolePageAlerts>
 
       <div className={styles.pageTitle}>
-        <p className={styles.breadcrumb}>
-          团队成员<span className={styles.breadcrumbSep}>/</span>邀请成员
-        </p>
-        <h1>邀请成员 / 编辑成员</h1>
+        <Link href="/dashboard/team" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+          ← 返回团队成员
+        </Link>
       </div>
 
       <nav className={styles.pageTabs} aria-label="邀请成员选项卡">

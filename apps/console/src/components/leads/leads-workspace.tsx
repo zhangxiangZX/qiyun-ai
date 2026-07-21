@@ -307,7 +307,7 @@ export function LeadsWorkspace() {
               label="当前筛选结果"
               value={`${items.length} 条`}
               description="会根据状态、机器人和负责人实时变化。"
-              icon={<Filter className="h-5 w-5" aria-hidden />}
+              icon={<Filter size={22} aria-hidden />}
               iconTone="brand"
             />
             <StatCard
@@ -315,7 +315,7 @@ export function LeadsWorkspace() {
               label="跟进中"
               value={`${followingCount} 条`}
               description="适合优先安排销售或客服继续推进。"
-              icon={<Star className="h-5 w-5" aria-hidden />}
+              icon={<Star size={22} aria-hidden />}
               iconTone="success"
             />
             <StatCard
@@ -324,7 +324,7 @@ export function LeadsWorkspace() {
               value={`${unassignedCount} 条`}
               description={wonCount ? `已成交 ${wonCount} 条，可继续复盘。` : "建议尽快分配负责人。"}
               tone={unassignedCount ? "warning" : "default"}
-              icon={<UserRound className="h-5 w-5" aria-hidden />}
+              icon={<UserRound size={22} aria-hidden />}
               iconTone="purple"
             />
           </div>

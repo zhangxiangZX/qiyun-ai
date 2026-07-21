@@ -97,17 +97,25 @@ async function injectAuthCookies(context, auth) {
   ]);
 }
 
-/** 等待页面进入正式 API 模式（非演示模式） */
+/** 等待页面进入正式 API 模式（非演示模式）。upstream 横幅已对业务用户隐藏，改查 /api/console/mode。 */
 async function waitForUpstreamMode(page, timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const upstream = await page.getByText("正式 API 模式").count();
-    if (upstream > 0) return;
-    const preview = await page.getByText("演示模式").count();
-    if (preview > 0) throw new Error("页面进入演示模式，API 可能未连接");
+    const mode = await page.evaluate(async () => {
+      try {
+        const response = await fetch("/api/console/mode", { cache: "no-store" });
+        if (!response.ok) return null;
+        const payload = await response.json();
+        return payload?.mode ?? null;
+      } catch {
+        return null;
+      }
+    });
+    if (mode === "upstream") return;
+    if (mode === "preview") throw new Error("页面进入演示模式，API 可能未连接");
     await page.waitForTimeout(500);
   }
-  // 超时不报错，继续执行后续检查（部分页面可能无 banner）
+  // 超时不报错，继续执行后续检查
 }
 
 /** 等待页面加载完成 */
@@ -561,9 +569,11 @@ const PAGE_TESTS = [
     url: "/dashboard/team/profile",
     async test(page, runIdx) {
       try {
-        await page.waitForTimeout(1500);
-        const hasContent = (await page.getByText(/企业资料|编辑资料|公司名称/).count()) > 0;
-        record(runIdx, "EPROF", "Enterprise Profile 企业资料", "资料页加载", hasContent);
+        await page
+          .getByText(/企业资料|编辑资料|企业名称/)
+          .first()
+          .waitFor({ state: "visible", timeout: 10_000 });
+        record(runIdx, "EPROF", "Enterprise Profile 企业资料", "资料页加载", true);
       } catch (e) {
         record(runIdx, "EPROF", "Enterprise Profile 企业资料", "资料页加载", false, String(e));
       }
@@ -601,7 +611,7 @@ console.log(`    登录成功: ${auth.user.email} (workspace: ${auth.user.active
 
 // 加载 Playwright
 const { chromium } = await resolvePlaywright();
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args: ["--no-proxy-server"] });
 
 for (let run = 0; run < RUNS; run++) {
   console.log(`==> 第 ${run + 1}/${RUNS} 轮测试开始`);

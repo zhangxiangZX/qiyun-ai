@@ -31,6 +31,10 @@ export function ConsoleDataModeBanner({ feature }: ConsoleDataModeBannerProps) {
 
   if (!info) return null;
 
+  // 正式 API（upstream）为默认生产态，不对业务用户展示开发态横幅。
+  // 仅演示模式保留提示，避免误把 mock 数据当线上数据。
+  if (info.mode === "upstream") return null;
+
   const presentation = getDataModeBannerPresentation(
     info.mode,
     feature,
@@ -69,15 +73,10 @@ export function ConsoleModeBadge() {
 
   if (!info) return null;
 
-  const label = getModeBadgeLabel(info.mode);
+  // 正式环境不展示「正式 API」徽章；仅演示模式需要醒目提示。
+  if (info.mode === "upstream") return null;
 
-  if (info.mode === "upstream") {
-    return (
-      <Badge variant="success" className="shrink-0">
-        {label}
-      </Badge>
-    );
-  }
+  const label = getModeBadgeLabel(info.mode);
 
   return (
     <Badge variant="warning" className="shrink-0">

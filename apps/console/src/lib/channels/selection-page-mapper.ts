@@ -26,3 +26,14 @@ export function slugifySelectionPageName(name: string): string {
     .replace(/^-+|-+$/g, "");
   return base || `selection-${Date.now()}`;
 }
+
+/** Unique public slug for newly created selection pages (ASCII-safe). */
+export function buildUniqueSelectionSlug(pageName: string): string {
+  const raw = slugifySelectionPageName(pageName)
+    .normalize("NFKD")
+    .replace(/[^\x00-\x7F]/g, "")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const stem = raw || "selection";
+  return `${stem}-${Date.now().toString(36)}`;
+}

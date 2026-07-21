@@ -33,9 +33,11 @@ module.exports = {
     removeConsole: { exclude: ['error', 'warn'] },
   },
 
-  // Webpack 分包优化：把 7.4MB 的 main-app.js 拆成可缓存的 vendor chunk
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
+  // Webpack 分包优化：仅生产构建启用。
+  // Dev 下覆盖 splitChunks 会打乱 App Router HMR 模块 ID，
+  // 表现为 TypeError: Cannot read properties of undefined (reading 'call')。
+  webpack: (config, { isServer, dev }) => {
+    if (!isServer && !dev) {
       config.optimization.splitChunks = {
         chunks: 'all',
         maxInitialRequests: 25,

@@ -1,43 +1,51 @@
 "use client";
 
-import { Calendar, ChevronDown, Download, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Download, RefreshCw } from "lucide-react";
 
-import { DataCenterTabs } from "@/components/data-center/data-center-tabs";
+import {
+  DateRangePicker,
+  resolveDateRangeBounds,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
 import styles from "@/styles/channel-analysis.module.css";
 
 export function DataCenterToolbar({
-  dateLabel,
+  range,
+  onRangeChange,
   onRefresh,
   refreshing = false,
+  exportHref = "/dashboard/reports/export",
 }: {
-  dateLabel: string;
+  range: DateRangeValue;
+  onRangeChange: (value: DateRangeValue) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** When set, toolbar 导出 navigates here. Pass empty string to hide. */
+  exportHref?: string;
 }) {
+  const bounds = resolveDateRangeBounds(range);
+
   return (
     <header className={styles.pageToolbar}>
-      <div className={styles.toolbarLeft}>
-        <DataCenterTabs />
-      </div>
+      <div className={styles.toolbarLeft} />
       <div className={styles.toolbarRight}>
-        <div className={styles.dateRange}>
-          <Calendar size={14} aria-hidden />
-          {dateLabel}
-          <ChevronDown size={12} aria-hidden />
-        </div>
+        <DateRangePicker value={range} onChange={onRangeChange} align="right" />
         <button
           type="button"
           className={styles.btnIcon}
-          aria-label="刷新"
+          aria-label={`刷新（当前 ${bounds.label}）`}
           onClick={onRefresh}
-          disabled={refreshing}
+          disabled={!onRefresh || refreshing}
         >
           <RefreshCw size={16} className={refreshing ? styles.spinning : undefined} aria-hidden />
         </button>
-        <button type="button" className={styles.btnExport}>
-          <Download size={14} aria-hidden />
-          导出
-        </button>
+        {exportHref ? (
+          <Link href={exportHref} className={styles.btnExport}>
+            <Download size={14} aria-hidden />
+            导出
+          </Link>
+        ) : null}
       </div>
     </header>
   );

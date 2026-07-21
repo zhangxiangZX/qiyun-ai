@@ -185,10 +185,10 @@ export function TemplateListWorkspace() {
 
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard emphasis="metric" label="模板总数" value={String(TEMPLATE_STATS.total)} description={`较上月 ↑ ${TEMPLATE_STATS.totalGrowth}%`} icon={<FileText className="h-5 w-5" />} iconTone="brand" />
-          <StatCard emphasis="metric" label="默认模板" value={String(TEMPLATE_STATS.defaults)} description={`占比 ${((TEMPLATE_STATS.defaults / TEMPLATE_STATS.total) * 100).toFixed(1)}%`} icon={<Star className="h-5 w-5" />} iconTone="warning" />
-          <StatCard emphasis="metric" label="本月使用次数" value={String(TEMPLATE_STATS.monthlyUsage)} description={`较上月 ↑ ${TEMPLATE_STATS.monthlyGrowth}%`} icon={<Eye className="h-5 w-5" />} iconTone="success" />
-          <StatCard emphasis="metric" label="最近更新" value={TEMPLATE_STATS.lastUpdated.split(" ")[0] ?? TEMPLATE_STATS.lastUpdated} description={TEMPLATE_STATS.lastUpdatedName} icon={<Pencil className="h-5 w-5" />} iconTone="info" />
+          <StatCard emphasis="metric" label="模板总数" value={String(TEMPLATE_STATS.total)} description={`较上月 ↑ ${TEMPLATE_STATS.totalGrowth}%`} icon={<FileText size={22} />} iconTone="brand" />
+          <StatCard emphasis="metric" label="默认模板" value={String(TEMPLATE_STATS.defaults)} description={`占比 ${((TEMPLATE_STATS.defaults / TEMPLATE_STATS.total) * 100).toFixed(1)}%`} icon={<Star size={22} />} iconTone="warning" />
+          <StatCard emphasis="metric" label="本月使用次数" value={String(TEMPLATE_STATS.monthlyUsage)} description={`较上月 ↑ ${TEMPLATE_STATS.monthlyGrowth}%`} icon={<Eye size={22} />} iconTone="success" />
+          <StatCard emphasis="metric" label="最近更新" value={TEMPLATE_STATS.lastUpdated.split(" ")[0] ?? TEMPLATE_STATS.lastUpdated} description={TEMPLATE_STATS.lastUpdatedName} icon={<Pencil size={22} />} iconTone="info" />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -245,45 +245,45 @@ export function CalendarWorkspace() {
       <div className={`${styles.kpiGrid} ui-stagger-fade-in ui-hover-lift-children`}>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#3b82f6] text-white`}>
+              <CalendarDays size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "calendar.kpi.month")}</div>
               <div className={styles.kpiValue}>{kpis.monthCount}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#3b5eff] text-white`}>
-              <CalendarDays size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#f59e0b] text-white`}>
+              <Clock size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "calendar.kpi.pending")}</div>
               <div className={styles.kpiValue}>{kpis.pending}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#f97316] text-white`}>
-              <Clock size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#22c55e] text-white`}>
+              <CheckCircle2 size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "calendar.kpi.done")}</div>
               <div className={styles.kpiValue}>{kpis.done}</div>
             </div>
-            <div className={`${styles.kpiIcon} bg-[#22c55e] text-white`}>
-              <CheckCircle2 size={20} aria-hidden />
-            </div>
           </div>
         </article>
         <article className={styles.kpiCard}>
           <div className={styles.kpiInner}>
+            <div className={`${styles.kpiIcon} bg-[#ef4444] text-white`}>
+              <AlertTriangle size={22} aria-hidden />
+            </div>
             <div>
               <div className={styles.kpiLabel}>{t(defaultLocale, "calendar.kpi.overdue")}</div>
               <div className={styles.kpiValue}>{kpis.overdue}</div>
-            </div>
-            <div className={`${styles.kpiIcon} bg-[#ef4444] text-white`}>
-              <AlertTriangle size={20} aria-hidden />
             </div>
           </div>
         </article>

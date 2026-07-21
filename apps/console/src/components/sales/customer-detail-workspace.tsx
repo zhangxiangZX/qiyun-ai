@@ -723,13 +723,13 @@ export function CustomerDetailWorkspace({ customerId }: { customerId: string | n
         <ConsoleRequestError {...resolveRequestErrorPresentation(error, "部分客户数据加载失败，请稍后重试。")} />
       ) : null}
 
-      <nav className={styles.breadcrumb} aria-label="面包屑">
-        <Link href="/dashboard/customers">客户管理</Link>
-        <span className={styles.breadcrumbSep}>/</span>
-        <span className={styles.breadcrumbActive}>客户详情</span>
-      </nav>
-
       <div className={styles.headerCard}>
+        <Link
+          href="/dashboard/customers"
+          className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+        >
+          ← 返回客户列表
+        </Link>
         <div className={styles.headerTop}>
           <div>
             <div className={styles.titleRow}>

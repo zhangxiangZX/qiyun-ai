@@ -14,6 +14,11 @@ import {
 import { Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
 
 import { DataCenterToolbar } from "@/components/data-center/data-center-toolbar";
+import {
+  defaultDateRange,
+  resolveDateRangeBounds,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker";
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
@@ -184,12 +189,15 @@ export function FollowUpAnalyticsWorkspace() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
 
-  const dateRange = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to);
-    from.setDate(from.getDate() - 29);
-    return { from, to };
-  }, []);
+  const [range, setRange] = useState<DateRangeValue>(() => defaultDateRange("30d"));
+  const dateBounds = useMemo(() => resolveDateRangeBounds(range), [range]);
+  const dateRange = useMemo(
+    () => ({
+      from: new Date(`${dateBounds.from}T00:00:00`),
+      to: new Date(`${dateBounds.to}T23:59:59`),
+    }),
+    [dateBounds.from, dateBounds.to],
+  );
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -284,7 +292,7 @@ export function FollowUpAnalyticsWorkspace() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const dateLabel = formatDateRange(dateRange.from, dateRange.to);
+  const dateLabel = `${dateBounds.from} ~ ${dateBounds.to}`;
 
   if (loading && !isPreview) {
     return (
@@ -303,7 +311,11 @@ export function FollowUpAnalyticsWorkspace() {
   return (
     <ConsolePage>
       <DataCenterToolbar
-        dateLabel={dateLabel}
+        range={range}
+        onRangeChange={(next) => {
+          setRange(next);
+          setRefreshing(true);
+        }}
         refreshing={refreshing}
         onRefresh={() => {
           setRefreshing(true);
@@ -321,9 +333,11 @@ export function FollowUpAnalyticsWorkspace() {
         description="分析销售跟进效率、方式分布与阶段转化，优化客户成交节奏。"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" type="button">
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              导出数据
+            <Button variant="outline" size="sm" type="button" asChild>
+              <Link href="/dashboard/reports/export">
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                导出数据
+              </Link>
             </Button>
           </div>
         }
@@ -331,11 +345,11 @@ export function FollowUpAnalyticsWorkspace() {
 
       <div className="space-y-4 pb-6">
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <StatCard emphasis="metric" label="跟进客户总数" value={String(kpis.totalCustomers.value)} icon={<Users className="h-5 w-5" />} iconTone="brand" trend={<TrendText value={kpis.totalCustomers.trend} />} />
-          <StatCard emphasis="metric" label="跟进总次数" value={String(kpis.totalFollowUps.value)} icon={<Phone className="h-5 w-5" />} iconTone="success" trend={<TrendText value={kpis.totalFollowUps.trend} />} />
-          <StatCard emphasis="metric" label="有效跟进次数" value={String(kpis.effectiveFollowUps.value)} icon={<Target className="h-5 w-5" />} iconTone="warning" trend={<TrendText value={kpis.effectiveFollowUps.trend} />} />
-          <StatCard emphasis="metric" label="平均跟进周期" value={`${kpis.avgCycleDays.value} 天`} icon={<CalendarClock className="h-5 w-5" />} iconTone="purple" trend={<TrendText value={kpis.avgCycleDays.trend} />} />
-          <StatCard emphasis="metric" label="跟进转化率" value={`${kpis.conversionRate.value}%`} icon={<TrendingUp className="h-5 w-5" />} iconTone="info" trend={<TrendText value={kpis.conversionRate.trend} />} />
+          <StatCard emphasis="metric" label="跟进客户总数" value={String(kpis.totalCustomers.value)} icon={<Users size={22} />} iconTone="brand" trend={<TrendText value={kpis.totalCustomers.trend} />} />
+          <StatCard emphasis="metric" label="跟进总次数" value={String(kpis.totalFollowUps.value)} icon={<Phone size={22} />} iconTone="success" trend={<TrendText value={kpis.totalFollowUps.trend} />} />
+          <StatCard emphasis="metric" label="有效跟进次数" value={String(kpis.effectiveFollowUps.value)} icon={<Target size={22} />} iconTone="warning" trend={<TrendText value={kpis.effectiveFollowUps.trend} />} />
+          <StatCard emphasis="metric" label="平均跟进周期" value={`${kpis.avgCycleDays.value} 天`} icon={<CalendarClock size={22} />} iconTone="purple" trend={<TrendText value={kpis.avgCycleDays.trend} />} />
+          <StatCard emphasis="metric" label="跟进转化率" value={`${kpis.conversionRate.value}%`} icon={<TrendingUp size={22} />} iconTone="info" trend={<TrendText value={kpis.conversionRate.trend} />} />
         </div>
 
         <div className="grid gap-4 xl:grid-cols-3">

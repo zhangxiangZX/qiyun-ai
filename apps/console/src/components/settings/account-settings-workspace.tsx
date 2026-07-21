@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useState } from "react";
 import {
   Bell,
@@ -35,8 +34,6 @@ import {
   type NotificationPreferences,
 } from "@/lib/settings/account-mock-data";
 import styles from "@/styles/account-settings.module.css";
-
-type TabKey = "profile" | "notifications" | "security";
 
 const NOTIF_ITEMS: Array<{
   key: keyof NotificationPreferences;
@@ -76,7 +73,6 @@ const NOTIF_ITEMS: Array<{
 ];
 
 export function AccountSettingsWorkspace() {
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const [showPasswordPanel, setShowPasswordPanel] = useState(false);
 
   const {
@@ -231,12 +227,6 @@ export function AccountSettingsWorkspace() {
   const displayAvatar = avatarPreview || avatarUrl;
   const profile = account ?? mockAccount;
 
-  const tabs: Array<{ id: TabKey; label: string }> = [
-    { id: "profile", label: "个人资料" },
-    { id: "notifications", label: "通知偏好" },
-    { id: "security", label: "安全设置" },
-  ];
-
   return (
     <ConsolePage>
       <ConsolePageAlerts>
@@ -259,32 +249,6 @@ export function AccountSettingsWorkspace() {
       </ConsolePageAlerts>
 
       <div className={styles.page}>
-        <nav className={styles.breadcrumb}>
-          <Link href="/dashboard/settings" className={styles.breadcrumbLink}>
-            账号中心
-          </Link>
-          <ChevronRight size={14} />
-          <span>个人设置</span>
-        </nav>
-
-        <h1 className={styles.pageTitle}>个人设置</h1>
-
-        <div className={styles.tabBar}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={activeTab === tab.id ? `${styles.tab} ${styles.tabActive}` : styles.tab}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id === "security") setShowPasswordPanel(true);
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <>
             <Skeleton className="mb-4 h-48 w-full rounded-xl" />
@@ -295,8 +259,7 @@ export function AccountSettingsWorkspace() {
           </>
         ) : (
           <>
-            {activeTab === "profile" ? (
-              <section className={styles.profileCard}>
+            <section className={styles.profileCard}>
                 <div className={styles.avatarCol}>
                   {displayAvatar ? (
                     <img src={displayAvatar} alt="头像" className={styles.avatar} />
@@ -451,11 +414,9 @@ export function AccountSettingsWorkspace() {
                   </div>
                 </div>
               </section>
-            ) : null}
 
-            <div className={activeTab === "profile" ? styles.bottomGrid : styles.bottomSingle}>
-              {(activeTab === "profile" || activeTab === "notifications") && (
-                <section className={styles.card}>
+            <div className={styles.bottomGrid}>
+              <section className={styles.card}>
                   <h2 className={styles.cardTitle}>通知偏好</h2>
                   <p className={styles.cardSubtitle}>管理您希望接收的通知类型</p>
                   <div className={styles.notifList}>
@@ -477,28 +438,13 @@ export function AccountSettingsWorkspace() {
                   </div>
                   <div className={styles.cardFooter}>
                     <span>部分通知可能通过邮件或站内信发送</span>
-                    <button type="button" className={styles.linkBtn}>
+                    <button type="button" className={styles.linkBtn} disabled title="通知规则说明即将上线">
                       通知规则说明
                     </button>
                   </div>
-                  {activeTab === "notifications" ? (
-                    <div className={styles.saveRow} style={{ marginTop: 16 }}>
-                      <button
-                        type="button"
-                        className={styles.saveBtn}
-                        disabled={savingProfile}
-                        onClick={() => void handleSaveProfile()}
-                      >
-                        <Save size={14} />
-                        {savingProfile ? "保存中…" : "保存修改"}
-                      </button>
-                    </div>
-                  ) : null}
                 </section>
-              )}
 
-              {(activeTab === "profile" || activeTab === "security") && (
-                <section className={styles.card}>
+              <section className={styles.card}>
                   <h2 className={styles.cardTitle}>安全设置</h2>
                   <p className={styles.cardSubtitle}>保护您的账户安全</p>
                   <div className={styles.securityList}>
@@ -515,10 +461,7 @@ export function AccountSettingsWorkspace() {
                       <button
                         type="button"
                         className={styles.securityAction}
-                        onClick={() => {
-                          setActiveTab("security");
-                          setShowPasswordPanel(true);
-                        }}
+                        onClick={() => setShowPasswordPanel(true)}
                       >
                         修改密码 <ChevronRight size={12} />
                       </button>
@@ -533,7 +476,7 @@ export function AccountSettingsWorkspace() {
                           <p className={styles.securityDesc}>未开启</p>
                         </div>
                       </div>
-                      <button type="button" className={styles.securityAction}>
+                      <button type="button" className={styles.securityAction} disabled title="手机绑定即将上线">
                         绑定手机 <ChevronRight size={12} />
                       </button>
                     </div>
@@ -547,7 +490,7 @@ export function AccountSettingsWorkspace() {
                           <p className={styles.securityDesc}>3 台设备</p>
                         </div>
                       </div>
-                      <button type="button" className={styles.securityAction}>
+                      <button type="button" className={styles.securityAction} disabled title="登录记录即将上线">
                         查看登录记录 <ChevronRight size={12} />
                       </button>
                     </div>
@@ -561,7 +504,7 @@ export function AccountSettingsWorkspace() {
                           <p className={styles.securityDesc}>查看安全评分与建议</p>
                         </div>
                       </div>
-                      <button type="button" className={styles.securityAction}>
+                      <button type="button" className={styles.securityAction} disabled title="账号安全设置即将上线">
                         安全设置 <ChevronRight size={12} />
                       </button>
                     </div>
@@ -571,15 +514,14 @@ export function AccountSettingsWorkspace() {
                       <CheckCircle2 size={14} />
                       您的账户安全状态良好，请继续保持
                     </span>
-                    <button type="button" className={styles.linkBtn}>
+                    <button type="button" className={styles.linkBtn} disabled title="安全中心即将上线">
                       安全中心
                     </button>
                   </div>
                 </section>
-              )}
             </div>
 
-            {activeTab === "security" && showPasswordPanel ? (
+            {showPasswordPanel ? (
               <section className={styles.passwordPanel}>
                 <h3 className={styles.cardTitle}>修改密码</h3>
                 <p className={styles.cardSubtitle}>为确保账户安全，请定期更换密码</p>

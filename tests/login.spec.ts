@@ -40,10 +40,14 @@ test.describe("login", () => {
 
   test("正确账号登录进入控制台且 upstream", async ({ page }) => {
     await loginViaUi(page);
+    // upstream 为默认生产态，页面不再展示「正式 API」横幅；以 /api/console/mode 为准
     await waitForUpstreamMode(page);
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText(/正式 API|真实 API|upstream|Connected to upstream/i).first()).toBeVisible({
-      timeout: 20_000,
+    const mode = await page.evaluate(async () => {
+      const response = await fetch("/api/console/mode", { cache: "no-store" });
+      return response.json();
     });
+    expect(mode.mode).toBe("upstream");
+    expect(mode.upstreamConfigured).toBe(true);
   });
 });

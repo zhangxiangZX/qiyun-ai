@@ -26,8 +26,48 @@ export interface SalesLinkView extends SalesLink {
   updatedAt: string;
 }
 
+/** Keep path (`/public/...`) distinct from legacy host codes (`qiyun.ai/xxx`). */
 function normalizeShortUrl(value: string): string {
-  return value.replace(/^https?:\/\//, "").replace(/^\//, "");
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/")) return trimmed;
+  return trimmed;
+}
+
+function resolveSalesLinkBaseUrl(): string {
+  const entry = process.env.NEXT_PUBLIC_ENTRY_URL?.replace(/\/$/, "");
+  if (entry) return entry;
+  const api = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "");
+  if (api) return api;
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return PUBLIC_ENTRY_URL;
+}
+
+function toSalesLinkPath(raw: string, slug: string): string {
+  const value = raw.trim();
+  if (!value) return `/public/sales-links/${slug}`;
+
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      // Repair bad joins like https://public/sales-links/...
+      if (url.hostname === "public") {
+        return `/public${url.pathname}${url.search}`.replace(/\/{2,}/g, "/");
+      }
+      return ""; // signal: already absolute, use as-is
+    } catch {
+      return `/public/sales-links/${slug}`;
+    }
+  }
+
+  if (value.startsWith("/")) return value;
+  if (value.startsWith("public/") || value.includes("/sales-links/")) {
+    return `/${value.replace(/^\/+/, "")}`;
+  }
+  return ""; // legacy host/path short code
 }
 
 export function mapSalesLinkApiItem(item: SalesLinkApiItem): SalesLinkView {
@@ -88,17 +128,27 @@ export async function updateSalesLink(
 export function resolveSalesLinkPublicUrl(
   link: Pick<SalesLinkView, "shortUrl" | "slug">,
 ): string {
-  const raw = link.shortUrl?.trim();
-  if (!raw) {
-    return `${PUBLIC_ENTRY_URL}/public/sales-links/${link.slug}`;
+  const raw = link.shortUrl?.trim() ?? "";
+  const base = resolveSalesLinkBaseUrl();
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      if (url.hostname === "public") {
+        return `${base}/public${url.pathname}${url.search}`.replace(/([^:]\/)\/+/g, "$1");
+      }
+      return raw;
+    } catch {
+      return `${base}/public/sales-links/${link.slug}`;
+    }
   }
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return raw;
+
+  const path = toSalesLinkPath(raw, link.slug);
+  if (!path) {
+    // Legacy mock codes like "qiyun.ai/1r6lx7k"
+    return `https://${raw}`;
   }
-  if (raw.startsWith("/")) {
-    return `${PUBLIC_ENTRY_URL}${raw}`;
-  }
-  return `https://${raw}`;
+  return `${base}${path}`;
 }
 
 export type SalesLinkScanSource = "link" | "qrcode" | "unknown" | "other";

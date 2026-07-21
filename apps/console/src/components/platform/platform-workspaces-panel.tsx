@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button, Input, Label } from "@qiyun/ui";
@@ -194,9 +195,14 @@ export function PlatformWorkspacesPanel() {
               统一处理官网提交的试用申请，通过后会自动创建工作区并发送管理员邀请。
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void load()}>
-            刷新
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/invitations">查看邀请记录</Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              刷新
+            </Button>
+          </div>
         </div>
 
         {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}

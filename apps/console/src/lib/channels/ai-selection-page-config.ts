@@ -1,5 +1,8 @@
-import { DEMO_SELECTION_PAGES, type SelectionPageItem } from "@/lib/channels/ai-standalone-shared";
-import { PUBLIC_ENTRY_URL } from "@/lib/brand";
+import {
+  DEMO_SELECTION_PAGES,
+  resolveSelectionPagePublicUrl,
+  type SelectionPageItem,
+} from "@/lib/channels/ai-standalone-shared";
 
 export interface ProductChip {
   id: string;
@@ -27,6 +30,8 @@ export interface DemoChatMessage {
   role: "user" | "assistant";
   content: string;
   followUpList?: string[];
+  citations?: Array<{ title: string; snippet: string }>;
+  needsLeadCapture?: boolean;
 }
 
 export interface SelectionPagePublicConfig {
@@ -35,7 +40,10 @@ export interface SelectionPagePublicConfig {
   enabled: boolean;
   published: boolean;
   sourceId: string;
+  /** Bound assistant for real RAG chat on the public page. */
   botId?: string;
+  /** Public site key used by /public/chat/stream (same as Widget). */
+  siteKey?: string;
   header: {
     title: string;
     subtitle: string;
@@ -84,6 +92,7 @@ const PAGE_ID_TO_SLUG: Record<string, string> = {
   stainless: "stainless-cabinet",
   expo: "expo-cabinet",
   sales: "sales-quote",
+  new: "new-selection-page",
 };
 
 const SLUG_TO_PAGE_ID = Object.fromEntries(
@@ -103,9 +112,7 @@ export function buildPublicSelectionPagePath(slug: string): string {
 }
 
 export function buildPublicSelectionPageUrl(slug: string, origin?: string): string {
-  const path = buildPublicSelectionPagePath(slug);
-  if (origin) return `${origin.replace(/\/$/, "")}${path}`;
-  return `${PUBLIC_ENTRY_URL}${path}`;
+  return resolveSelectionPagePublicUrl(slug, origin);
 }
 
 function baseConfigForPage(page: SelectionPageItem): SelectionPagePublicConfig {

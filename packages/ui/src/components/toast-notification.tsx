@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CheckCircle2,
@@ -267,13 +268,16 @@ function SuccessDialogToastInner({
     };
   }, [onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in"
+      data-dialog-overlay=""
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 animate-fade-in"
     >
       <div
         ref={containerRef}
-        className="w-full max-w-sm rounded-dialog border border-border bg-card p-8 shadow-card animate-scale-in text-center"
+        className="w-full max-w-sm rounded-dialog border border-border bg-white p-8 text-foreground shadow-card text-center opacity-100"
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -290,6 +294,7 @@ function SuccessDialogToastInner({
           <Button onClick={onClose}>{confirmLabel}</Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

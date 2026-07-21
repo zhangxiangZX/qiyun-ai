@@ -102,6 +102,7 @@ export function QuotesManagementWorkspace() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusTab, setStatusTab] = useState<QuoteDisplayStatus | "all">("all");
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("2024-06-01");
   const [dateTo, setDateTo] = useState("2024-06-30");
   const [page, setPage] = useState(1);
@@ -202,6 +203,31 @@ export function QuotesManagementWorkspace() {
   const detailHref = (row: QuoteDashboardRow) =>
     isPreview ? "/dashboard/quotes/detail" : `/dashboard/quotes/${row.id}`;
 
+  function handleExport() {
+    const source = filtered;
+    if (!source.length) {
+      setExportNotice("当前筛选条件下没有可导出的报价。");
+      return;
+    }
+    const header = ["number", "company", "product", "amount", "status", "updatedAt"];
+    const lines = [header.join(",")];
+    for (const row of source) {
+      lines.push(
+        [row.number, row.company, row.product, String(row.amount), row.status, row.updatedAt]
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(","),
+      );
+    }
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `quotes-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportNotice(`已导出 ${source.length} 条报价记录。`);
+  }
+
   return (
     <ConsolePage>
       <PageHeader
@@ -215,7 +241,7 @@ export function QuotesManagementWorkspace() {
                 新建报价
               </Link>
             </Button>
-            <Button variant="outline" type="button">
+            <Button variant="outline" type="button" onClick={handleExport}>
               <Download className="mr-1.5 h-4 w-4" />
               导出
             </Button>
@@ -225,6 +251,9 @@ export function QuotesManagementWorkspace() {
 
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="报价管理" />
+        {exportNotice ? (
+          <p className="text-sm text-emerald-700" role="status">{exportNotice}</p>
+        ) : null}
       </ConsolePageAlerts>
 
       <div className="space-y-4">
@@ -246,7 +275,7 @@ export function QuotesManagementWorkspace() {
                 emphasis="metric"
                 label="报价总数"
                 value={String(stats.total)}
-                icon={<FileText className="h-5 w-5" />}
+                icon={<FileText size={22} />}
                 iconTone="brand"
                 trend={<TrendPill value={`${stats.totalGrowth}%`} />}
               />
@@ -254,7 +283,7 @@ export function QuotesManagementWorkspace() {
                 emphasis="metric"
                 label="待发送"
                 value={String(stats.toSend)}
-                icon={<Send className="h-5 w-5" />}
+                icon={<Send size={22} />}
                 iconTone="warning"
                 trend={<TrendPill value={`${stats.toSendGrowth}%`} />}
               />
@@ -262,7 +291,7 @@ export function QuotesManagementWorkspace() {
                 emphasis="metric"
                 label="已发送"
                 value={String(stats.sent)}
-                icon={<Clock3 className="h-5 w-5" />}
+                icon={<Clock3 size={22} />}
                 iconTone="brand"
                 trend={<TrendPill value={`${stats.sentGrowth}%`} />}
               />
@@ -270,7 +299,7 @@ export function QuotesManagementWorkspace() {
                 emphasis="metric"
                 label="待确认"
                 value={String(stats.toConfirm)}
-                icon={<Timer className="h-5 w-5" />}
+                icon={<Timer size={22} />}
                 iconTone="purple"
                 trend={<TrendPill value={`${stats.toConfirmGrowth}%`} />}
               />
@@ -278,7 +307,7 @@ export function QuotesManagementWorkspace() {
                 emphasis="metric"
                 label="已成交"
                 value={String(stats.won)}
-                icon={<CheckCircle2 className="h-5 w-5" />}
+                icon={<CheckCircle2 size={22} />}
                 iconTone="success"
                 trend={<TrendPill value={`${stats.wonGrowth}%`} />}
               />
@@ -286,7 +315,7 @@ export function QuotesManagementWorkspace() {
                 emphasis="metric"
                 label="即将过期"
                 value={String(stats.expiring)}
-                icon={<TrendingUp className="h-5 w-5" />}
+                icon={<TrendingUp size={22} />}
                 iconTone="warning"
                 trend={<TrendPill value={`${stats.expiringGrowth}%`} />}
               />

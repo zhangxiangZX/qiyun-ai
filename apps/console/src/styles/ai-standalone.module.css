@@ -30,10 +30,14 @@
 }
 
 .statCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
 }
 
 .statTop {
@@ -44,18 +48,18 @@
 }
 
 .statLabel {
+  margin-bottom: 4px;
   font-size: 13px;
   color: #6b7280;
 }
 
 .statIcon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
   color: #fff;
 }
 

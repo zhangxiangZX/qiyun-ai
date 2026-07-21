@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { FileText, FileUp, Upload, X } from "lucide-react";
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { FileText, FileUp, Loader2, Upload, X } from "lucide-react";
 
 import { Alert, Button } from "@qiyun/ui";
-import { Loader2 } from "lucide-react";
 
 import { ALLOWED_EXTENSIONS } from "@/lib/knowledge/constants";
 import { formatFileSize } from "@/lib/knowledge/format";
@@ -17,12 +16,16 @@ export interface UploadZoneProps {
   onFilesSelected: (files: File[]) => void;
 }
 
-export function UploadZone({
-  disabled = false,
-  disabledReason,
-  loading = false,
-  onFilesSelected,
-}: UploadZoneProps) {
+export interface UploadZoneHandle {
+  openFilePicker: () => void;
+  uploadStaged: () => void;
+  stagedCount: number;
+}
+
+export const UploadZone = forwardRef<UploadZoneHandle, UploadZoneProps>(function UploadZone(
+  { disabled = false, disabledReason, loading = false, onFilesSelected },
+  ref,
+) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,11 +62,26 @@ export function UploadZone({
     setStagedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
-  function handleUpload() {
+  const handleUpload = useCallback(() => {
     if (!stagedFiles.length || disabled || loading) return;
     onFilesSelected(stagedFiles);
     setStagedFiles([]);
-  }
+  }, [disabled, loading, onFilesSelected, stagedFiles]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openFilePicker: () => {
+        if (disabled || loading) return;
+        inputRef.current?.click();
+      },
+      uploadStaged: () => handleUpload(),
+      get stagedCount() {
+        return stagedFiles.length;
+      },
+    }),
+    [disabled, handleUpload, loading, stagedFiles],
+  );
 
   const blocked = disabled || loading;
 
@@ -206,4 +224,4 @@ export function UploadZone({
       ) : null}
     </section>
   );
-}
+});

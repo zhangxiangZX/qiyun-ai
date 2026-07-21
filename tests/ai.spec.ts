@@ -11,8 +11,8 @@ test.describe("ai", () => {
   test("AI 助手列表与新建入口", async ({ page }) => {
     await page.goto("/dashboard/bots");
     await waitForPageReady(page);
-    await expect(page.getByText(/AI助手|助手/).first()).toBeVisible();
-    await expect(page.getByText(/新建/).first()).toBeVisible();
+    await expect(page.getByText(/AI\s*助手/).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "新建助手" }).first()).toBeVisible();
   });
 
   test("知识库页面可打开并展示上传/列表区", async ({ page }) => {

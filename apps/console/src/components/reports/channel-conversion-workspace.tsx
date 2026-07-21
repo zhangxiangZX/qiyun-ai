@@ -284,22 +284,22 @@ export function ChannelConversionWorkspace() {
 
       <div className={styles.kpiGrid}>
         {[
-          { icon: Eye, bg: "#3b5eff", color: "#fff", label: "总访问量", value: formatNum(kpis.visits), trend: null },
+          { icon: Eye, bg: "#3b82f6", color: "#fff", label: "总访问量", value: formatNum(kpis.visits), trend: null },
           { icon: MessageSquare, bg: "#8b5cf6", color: "#fff", label: "总对话数", value: formatNum(kpis.conversations), trend: null },
           { icon: Users, bg: "#22c55e", color: "#fff", label: "收集线索", value: formatNum(kpis.leads), trend: null },
-          { icon: Percent, bg: "#f97316", color: "#fff", label: "整体转化率", value: kpis.conversion, trend: null },
+          { icon: Percent, bg: "#f59e0b", color: "#fff", label: "整体转化率", value: kpis.conversion, trend: null },
         ].map(({ icon: Icon, bg, color, label, value, trend }) => (
           <div key={label} className={styles.kpiCard}>
-            <div className={styles.kpiHead}>
-              <span className={styles.kpiLabel}>{label}</span>
-              <div className={styles.kpiIcon} style={{ background: bg }}>
-                <Icon size={14} color={color} aria-hidden />
-              </div>
+            <div className={styles.kpiIcon} style={{ background: bg }}>
+              <Icon size={22} color={color} aria-hidden />
             </div>
-            <div className={styles.kpiValue}>{value}</div>
-            <div className={styles.kpiTrend}>
-              <span className={styles.trendUp}>{trend ? `↑ ${trend}` : "—"}</span>
-              <span className={styles.trendMuted}>较上期</span>
+            <div>
+              <div className={styles.kpiLabel}>{label}</div>
+              <div className={styles.kpiValue}>{value}</div>
+              <div className={styles.kpiTrend}>
+                <span className={styles.trendUp}>{trend ? `↑ ${trend}` : "—"}</span>
+                <span className={styles.trendMuted}>较上期</span>
+              </div>
             </div>
           </div>
         ))}

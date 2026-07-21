@@ -23,7 +23,12 @@ import {
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ChatResponseOutcomeBadge } from "@/components/shared/chat-response-outcome";
-import { isPreviewModeError } from "@/lib/api/use-api-resource";
+import { getBotDetail } from "@/lib/bots/data";
+import {
+  getPreviewBotContext,
+  streamChatMessage,
+  syncPreviewBot,
+} from "@/lib/chat/api";
 import { testBotChat } from "@/lib/conversations/ai-test-api";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import {
@@ -31,6 +36,7 @@ import {
   formatTime,
   getAiTestInitialMessages,
   getAiTestMockReply,
+  inferAiTestOutcome,
   type AiTestBot,
   type AiTestMessage,
 } from "@/lib/conversations/ai-test-mock-data";
@@ -94,6 +100,8 @@ export function AiTestWorkspace() {
   const [started, setStarted] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [manualEval, setManualEval] = useState<"accurate" | "optimize" | "miss" | null>(null);
+  const [conversationId, setConversationId] = useState<string | undefined>();
+  const visitorIdRef = useRef(`visitor_ai_test_${Date.now().toString(36)}`);
   const listRef = useRef<HTMLDivElement>(null);
 
   const selectedBot = useMemo(
@@ -131,6 +139,8 @@ export function AiTestWorkspace() {
   function handleStart() {
     if (!selectedBot) return;
     setStarted(true);
+    setConversationId(undefined);
+    visitorIdRef.current = `visitor_ai_test_${selectedBot.id}_${Date.now().toString(36)}`;
     setMessages(getAiTestInitialMessages(selectedBot.id));
     scrollToBottom();
   }
@@ -138,6 +148,8 @@ export function AiTestWorkspace() {
   function handleClear() {
     setClearOpen(false);
     if (!selectedBot) return;
+    setConversationId(undefined);
+    visitorIdRef.current = `visitor_ai_test_${selectedBot.id}_${Date.now().toString(36)}`;
     setMessages([
       {
         id: `welcome-${selectedBot.id}-${Date.now()}`,
@@ -167,28 +179,89 @@ export function AiTestWorkspace() {
     scrollToBottom();
 
     void (async () => {
+      const startedAt = Date.now();
       try {
-        const result = await testBotChat(selectedBot.id, question);
+        let previewContext;
+        try {
+          previewContext = await getPreviewBotContext(selectedBot.id);
+        } catch {
+          const detail = await getBotDetail(selectedBot.id);
+          previewContext = await syncPreviewBot({
+            botId: selectedBot.id,
+            name: detail?.name ?? selectedBot.name,
+            status: detail?.status ?? selectedBot.status,
+            knowledgeBaseIds: detail?.knowledgeBaseIds ?? [],
+          });
+        }
+
+        const result = await streamChatMessage({
+          botId: previewContext.botId,
+          siteKey: previewContext.siteKey,
+          visitorId: visitorIdRef.current,
+          conversationId,
+          origin: previewContext.origin,
+          message: question,
+        });
+        setConversationId(result.conversationId);
+
+        const kbHits = result.citations?.length ?? 0;
+        const outcome = result.needsLeadCapture
+          ? "needs_lead"
+          : inferAiTestOutcome(question, kbHits);
         const reply: AiTestMessage = {
-          id: `assistant-${Date.now()}`,
+          id: result.messageId || `assistant-${Date.now()}`,
           role: "assistant",
-          content: result.reply,
+          content: result.content,
           time: formatTime(),
-          outcome: result.reply.includes("知识库未激活") ? "no_knowledge" : "knowledge_hit",
+          outcome,
           debug: {
-            tokens: Math.max(32, Math.round(result.reply.length / 2)),
-            latencyMs: 900,
-            kbHits: result.reply.includes("已检索到") ? 1 : 0,
+            tokens: Math.max(32, Math.round(result.content.length / 2)),
+            latencyMs: Math.max(1, Date.now() - startedAt),
+            kbHits,
             model: selectedBot.model,
           },
         };
         setMessages((prev) => [...prev, reply]);
-      } catch (error) {
-        if (!isPreviewModeError(error)) {
-          const fallback = getAiTestMockReply(selectedBot.id, question);
-          setMessages((prev) => [...prev, fallback]);
-        } else {
-          setMessages((prev) => [...prev, getAiTestMockReply(selectedBot.id, question)]);
+      } catch (streamError) {
+        try {
+          const result = await testBotChat(selectedBot.id, question);
+          const reply: AiTestMessage = {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            content: result.reply,
+            time: formatTime(),
+            outcome: result.reply.includes("知识库未激活") ? "no_knowledge" : "knowledge_hit",
+            debug: {
+              tokens: Math.max(32, Math.round(result.reply.length / 2)),
+              latencyMs: Math.max(1, Date.now() - startedAt),
+              kbHits: result.reply.includes("已检索到") ? 1 : 0,
+              model: selectedBot.model,
+            },
+          };
+          setMessages((prev) => [...prev, reply]);
+        } catch (error) {
+          const reason =
+            streamError instanceof Error
+              ? streamError.message
+              : error instanceof Error
+                ? error.message
+                : "未知错误";
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-fallback-${Date.now()}`,
+              role: "assistant",
+              content: `暂时无法完成真实 RAG 回答（${reason}）。已回退到本地示例回复，仅供界面预览。\n\n${getAiTestMockReply(selectedBot.id, question).content}`,
+              time: formatTime(),
+              outcome: "no_knowledge",
+              debug: {
+                tokens: 0,
+                latencyMs: Math.max(1, Date.now() - startedAt),
+                kbHits: 0,
+                model: selectedBot.model,
+              },
+            },
+          ]);
         }
       } finally {
         setThinking(false);
@@ -317,6 +390,12 @@ export function AiTestWorkspace() {
                 </>
               )}
             </div>
+
+            {started && messages.some((m) => m.outcome === "needs_lead") ? (
+              <div className="border-t border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+                已触发留资引导：该问题涉及报价/交期等，建议引导访客留下联系方式由销售跟进。
+              </div>
+            ) : null}
 
             <form
               className="border-t border-border p-3"

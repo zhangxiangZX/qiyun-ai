@@ -41,6 +41,19 @@ $jwtRefreshSecret = [string]$values["JWT_REFRESH_SECRET"]
 if ($jwtSecret.Length -lt 32) { $errors += "JWT_SECRET must be at least 32 characters" }
 if ($jwtRefreshSecret.Length -lt 32) { $errors += "JWT_REFRESH_SECRET must be at least 32 characters" }
 if ($values["JWT_SECRET"] -eq $values["JWT_REFRESH_SECRET"]) { $errors += "JWT secrets must be different" }
+if ($values["EMAIL_PROVIDER"] -eq "resend") {
+  $resendKey = [string]$values["RESEND_API_KEY"]
+  if ([string]::IsNullOrWhiteSpace($resendKey) -or $resendKey -match 'REPLACE_|change-me|replace-me') {
+    $errors += "RESEND_API_KEY is required when EMAIL_PROVIDER=resend"
+  }
+}
+$appUrl = [string]$values["APP_URL"]
+$cookieSecure = [string]$values["COOKIE_SECURE"]
+if ($appUrl.StartsWith("https://") -and $cookieSecure -ne "true") {
+  $errors += "COOKIE_SECURE must be true for HTTPS"
+} elseif ($appUrl.StartsWith("http://") -and $cookieSecure -ne "false") {
+  $errors += "COOKIE_SECURE must be false for temporary HTTP deployment"
+}
 
 if ($errors.Count -gt 0) {
   $errors | ForEach-Object { Write-Error $_ }

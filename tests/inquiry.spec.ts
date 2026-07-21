@@ -47,11 +47,10 @@ test.describe("inquiry", () => {
 
     await page.goto("/dashboard/inquiries");
     await waitForPageReady(page);
-    const search = page.getByPlaceholder(/搜索|客户|询盘/).first();
-    if (await search.count()) {
-      await search.fill(marker);
-      await page.keyboard.press("Enter");
-    }
+    // 使用列表内搜索，避开顶栏 disabled 的全局搜索
+    const search = page.locator("#inquiry-list-search");
+    await search.waitFor({ state: "visible", timeout: 15_000 });
+    await search.fill(marker);
     await expect(page.getByText(marker).first()).toBeVisible({ timeout: 30_000 });
   });
 

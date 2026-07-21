@@ -37,7 +37,7 @@ const PAGE_SIZE = 10;
 
 function TrendPill({ value, tone }: { value: string; tone: "up" | "down" }) {
   return (
-    <span className={`text-xs font-medium ${tone === "up" ? "text-emerald-600" : "text-red-600"}`}>
+    <span className={`text-xs font-medium ${tone === "up" ? "text-emerald-700" : "text-red-600"}`}>
       {tone === "up" ? "↑" : "↓"} {value}
     </span>
   );
@@ -290,7 +290,7 @@ export function KnowledgeManagementWorkspace() {
                 emphasis="metric"
                 label="文档总数"
                 value={String(stats.totalDocuments)}
-                icon={<FileText className="h-5 w-5" />}
+                icon={<FileText size={22} />}
                 iconTone="brand"
                 trend={<TrendPill value={`${stats.totalGrowth}%`} tone="up" />}
               />
@@ -299,14 +299,14 @@ export function KnowledgeManagementWorkspace() {
                 label="已向量化"
                 value={String(stats.vectorized)}
                 description={`占总量 ${stats.vectorizedRate}%`}
-                icon={<FileText className="h-5 w-5" />}
+                icon={<FileText size={22} />}
                 iconTone="success"
               />
               <StatCard
                 emphasis="metric"
                 label="待处理"
                 value={String(stats.pending)}
-                icon={<FileText className="h-5 w-5" />}
+                icon={<FileText size={22} />}
                 iconTone="warning"
                 trend={<TrendPill value={`${Math.abs(stats.pendingChange)}%`} tone="down" />}
               />
@@ -315,14 +315,14 @@ export function KnowledgeManagementWorkspace() {
                 label="最近更新"
                 value={stats.recentUpdateAt.split(" ")[0] ?? stats.recentUpdateAt}
                 description={stats.recentUpdateFile}
-                icon={<RefreshCw className="h-5 w-5" />}
+                icon={<RefreshCw size={22} />}
                 iconTone="info"
               />
               <StatCard
                 emphasis="metric"
                 label="平均命中率"
                 value={`${stats.avgHitRate}%`}
-                icon={<FileText className="h-5 w-5" />}
+                icon={<FileText size={22} />}
                 iconTone="purple"
                 trend={<TrendPill value={`${stats.hitRateChange}pp`} tone="up" />}
               />
