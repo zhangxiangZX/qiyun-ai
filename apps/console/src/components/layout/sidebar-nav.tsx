@@ -9,6 +9,7 @@ import { cn } from "@qiyun/ui";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { BRAND_DOMAIN, BRAND_ICON_SRC, BRAND_NAME } from "@/lib/brand";
 import { fetchAuthSession, type AuthSession } from "@/lib/auth/client";
+import { resolveActiveWorkspace, type WorkspaceRole } from "@/lib/auth/workspace-home";
 import {
   defaultExpandedNavigationGroupIds,
   getActiveNavItem,
@@ -35,6 +36,7 @@ function SidebarNavGroup({
   pathname,
   search,
   platformRole,
+  workspaceRole,
   onNavigate,
   variant,
 }: {
@@ -42,12 +44,19 @@ function SidebarNavGroup({
   pathname: string;
   search?: string;
   platformRole?: "platform_admin" | null;
+  workspaceRole?: WorkspaceRole | null;
   onNavigate?: () => void;
   variant: "sidebar" | "drawer";
 }) {
   const isDark = variant === "sidebar";
   const Icon = group.icon;
-  const groupActive = isNavigationGroupActive(group, pathname, search, platformRole);
+  const groupActive = isNavigationGroupActive(
+    group,
+    pathname,
+    search,
+    platformRole,
+    workspaceRole,
+  );
   const [expanded, setExpanded] = useState(
     groupActive || defaultExpandedNavigationGroupIds.has(group.id),
   );
@@ -113,7 +122,13 @@ function SidebarNavGroup({
         {expanded ? (
           <div className="nav-sublist">
             {group.children?.map((child) => {
-              const isActive = isNavigationLinkActive(child, pathname, search, platformRole);
+              const isActive = isNavigationLinkActive(
+                child,
+                pathname,
+                search,
+                platformRole,
+                workspaceRole,
+              );
               return (
                 <Link
                   key={child.id}
@@ -147,7 +162,13 @@ function SidebarNavGroup({
       {expanded ? (
         <div className="space-y-0.5 pb-1 pl-3">
           {group.children?.map((child) => {
-            const isActive = isNavigationLinkActive(child, pathname, search, platformRole);
+            const isActive = isNavigationLinkActive(
+              child,
+              pathname,
+              search,
+              platformRole,
+              workspaceRole,
+            );
             return (
               <Link
                 key={child.id}
@@ -191,13 +212,17 @@ export function SidebarNav({
   const isDark = variant === "sidebar";
   const [session, setSession] = useState<AuthSession | null>(null);
   const effectivePlatformRole = session?.user.platformRole ?? platformRole ?? null;
+  const workspaceRole = useMemo(() => {
+    if (!session) return null;
+    return resolveActiveWorkspace(session.workspaces, session.user.activeWorkspaceId)?.role ?? null;
+  }, [session]);
   const navigationGroups = useMemo(
-    () => getNavigationGroups(effectivePlatformRole),
-    [effectivePlatformRole],
+    () => getNavigationGroups(effectivePlatformRole, workspaceRole),
+    [effectivePlatformRole, workspaceRole],
   );
   const active = useMemo(
-    () => getActiveNavItem(pathname, effectivePlatformRole, search),
-    [effectivePlatformRole, pathname, search],
+    () => getActiveNavItem(pathname, effectivePlatformRole, search, workspaceRole),
+    [effectivePlatformRole, pathname, search, workspaceRole],
   );
 
   useEffect(() => {
@@ -227,6 +252,7 @@ export function SidebarNav({
               pathname={pathname}
               search={search}
               platformRole={effectivePlatformRole}
+              workspaceRole={workspaceRole}
               onNavigate={onNavigate}
               variant={variant}
             />
@@ -265,6 +291,7 @@ export function SidebarNav({
             pathname={pathname}
             search={search}
             platformRole={effectivePlatformRole}
+            workspaceRole={workspaceRole}
             onNavigate={onNavigate}
             variant={variant}
           />

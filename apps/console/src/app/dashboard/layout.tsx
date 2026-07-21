@@ -19,7 +19,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect(`/reset-password?email=${encodeURIComponent(user.email)}`);
   }
 
-  const redirectTarget = resolveDashboardRedirect(Boolean(user), user?.platformRole ?? null);
+  const redirectTarget = resolveDashboardRedirect(Boolean(user), user?.platformRole ?? null, {
+    activeWorkspaceId: user?.activeWorkspaceId ?? null,
+  });
   if (redirectTarget) {
     redirect(redirectTarget);
   }

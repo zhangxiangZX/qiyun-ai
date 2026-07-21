@@ -11,6 +11,8 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { roleHomeNavIdForRole, type WorkspaceRole } from "@/lib/auth/workspace-home";
+
 export interface NavigationLink {
   id: string;
   title: string;
@@ -104,31 +106,24 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
   {
     groupId: "customer-opportunity",
     id: "lead-list",
-    title: "线索列表",
+    title: "线索列表（已合并至询盘）",
     href: "/dashboard/leads",
     matchPrefixes: ["/dashboard/leads"],
     matchPrefixesOnly: true,
   },
   {
     groupId: "customer-opportunity",
-    id: "lead-detail",
-    title: "询盘详情",
-    href: "/dashboard/leads/detail",
-    matchPrefixes: ["/dashboard/leads/"],
-    matchPrefixesOnly: true,
-  },
-  {
-    groupId: "customer-opportunity",
     id: "inquiry-detail",
     title: "询盘详情",
-    href: "/dashboard/inquiries/detail",
+    href: "/dashboard/inquiries",
     matchPrefixes: ["/dashboard/inquiries/"],
     matchPrefixesOnly: true,
+    excludePathPrefixes: ["/dashboard/inquiries/new", "/dashboard/inquiries/assign"],
   },
   {
     groupId: "customer-opportunity",
     id: "inquiry-new",
-    title: "新建询盘",
+    title: "表单新建询盘",
     href: "/dashboard/inquiries/new",
     matchPrefixes: ["/dashboard/inquiries/new"],
     matchPrefixesOnly: true,
@@ -150,13 +145,13 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
   {
     groupId: "customer-opportunity",
     id: "documents",
-    title: "文档中心",
+    title: "销售资料库",
     href: "/dashboard/documents",
   },
   {
     groupId: "customer-opportunity",
     id: "document-detail",
-    title: "资料详情",
+    title: "销售资料详情",
     href: "/dashboard/documents/detail",
     matchPrefixes: ["/dashboard/documents/"],
     matchPrefixesOnly: true,
@@ -217,6 +212,13 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
     matchPrefixesOnly: true,
   },
   {
+    groupId: "acquisition",
+    id: "qrcode-management",
+    title: "二维码",
+    href: "/dashboard/channels/qrcodes",
+    matchPrefixes: ["/dashboard/channels/qrcodes"],
+  },
+  {
     groupId: "quote-management",
     id: "quote-new",
     title: "新建报价",
@@ -270,12 +272,12 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
     groupId: "quote-management",
     id: "quote-detail",
     title: "报价详情",
-    href: "/dashboard/quotes/detail",
+    href: "/dashboard/quotes",
     matchPrefixes: ["/dashboard/quotes/"],
     matchPrefixesOnly: true,
     // 详情页与 PDF/客户页共用 /dashboard/quotes/[id] 前缀，需排除子页与模板路由
     excludePathEndsWith: ["/preview", "/customer", "/edit"],
-    excludePathPrefixes: ["/dashboard/quotes/templates", "/dashboard/quotes/new"],
+    excludePathPrefixes: ["/dashboard/quotes/templates", "/dashboard/quotes/new", "/dashboard/quotes/detail"],
   },
   {
     groupId: "quote-management",
@@ -378,9 +380,9 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
     title: "工作台",
     icon: LayoutDashboard,
     children: [
-      { id: "boss-home", title: "老板首页", href: "/dashboard/boss" },
-      { id: "admin-home", title: "管理员首页", href: "/dashboard/admin" },
-      { id: "sales-rep-home", title: "销售首页", href: "/dashboard/sales-rep" },
+      { id: "boss-home", title: "首页", href: "/dashboard/boss" },
+      { id: "admin-home", title: "首页", href: "/dashboard/admin" },
+      { id: "sales-rep-home", title: "首页", href: "/dashboard/sales-rep" },
     ],
   },
   {
@@ -390,7 +392,7 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
     children: [
       {
         id: "quick-entry",
-        title: "快速录入",
+        title: "AI 快速录入",
         href: "/dashboard/quick-entry",
         matchPrefixes: ["/dashboard/quick-entry"],
       },
@@ -422,15 +424,9 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
       },
       {
         id: "sales-links",
-        title: "销售链接 / 二维码",
+        title: "销售链接",
         href: "/dashboard/channels/links",
-        matchPrefixes: ["/dashboard/channels/links"],
-      },
-      {
-        id: "qrcode-management",
-        title: "二维码管理",
-        href: "/dashboard/channels/qrcodes",
-        matchPrefixes: ["/dashboard/channels/qrcodes"],
+        matchPrefixes: ["/dashboard/channels/links", "/dashboard/channels/qrcodes"],
       },
     ],
   },
@@ -471,7 +467,7 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
       { id: "sales-funnel", title: "成交漏斗", href: "/dashboard/sales" },
       { id: "channel-analysis", title: "渠道分析", href: "/dashboard/reports/channel" },
       { id: "follow-up-analysis", title: "销售分析", href: "/dashboard/reports/follow-up" },
-      { id: "report-export", title: "报表导出", href: "/dashboard/reports/export" },
+      { id: "report-export", title: "经营报表导出", href: "/dashboard/reports/export" },
     ],
   },
   {
@@ -681,10 +677,36 @@ function groupDirectLinkMatches(group: NavigationGroup, pathname: string): boole
   return pathname === group.href || pathname.startsWith(`${group.href}/`);
 }
 
-export function getNavigationGroups(platformRole?: "platform_admin" | null): NavigationGroup[] {
-  return platformRole === "platform_admin"
-    ? platformAdminNavigationGroups
-    : workspaceNavigationGroups;
+function filterWorkspaceNavForRole(
+  groups: NavigationGroup[],
+  workspaceRole?: WorkspaceRole | null,
+): NavigationGroup[] {
+  // 会话未就绪时暂不筛，避免先闪错角色首页
+  if (workspaceRole == null) {
+    return groups;
+  }
+
+  const allowedHomeId = roleHomeNavIdForRole(workspaceRole);
+
+  return groups.map((group) => {
+    if (group.id !== "workspace" || !group.children?.length) {
+      return group;
+    }
+    return {
+      ...group,
+      children: group.children.filter((child) => child.id === allowedHomeId),
+    };
+  });
+}
+
+export function getNavigationGroups(
+  platformRole?: "platform_admin" | null,
+  workspaceRole?: WorkspaceRole | null,
+): NavigationGroup[] {
+  if (platformRole === "platform_admin") {
+    return platformAdminNavigationGroups;
+  }
+  return filterWorkspaceNavForRole(workspaceNavigationGroups, workspaceRole);
 }
 
 export interface ActiveNavigationItem {
@@ -697,8 +719,9 @@ export function getActiveNavItem(
   pathname: string,
   platformRole?: "platform_admin" | null,
   searchParams?: NavSearchParams,
+  workspaceRole?: WorkspaceRole | null,
 ): ActiveNavigationItem | undefined {
-  const groups = getNavigationGroups(platformRole);
+  const groups = getNavigationGroups(platformRole, workspaceRole);
   const allLinks = [
     ...groups.flatMap((group) => group.children ?? []),
     ...hiddenNavigationLinksForMatching,
@@ -746,9 +769,10 @@ export function isNavigationLinkActive(
   pathname: string,
   searchParams?: NavSearchParams,
   platformRole?: "platform_admin" | null,
+  workspaceRole?: WorkspaceRole | null,
 ): boolean {
   const allLinks = [
-    ...getNavigationGroups(platformRole).flatMap((group) => group.children ?? []),
+    ...getNavigationGroups(platformRole, workspaceRole).flatMap((group) => group.children ?? []),
     ...hiddenNavigationLinksForMatching,
   ];
   return linkMatchesPath(link, pathname, searchParams, allLinks);
@@ -759,9 +783,10 @@ export function isNavigationGroupActive(
   pathname: string,
   searchParams?: NavSearchParams,
   platformRole?: "platform_admin" | null,
+  workspaceRole?: WorkspaceRole | null,
 ): boolean {
   const allLinks = [
-    ...getNavigationGroups(platformRole).flatMap((item) => item.children ?? []),
+    ...getNavigationGroups(platformRole, workspaceRole).flatMap((item) => item.children ?? []),
     ...hiddenNavigationLinksForMatching,
   ];
   if (group.href && groupDirectLinkMatches(group, pathname)) {

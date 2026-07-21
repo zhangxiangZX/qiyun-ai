@@ -30,6 +30,10 @@ import {
 import { fetchAuthSession, logoutWithConsole, type AuthSession } from "@/lib/auth/client";
 import { BRAND_NAME } from "@/lib/brand";
 import { formatUserDisplayName } from "@/lib/auth/display-name";
+import {
+  resolveActiveWorkspace,
+  resolveWorkspaceHomePathFromSession,
+} from "@/lib/auth/workspace-home";
 import { activateWorkspace } from "@/lib/auth/workspaces";
 import { getActiveNavItem } from "@/lib/navigation";
 import { notifyWorkspaceChanged } from "@/lib/workspace-events";
@@ -57,7 +61,11 @@ export function ConsoleTopbar({
   const [confirmSignOutOpen, setConfirmSignOutOpen] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const effectivePlatformRole = session?.user.platformRole ?? platformRole ?? null;
-  const active = getActiveNavItem(pathname, effectivePlatformRole, search);
+  const workspaceRole = useMemo(() => {
+    if (!session) return null;
+    return resolveActiveWorkspace(session.workspaces, session.user.activeWorkspaceId)?.role ?? null;
+  }, [session]);
+  const active = getActiveNavItem(pathname, effectivePlatformRole, search, workspaceRole);
 
   const loadSession = () => {
     setSessionState("loading");
@@ -79,7 +87,10 @@ export function ConsoleTopbar({
   }, []);
 
   const activeWorkspace = useMemo(
-    () => session?.workspaces.find((item) => item.isActive) ?? session?.workspaces[0] ?? null,
+    () =>
+      session
+        ? resolveActiveWorkspace(session.workspaces, session.user.activeWorkspaceId)
+        : null,
     [session],
   );
   const displayName = useMemo(
@@ -108,6 +119,8 @@ export function ConsoleTopbar({
       const nextSession = await activateWorkspace(workspaceId);
       setSession(nextSession);
       notifyWorkspaceChanged();
+      const nextHome = resolveWorkspaceHomePathFromSession(nextSession);
+      router.replace(nextHome);
       router.refresh();
     } catch (error) {
       setWorkspaceError(error instanceof Error ? error.message : "切换工作区失败，请重试。");
