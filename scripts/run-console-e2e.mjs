@@ -53,4 +53,37 @@ function ensureChromium() {
 
 ensureE2eDeps();
 ensureChromium();
-runNode(path.join(e2eRoot, "run-browser-tests.mjs"));
+
+const failures = [];
+
+console.log("==> Console Playwright: C-P0-07 v1 delivery critical journeys");
+{
+  const result = spawnSync(
+    process.execPath,
+    [
+      playwrightCli,
+      "test",
+      "--config",
+      path.join(e2eRoot, "playwright.config.mjs"),
+      path.join(e2eRoot, "v1-delivery-critical.spec.ts"),
+    ],
+    { stdio: "inherit", cwd: consoleRoot, env: process.env },
+  );
+  if ((result.status ?? 1) !== 0) failures.push("v1-delivery-critical");
+}
+
+console.log("==> Console browser E2E (legacy runner)");
+{
+  const result = spawnSync(process.execPath, [path.join(e2eRoot, "run-browser-tests.mjs")], {
+    stdio: "inherit",
+    cwd: consoleRoot,
+    env: process.env,
+  });
+  if ((result.status ?? 1) !== 0) failures.push("browser-tests");
+}
+
+if (failures.length) {
+  console.error(`==> Console E2E failed: ${failures.join(", ")}`);
+  process.exit(1);
+}
+console.log("==> Console E2E passed");
