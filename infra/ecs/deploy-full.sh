@@ -62,8 +62,30 @@ echo "==> Service status"
 docker compose --env-file "$ENV_FILE" -f infra/docker-compose.ecs.yml ps
 
 echo "==> Local health probes"
-curl -fsS "http://127.0.0.1:3001/health" && echo
-curl -fsS -o /dev/null -w "Console HTTP %{http_code}\n" "http://127.0.0.1:3000/login"
+wait_for_http() {
+  local label="$1"
+  local url="$2"
+  local attempts="${3:-30}"
+  local delay="${4:-2}"
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if curl -fsS -o /dev/null "$url"; then
+      echo "$label is ready ($url)"
+      return 0
+    fi
+
+    if ((attempt < attempts)); then
+      echo "Waiting for $label ($attempt/$attempts)..."
+      sleep "$delay"
+    fi
+  done
+
+  echo "$label did not become ready after $((attempts * delay)) seconds: $url" >&2
+  return 1
+}
+
+wait_for_http "API" "http://127.0.0.1:3001/health"
+wait_for_http "Console" "http://127.0.0.1:3000/login"
 
 echo
 echo "Deployment complete for ${PUBLIC_IP}"

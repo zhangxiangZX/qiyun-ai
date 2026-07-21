@@ -13,6 +13,8 @@ import {
   type ConsoleWorkspaceSummary,
 } from "@/server/auth-session";
 
+const UPSTREAM_SESSION_TIMEOUT_MS = 5_000;
+
 function buildDegradedWorkspaces(user: ConsoleAuthUser): ConsoleWorkspaceSummary[] {
   if (!user.activeWorkspaceId) {
     return [];
@@ -38,6 +40,7 @@ async function refreshUserFromUpstream(
         authorization: `Bearer ${accessToken}`,
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(UPSTREAM_SESSION_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -89,6 +92,7 @@ export async function GET(request: NextRequest) {
         authorization: `Bearer ${accessToken}`,
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(UPSTREAM_SESSION_TIMEOUT_MS),
     });
 
     if (workspacesResponse.ok) {

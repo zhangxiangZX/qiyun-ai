@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthFieldError, AuthFormFeedback } from "@/components/auth/auth-form-feedback";
-import { fetchAuthSession, loginWithConsole } from "@/lib/auth/client";
+import { loginWithConsole } from "@/lib/auth/client";
 import { localizeAuthError, AUTH_VALIDATION } from "@/lib/auth/messages";
 import { resolveWorkspaceHomePathFromSession } from "@/lib/auth/workspace-home";
 import { loginIcons } from "@/lib/auth/login-icons";
@@ -49,36 +49,6 @@ export function LoginForm({
   }>({});
   const [formMessage, setFormMessage] = useState("");
   const [formMessageType, setFormMessageType] = useState<"ok" | "bad" | "hint" | "">("");
-
-  useEffect(() => {
-    if (status === "success") {
-      const timeout = window.setTimeout(async () => {
-        if (inviteToken) {
-          router.push(`/accept-invite?token=${encodeURIComponent(inviteToken)}`);
-          return;
-        }
-        try {
-          const session = await fetchAuthSession();
-          if (session?.user.mustChangePassword) {
-            router.push(`/reset-password?email=${encodeURIComponent(session.user.email)}`);
-            return;
-          }
-          if (session?.user.platformRole === "platform_admin") {
-            router.push("/dashboard/super-admin");
-            return;
-          }
-          router.push(resolveWorkspaceHomePathFromSession(session));
-          return;
-        } catch {
-          /* fall through to dashboard */
-        }
-        router.push("/dashboard/sales-rep");
-      }, 900);
-      return () => window.clearTimeout(timeout);
-    }
-
-    return undefined;
-  }, [inviteToken, router, status]);
 
   useEffect(() => {
     const remembered = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
@@ -131,7 +101,7 @@ export function LoginForm({
     setStatus("loading");
 
     try {
-      await loginWithConsole({
+      const session = await loginWithConsole({
         email: email.trim(),
         password,
       });
@@ -145,6 +115,18 @@ export function LoginForm({
       setStatus("success");
       setFormMessage("登录成功，正在进入控制台。");
       setFormMessageType("ok");
+
+      const destination = inviteToken
+        ? `/accept-invite?token=${encodeURIComponent(inviteToken)}`
+        : session.user.mustChangePassword
+          ? `/reset-password?email=${encodeURIComponent(session.user.email)}`
+          : session.user.platformRole === "platform_admin"
+            ? "/dashboard/super-admin"
+            : resolveWorkspaceHomePathFromSession(session);
+
+      // The login response already contains the complete session. Avoid a second
+      // upstream round trip here so slow workspace queries cannot block navigation.
+      window.setTimeout(() => router.replace(destination), 300);
     } catch (error) {
       setStatus("error");
       setFormMessage(
