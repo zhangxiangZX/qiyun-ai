@@ -30,7 +30,20 @@ export interface AiTestDebugInfo {
   model: string;
 }
 
-export type AiTestOutcome = "knowledge_hit" | "no_knowledge" | "needs_lead";
+export type AiTestOutcome =
+  | "knowledge_hit"
+  | "low_score"
+  | "no_knowledge"
+  | "needs_lead"
+  | "empty_kb"
+  | "service_error";
+
+export interface AiTestCitation {
+  id: string;
+  title: string;
+  excerpt: string;
+  score?: number;
+}
 
 export interface AiTestMessage {
   id: string;
@@ -39,17 +52,31 @@ export interface AiTestMessage {
   time: string;
   /** 助手回复的业务结果分类（欢迎语等可省略） */
   outcome?: AiTestOutcome;
+  citations?: AiTestCitation[];
   /** 仅助手消息携带诊断信息 */
   debug?: AiTestDebugInfo;
 }
 
 const LEAD_KEYWORDS = /报价|价格|多少钱|费用|预算|采购.*台|批量|交期.*确认|定制/;
+const LOW_SCORE_THRESHOLD = 0.6;
 
-export function inferAiTestOutcome(question: string, kbHits: number): AiTestOutcome {
+export function inferAiTestOutcome(
+  question: string,
+  citations: Array<{ score?: number }> = [],
+  options?: { emptyKnowledgeBase?: boolean; serviceError?: boolean },
+): AiTestOutcome {
+  if (options?.serviceError) return "service_error";
+  if (options?.emptyKnowledgeBase) return "empty_kb";
   if (LEAD_KEYWORDS.test(question)) {
     return "needs_lead";
   }
-  if (kbHits > 0) {
+  if (citations.length > 0) {
+    const scores = citations
+      .map((item) => item.score)
+      .filter((score): score is number => typeof score === "number");
+    if (scores.length > 0 && scores.every((score) => score < LOW_SCORE_THRESHOLD)) {
+      return "low_score";
+    }
     return "knowledge_hit";
   }
   return "no_knowledge";
@@ -166,7 +193,10 @@ export function getAiTestInitialMessages(botId: string): AiTestMessage[] {
       role: "assistant",
       content: seed.assistant,
       time: formatTime(),
-      outcome: inferAiTestOutcome(seed.user, seed.debug.kbHits),
+      outcome: inferAiTestOutcome(
+        seed.user,
+        seed.debug.kbHits > 0 ? [{ score: 0.85 }] : [],
+      ),
       debug: { ...seed.debug, model: bot.model },
     });
   }
@@ -203,7 +233,10 @@ export function getAiTestMockReply(botId: string, question: string): AiTestMessa
     role: "assistant",
     content,
     time: formatTime(),
-    outcome: inferAiTestOutcome(question, kbHits),
+    outcome: inferAiTestOutcome(
+      question,
+      kbHits > 0 ? Array.from({ length: kbHits }, () => ({ score: 0.82 })) : [],
+    ),
     debug: { tokens, latencyMs, kbHits, model: safeBot.model },
   };
 }

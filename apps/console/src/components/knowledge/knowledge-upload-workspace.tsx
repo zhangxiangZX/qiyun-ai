@@ -4,161 +4,189 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileCode2,
-  FileSpreadsheet,
   FileText,
   FileType,
-  Presentation,
   RefreshCw,
-  Star,
 } from "lucide-react";
 
-import { Badge, Button, PageHeader } from "@qiyun/ui";
+import { Badge, Button, PageHeader, Skeleton } from "@qiyun/ui";
 
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
-import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
-import { ConsoleRequestError } from "@/components/console/console-request-error";
-import { UploadZone, type UploadZoneHandle } from "@/components/knowledge/upload-zone";
-import { listKnowledgeBases, uploadDocumentFiles } from "@/lib/knowledge/api";
-import { formatFileSize } from "@/lib/knowledge/format";
-import type { KnowledgeDocument } from "@/lib/knowledge/types";
+import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
+import { ConsoleFeedback } from "@/components/console/console-feedback";
+import { ConsolePage, ConsolePageAlerts, ConsolePageSection } from "@/components/console/console-page-shell";
 import {
-  uploadParseSummary,
-  uploadQualityScores,
-  type UploadFileRow,
-} from "@/lib/knowledge/upload-mock-data";
+  ConsoleRequestError,
+  resolveRequestErrorPresentation,
+} from "@/components/console/console-request-error";
+import { DocumentFailurePanel } from "@/components/knowledge/document-failure-panel";
+import { DocumentPipelineStepper } from "@/components/knowledge/document-pipeline-stepper";
+import { UploadBatchSummary } from "@/components/knowledge/upload-batch-summary";
+import {
+  UploadProgressList,
+  type UploadQueueItem,
+} from "@/components/knowledge/upload-progress-list";
+import { UploadZone } from "@/components/knowledge/upload-zone";
+import {
+  createKnowledgeBase,
+  deleteDocument,
+  getDocument,
+  listKnowledgeBaseDocuments,
+  listKnowledgeBases,
+  reindexDocument,
+  reparseDocument,
+  uploadDocumentFiles,
+} from "@/lib/knowledge/api";
+import {
+  getKnowledgeCapabilities,
+  type KnowledgeCapabilities,
+} from "@/lib/knowledge/capabilities";
+import { ALLOWED_EXTENSIONS } from "@/lib/knowledge/constants";
+import { formatDeleteDocumentSuccessMessage } from "@/lib/knowledge/delete-result";
+import { formatFileSize } from "@/lib/knowledge/format";
+import {
+  DOCUMENT_DISPLAY_STATUS_LABELS,
+  DOCUMENT_POLL_INTERVAL_SECONDS,
+  DOCUMENT_STATUS_POLLING_NOTE,
+} from "@/lib/knowledge/status-labels";
+import type { KnowledgeBase, KnowledgeDocument } from "@/lib/knowledge/types";
+import { isInProgressStatus } from "@/lib/knowledge/types";
 
 const FORMATS = [
   { label: "PDF", icon: FileText, tone: "text-red-500" },
   { label: "DOCX", icon: FileType, tone: "text-blue-500" },
-  { label: "PPTX", icon: Presentation, tone: "text-orange-500" },
-  { label: "XLSX", icon: FileSpreadsheet, tone: "text-emerald-500" },
   { label: "TXT", icon: FileText, tone: "text-slate-500" },
   { label: "MD", icon: FileCode2, tone: "text-violet-500" },
   { label: "HTML", icon: FileCode2, tone: "text-cyan-500" },
 ];
 
-function FileTypeBadge({ type }: { type: UploadFileRow["fileType"] }) {
-  return (
-    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
-      {type}
-    </span>
-  );
-}
-
-function ProgressBar({ value }: { value: number }) {
-  return (
-    <div className="h-2 overflow-hidden rounded-full bg-muted">
-      <div
-        className="h-full rounded-full bg-primary transition-all"
-        style={{ width: `${value}%` }}
-      />
-    </div>
-  );
-}
-
-function StarRating({ score }: { score: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Star
-          key={index}
-          className={`h-3.5 w-3.5 ${
-            index < Math.floor(score)
-              ? "fill-amber-400 text-amber-400"
-              : index < score
-                ? "fill-amber-200 text-amber-400"
-                : "text-muted-foreground/30"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function ParseRing({ rate }: { rate: number }) {
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (rate / 100) * circumference;
-  return (
-    <div className="relative mx-auto h-28 w-28">
-      <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/30" />
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="text-primary"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-semibold text-foreground">{rate}%</span>
-        <span className="text-xs text-muted-foreground">解析完成率</span>
-      </div>
-    </div>
-  );
-}
-
-function mapDocumentToRow(doc: KnowledgeDocument): UploadFileRow {
-  const ext = doc.fileType.replace(".", "").toLowerCase();
-  const fileType = (["pdf", "docx", "pptx", "xlsx", "txt", "md", "html"].includes(ext)
-    ? ext
-    : "pdf") as UploadFileRow["fileType"];
-  const status =
-    doc.status === "ready"
-      ? "completed"
-      : doc.status === "failed"
-        ? "failed"
-        : doc.status === "uploaded"
-          ? "uploading"
-          : "parsing";
-  const statusLabel =
-    doc.status === "ready"
-      ? "已完成"
-      : doc.status === "failed"
-        ? "失败"
-        : doc.status === "uploaded"
-          ? "已上传"
-          : "解析中";
+function mapProcessingQueueItem(
+  item: UploadQueueItem,
+  document: KnowledgeDocument,
+): UploadQueueItem {
+  if (document.status === "ready") {
+    return {
+      ...item,
+      status: "completed",
+      phase: "done",
+      processingStatus: document.status,
+      processingError: null,
+      processingErrorCode: null,
+    };
+  }
+  if (document.status === "failed") {
+    return {
+      ...item,
+      status: "processing_failed",
+      phase: "done",
+      processingStatus: document.status,
+      processingError: document.errorMessage,
+      processingErrorCode: document.errorCode,
+    };
+  }
   return {
-    id: doc.id,
-    fileName: doc.fileName,
-    fileType,
-    size: formatFileSize(doc.sizeBytes),
-    uploadProgress: doc.status === "ready" ? 100 : doc.status === "uploaded" ? 100 : 65,
-    status,
-    statusLabel,
-    extractedSummary:
-      doc.chunkCount != null ? `${doc.chunkCount} 个文本块` : doc.errorMessage ?? "等待解析",
+    ...item,
+    status: "processing",
+    phase: "processing",
+    processingStatus: document.status,
+    processingError: null,
+    processingErrorCode: null,
   };
 }
 
 export function KnowledgeUploadWorkspace() {
-  const [files, setFiles] = useState<UploadFileRow[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [category, setCategory] = useState("产品文档");
-  const [name, setName] = useState("产品手册与解决方案");
-  const [language, setLanguage] = useState("zh-CN");
-  const [description, setDescription] = useState(
-    "收录产品手册、解决方案与客户常见问答，供官网 Widget 与选型助手检索。",
-  );
-  const [parseMode, setParseMode] = useState<"smart" | "fast" | "custom">("smart");
-  const [tags, setTags] = useState(["产品文档", "解决方案", "使用指南", "技术文档"]);
+  const pendingFilesRef = useRef<Map<string, File>>(new Map());
+
+  const [bases, setBases] = useState<KnowledgeBase[]>([]);
+  const [basesLoading, setBasesLoading] = useState(true);
+  const [basesError, setBasesError] = useState<unknown>(null);
   const [selectedBaseId, setSelectedBaseId] = useState("");
-  const uploadZoneRef = useRef<UploadZoneHandle>(null);
+  const [creatingBase, setCreatingBase] = useState(false);
+
+  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState<unknown>(null);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+  const [feedback, setFeedback] = useState<{ variant: "success" | "error"; title: string } | null>(
+    null,
+  );
+  const [capabilities, setCapabilities] = useState<KnowledgeCapabilities | null>(null);
+  const [busyDocumentId, setBusyDocumentId] = useState<string | null>(null);
+
+  const selectedBase = useMemo(
+    () => bases.find((item) => item.id === selectedBaseId) ?? null,
+    [bases, selectedBaseId],
+  );
+
+  const uploadQueueProcessingKey = useMemo(
+    () =>
+      uploadQueue
+        .filter((item) => item.status === "processing" && item.documentId)
+        .map((item) => `${item.documentId}:${item.processingStatus}`)
+        .join(","),
+    [uploadQueue],
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      queued: uploadQueue.filter((item) => item.status === "queued" || item.status === "uploading")
+        .length,
+      uploaded: 0,
+      parsing: 0,
+      indexing: 0,
+      ready: 0,
+      failed: 0,
+    };
+    for (const document of documents) {
+      counts[document.status] = (counts[document.status] ?? 0) + 1;
+    }
+    return counts;
+  }, [documents, uploadQueue]);
 
   const loadBases = useCallback(async () => {
+    setBasesLoading(true);
+    setBasesError(null);
     try {
-      const bases = await listKnowledgeBases();
-      setSelectedBaseId(bases[0]?.id ?? "");
-    } catch {
+      const [next, caps] = await Promise.all([listKnowledgeBases(), getKnowledgeCapabilities()]);
+      setBases(next);
+      setCapabilities(caps);
+      setSelectedBaseId((current) => {
+        if (current && next.some((base) => base.id === current)) return current;
+        return next[0]?.id ?? "";
+      });
+    } catch (error) {
+      setBases([]);
       setSelectedBaseId("");
+      setBasesError(error);
+    } finally {
+      setBasesLoading(false);
+    }
+  }, []);
+
+  const loadDocuments = useCallback(async (baseId: string) => {
+    if (!baseId) {
+      setDocuments([]);
+      return;
+    }
+    setDocumentsLoading(true);
+    setDocumentsError(null);
+    try {
+      const nextDocuments = await listKnowledgeBaseDocuments(baseId);
+      setDocuments(nextDocuments);
+      setUploadQueue((current) =>
+        current.map((item) => {
+          if (item.status !== "processing" || !item.documentId) return item;
+          const document = nextDocuments.find((entry) => entry.id === item.documentId);
+          return document ? mapProcessingQueueItem(item, document) : item;
+        }),
+      );
+    } catch (error) {
+      setDocumentsError(error);
+      setDocuments([]);
+    } finally {
+      setDocumentsLoading(false);
     }
   }, []);
 
@@ -166,72 +194,254 @@ export function KnowledgeUploadWorkspace() {
     void loadBases();
   }, [loadBases]);
 
-  const handleUpload = useCallback(
-    async (selected: File[]) => {
-      if (!selectedBaseId || !selected.length) return;
-      setUploading(true);
-      setUploadError(null);
-      try {
-        const uploaded = await uploadDocumentFiles(selectedBaseId, selected);
-        setFiles((current) => [...uploaded.map(mapDocumentToRow), ...current]);
-      } catch (error) {
-        setUploadError(error instanceof Error ? error.message : "上传失败，请稍后重试。");
-      } finally {
-        setUploading(false);
-      }
-    },
-    [selectedBaseId],
-  );
+  useEffect(() => {
+    if (!selectedBaseId) {
+      setDocuments([]);
+      return;
+    }
+    void loadDocuments(selectedBaseId);
+  }, [loadDocuments, selectedBaseId]);
 
-  const summary = useMemo(() => {
-    if (!files.length) return uploadParseSummary;
-    const parsed = files.filter((file) => file.status === "completed").length;
-    const parsing = files.filter((file) => file.status === "parsing" || file.status === "uploading").length;
-    const queued = files.filter((file) => file.status === "queued").length;
-    const completionRate = files.length ? Math.round((parsed / files.length) * 100) : 0;
-    return {
-      ...uploadParseSummary,
-      total: files.length,
-      parsed,
-      parsing,
-      queued,
-      completionRate,
-    };
-  }, [files]);
-  const quality = uploadQualityScores;
+  useEffect(() => {
+    const hasInProgress = documents.some((document) => isInProgressStatus(document.status));
+    if (!hasInProgress || !selectedBaseId) return;
+    const timer = window.setInterval(() => {
+      void loadDocuments(selectedBaseId);
+    }, DOCUMENT_POLL_INTERVAL_SECONDS * 1000);
+    return () => window.clearInterval(timer);
+  }, [documents, loadDocuments, selectedBaseId]);
+
+  useEffect(() => {
+    const processingIds = uploadQueue
+      .filter((item) => item.status === "processing" && item.documentId)
+      .map((item) => item.documentId as string);
+    if (!processingIds.length) return;
+
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const updates = await Promise.all(processingIds.map((id) => getDocument(id)));
+          setUploadQueue((current) => {
+            const byId = new Map(updates.map((document) => [document.id, document]));
+            return current.map((item) => {
+              if (!item.documentId || item.status !== "processing") return item;
+              const document = byId.get(item.documentId);
+              return document ? mapProcessingQueueItem(item, document) : item;
+            });
+          });
+          setDocuments((current) => {
+            const byId = new Map(updates.map((document) => [document.id, document]));
+            return current.map((document) => byId.get(document.id) ?? document);
+          });
+        } catch {
+          // keep current status; next poll retries
+        }
+      })();
+    }, DOCUMENT_POLL_INTERVAL_SECONDS * 1000);
+
+    return () => window.clearInterval(timer);
+  }, [uploadQueueProcessingKey, uploadQueue]);
+
+  const handleCreateBase = useCallback(async () => {
+    setCreatingBase(true);
+    setFeedback(null);
+    try {
+      const base = await createKnowledgeBase("产品知识库");
+      setBases((current) => [...current, base]);
+      setSelectedBaseId(base.id);
+      setFeedback({ variant: "success", title: `已创建知识库「${base.name}」` });
+    } catch (error) {
+      setFeedback({
+        variant: "error",
+        title: resolveRequestErrorPresentation(error, "创建知识库失败，请稍后重试。").message,
+      });
+    } finally {
+      setCreatingBase(false);
+    }
+  }, []);
+
+  async function processUploadQueue(baseId: string, files: File[]) {
+    setUploading(true);
+    setFeedback(null);
+
+    const queueItems: UploadQueueItem[] = files.map((file) => ({
+      fileName: file.name,
+      status: "queued",
+      phase: "upload",
+    }));
+    setUploadQueue((current) => [...current, ...queueItems]);
+
+    for (const file of files) {
+      pendingFilesRef.current.set(file.name, file);
+      setUploadQueue((current) =>
+        current.map((item) =>
+          item.fileName === file.name && item.status === "queued"
+            ? { ...item, status: "uploading", phase: "upload" }
+            : item,
+        ),
+      );
+
+      try {
+        const uploaded = await uploadDocumentFiles(baseId, [file]);
+        const document = uploaded[0];
+        if (!document) {
+          throw new Error("上传成功但未返回文档记录。");
+        }
+        setUploadQueue((current) =>
+          current.map((item) =>
+            item.fileName === file.name
+              ? {
+                  ...item,
+                  status: "processing",
+                  phase: "processing",
+                  documentId: document.id,
+                  processingStatus: document.status,
+                }
+              : item,
+          ),
+        );
+        setDocuments((current) => {
+          const exists = current.some((entry) => entry.id === document.id);
+          return exists ? current : [...current, document];
+        });
+      } catch (error) {
+        const message = resolveRequestErrorPresentation(error, "文件上传失败。").message;
+        setUploadQueue((current) =>
+          current.map((item) =>
+            item.fileName === file.name
+              ? { ...item, status: "upload_error", phase: "upload", errorMessage: message }
+              : item,
+          ),
+        );
+      }
+    }
+
+    setUploading(false);
+    void loadDocuments(baseId);
+  }
+
+  function handleUpload(files: File[]) {
+    if (!selectedBaseId) {
+      setFeedback({ variant: "error", title: "请先创建或选择知识库，再上传文档。" });
+      return;
+    }
+    void processUploadQueue(selectedBaseId, files);
+  }
+
+  function handleRetryUpload(fileName: string) {
+    const file = pendingFilesRef.current.get(fileName);
+    if (!file || !selectedBaseId) {
+      setFeedback({
+        variant: "error",
+        title: "无法重试：原始文件已不在队列中，请重新选择文件上传。",
+      });
+      return;
+    }
+    setUploadQueue((current) => current.filter((item) => item.fileName !== fileName));
+    void processUploadQueue(selectedBaseId, [file]);
+  }
+
+  async function handleRetryDocument(documentId: string) {
+    setBusyDocumentId(documentId);
+    setFeedback(null);
+    try {
+      const updated = await reindexDocument(documentId);
+      setDocuments((current) =>
+        current.map((document) => (document.id === documentId ? updated : document)),
+      );
+      setFeedback({ variant: "success", title: "已重新排队索引，请稍候查看处理状态。" });
+    } catch (error) {
+      setFeedback({
+        variant: "error",
+        title: resolveRequestErrorPresentation(error, "重试索引失败。").message,
+      });
+    } finally {
+      setBusyDocumentId(null);
+    }
+  }
+
+  async function handleReparseDocument(documentId: string) {
+    setBusyDocumentId(documentId);
+    setFeedback(null);
+    try {
+      const updated = await reparseDocument(documentId);
+      setDocuments((current) =>
+        current.map((document) => (document.id === documentId ? updated : document)),
+      );
+      setFeedback({ variant: "success", title: "已重新排队解析，请稍候查看处理状态。" });
+    } catch (error) {
+      setFeedback({
+        variant: "error",
+        title: resolveRequestErrorPresentation(error, "重新解析失败。").message,
+      });
+    } finally {
+      setBusyDocumentId(null);
+    }
+  }
+
+  async function handleDeleteDocument(documentId: string) {
+    const target = documents.find((document) => document.id === documentId);
+    if (!target) return;
+    if (!capabilities?.documentDeleteAvailable) {
+      setFeedback({
+        variant: "error",
+        title: capabilities?.documentDeleteHint || "单文档删除尚未接通。",
+      });
+      return;
+    }
+    setBusyDocumentId(documentId);
+    setFeedback(null);
+    try {
+      const result = await deleteDocument(documentId);
+      setDocuments((current) => current.filter((document) => document.id !== documentId));
+      setFeedback({
+        variant: "success",
+        title: formatDeleteDocumentSuccessMessage(target.fileName, result),
+      });
+    } catch (error) {
+      setFeedback({
+        variant: "error",
+        title: resolveRequestErrorPresentation(error, "删除文档失败。").message,
+      });
+    } finally {
+      setBusyDocumentId(null);
+    }
+  }
+
+  if (basesLoading) {
+    return (
+      <ConsolePage>
+        <PageHeader
+          variant="compact"
+          title="知识库上传"
+          description="将文档上传到已有知识库，状态由 DocumentStatus 轮询更新。"
+        />
+        <Skeleton className="h-96 w-full rounded-card" />
+      </ConsolePage>
+    );
+  }
 
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="知识库上传"
-        description="上传产品手册、方案与 FAQ，配置解析规则后供 AI 助手检索引用。"
+        description="上传后展示真实处理阶段：排队中 → 已接收 → 解析中 → 建索引中 → 已完成 / 失败。无字节级上传百分比。"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              disabled={!selectedBaseId || uploading}
-              onClick={() => uploadZoneRef.current?.openFilePicker()}
-            >
-              选择文件
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/knowledge-bases">返回知识库</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/conversations/test">测试问答</Link>
             </Button>
             <Button
-              size="sm"
-              type="button"
-              loading={uploading}
-              disabled={!selectedBaseId || uploading}
-              onClick={() => {
-                const zone = uploadZoneRef.current;
-                if (!zone) return;
-                if (zone.stagedCount > 0) {
-                  zone.uploadStaged();
-                  return;
-                }
-                zone.openFilePicker();
-              }}
+              variant="outline"
+              onClick={() => void loadDocuments(selectedBaseId)}
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              disabled={!selectedBaseId}
             >
-              开始上传
+              刷新状态
             </Button>
           </div>
         }
@@ -239,22 +449,66 @@ export function KnowledgeUploadWorkspace() {
 
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="知识库上传" />
-        {uploadError ? <ConsoleRequestError message={uploadError} /> : null}
+        {basesError ? (
+          <ConsoleRequestError
+            {...resolveRequestErrorPresentation(basesError, "知识库列表加载失败。")}
+            onRetry={() => void loadBases()}
+          />
+        ) : null}
+        {feedback ? (
+          <ConsoleFeedback
+            variant={feedback.variant}
+            title={feedback.title}
+            onDismiss={() => setFeedback(null)}
+          />
+        ) : null}
       </ConsolePageAlerts>
 
-      <div className="space-y-4">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_300px]">
+      {!bases.length ? (
+        <ConsolePageSection>
+          <ConsoleEmptyState
+            preset="noKnowledgeBases"
+            action={
+              <Button loading={creatingBase} onClick={() => void handleCreateBase()}>
+                新建知识库并继续
+              </Button>
+            }
+          />
+        </ConsolePageSection>
+      ) : (
+        <div className="space-y-4">
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-foreground">上传文件</h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">上传文件</h2>
+              <select
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                value={selectedBaseId}
+                onChange={(event) => setSelectedBaseId(event.target.value)}
+                aria-label="选择知识库"
+                disabled={uploading}
+              >
+                {bases.map((base) => (
+                  <option key={base.id} value={base.id}>
+                    {base.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <UploadZone
-              ref={uploadZoneRef}
               loading={uploading}
-              disabled={!selectedBaseId}
-              disabledReason={!selectedBaseId ? "请先创建知识库后再上传文档。" : undefined}
-              onFilesSelected={(selected) => void handleUpload(selected)}
+              autoUpload
+              disabled={!selectedBaseId || selectedBase?.status === "disabled"}
+              disabledReason={
+                selectedBase?.status === "disabled"
+                  ? "知识库已停用，无法上传新文档。"
+                  : !selectedBaseId
+                    ? "请先新建或选择知识库后再上传文档。"
+                    : undefined
+              }
+              onFilesSelected={handleUpload}
             />
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              支持批量上传，单个文件最大 200MB
+              支持 {ALLOWED_EXTENSIONS.join(" / ")}，单个文件最大 20MB。{DOCUMENT_STATUS_POLLING_NOTE}
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               {FORMATS.map((format) => (
@@ -264,237 +518,148 @@ export function KnowledgeUploadWorkspace() {
                 </span>
               ))}
             </div>
-            {!selectedBaseId ? (
-              <p className="mt-3 text-center text-xs text-amber-600">
-                尚未连接知识库 API，当前展示上传预览界面。
-                <Link href="/dashboard/knowledge-bases" className="ml-1 underline">
-                  前往知识库
-                </Link>
-              </p>
-            ) : null}
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-foreground">知识库设置</h2>
-            <div className="space-y-3">
-              <label className="block text-sm">
-                <span className="mb-1 block text-muted-foreground">知识库分类</span>
-                <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                >
-                  <option>产品文档</option>
-                  <option>解决方案</option>
-                  <option>客户案例</option>
-                  <option>售后服务</option>
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block text-muted-foreground">知识库名称</span>
-                <input
-                  className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block text-muted-foreground">语言</span>
-                <select
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value)}
-                >
-                  <option value="zh-CN">简体中文</option>
-                  <option value="en-US">English</option>
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block text-muted-foreground">标签</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block text-muted-foreground">知识库描述</span>
-                <textarea
-                  className="min-h-20 w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                />
-              </label>
-              <fieldset className="space-y-2">
-                <legend className="text-sm text-muted-foreground">解析设置</legend>
-                {[
-                  { key: "smart" as const, title: "智能解析（推荐）", desc: "自动识别文档结构" },
-                  { key: "fast" as const, title: "快速解析", desc: "仅提取纯文本" },
-                  { key: "custom" as const, title: "自定义解析", desc: "手动配置分段规则" },
-                ].map((option) => (
-                  <label
-                    key={option.key}
-                    className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 ${
-                      parseMode === option.key ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="parseMode"
-                      checked={parseMode === option.key}
-                      onChange={() => setParseMode(option.key)}
-                      className="mt-1"
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-foreground">{option.title}</span>
-                      <span className="text-xs text-muted-foreground">{option.desc}</span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">AI 解析摘要</h2>
-              <Button variant="ghost" size="icon" className="h-8 w-8" type="button">
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </div>
-            <ParseRing rate={summary.completionRate} />
-            <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs">
-              <div className="rounded-lg bg-muted/40 py-2">
-                <div className="font-semibold text-foreground">{summary.total}</div>
-                <div className="text-muted-foreground">总文件</div>
-              </div>
-              <div className="rounded-lg bg-muted/40 py-2">
-                <div className="font-semibold text-foreground">{summary.parsed}</div>
-                <div className="text-muted-foreground">已解析</div>
-              </div>
-              <div className="rounded-lg bg-muted/40 py-2">
-                <div className="font-semibold text-foreground">{summary.parsing}</div>
-                <div className="text-muted-foreground">解析中</div>
-              </div>
-              <div className="rounded-lg bg-muted/40 py-2">
-                <div className="font-semibold text-foreground">{summary.queued}</div>
-                <div className="text-muted-foreground">待解析</div>
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-              {[
-                { label: "文本块", value: summary.textBlocks },
-                { label: "表格", value: summary.tables },
-                { label: "图片", value: summary.images },
-                { label: "代码块", value: summary.codeBlocks },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-border/70 px-3 py-2">
-                  <div className="text-xs text-muted-foreground">{item.label}</div>
-                  <div className="font-semibold text-foreground">{item.value.toLocaleString("zh-CN")}</div>
+            <h2 className="mb-3 text-sm font-semibold text-foreground">处理状态汇总</h2>
+            <p className="mb-3 text-xs text-muted-foreground">{DOCUMENT_STATUS_POLLING_NOTE}</p>
+            <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3 lg:grid-cols-6">
+              {(
+                [
+                  "queued",
+                  "uploaded",
+                  "parsing",
+                  "indexing",
+                  "ready",
+                  "failed",
+                ] as const
+              ).map((status) => (
+                <div key={status} className="rounded-lg bg-muted/40 py-2">
+                  <div className="font-semibold text-foreground">{statusCounts[status] ?? 0}</div>
+                  <div className="text-muted-foreground">
+                    {DOCUMENT_DISPLAY_STATUS_LABELS[status]}
+                  </div>
                 </div>
               ))}
             </div>
           </section>
-        </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <UploadBatchSummary items={uploadQueue} onDismiss={() => setUploadQueue([])} />
+
+          <UploadProgressList
+            items={uploadQueue}
+            onRetryUpload={handleRetryUpload}
+            onRetryProcessing={handleRetryDocument}
+          />
+
+          {documentsError ? (
+            <ConsoleRequestError
+              {...resolveRequestErrorPresentation(documentsError, "文档列表加载失败。")}
+              onRetry={() => void loadDocuments(selectedBaseId)}
+            />
+          ) : null}
+
           <section className="rounded-2xl border border-border bg-card shadow-sm">
             <div className="border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold text-foreground">文件上传列表</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                文档列表
+                {selectedBase ? ` · ${selectedBase.name}` : ""}
+              </h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30 text-left text-xs text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">文件名称</th>
-                    <th className="px-4 py-3 font-medium">大小</th>
-                    <th className="px-4 py-3 font-medium">上传进度</th>
-                    <th className="px-4 py-3 font-medium">解析状态</th>
-                    <th className="px-4 py-3 font-medium">提取内容</th>
-                    <th className="px-4 py-3 text-right font-medium">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {files.map((file) => (
-                    <tr key={file.id} className="border-b border-border/60">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <FileTypeBadge type={file.fileType} />
-                          <span className="font-medium text-foreground">{file.fileName}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{file.size}</td>
-                      <td className="px-4 py-3">
-                        <div className="min-w-[120px] space-y-1">
-                          <ProgressBar value={file.uploadProgress} />
-                          <span className="text-xs text-muted-foreground">{file.uploadProgress}%</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge
-                          variant={file.status === "completed" ? "success" : "secondary"}
-                        >
-                          {file.statusLabel}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{file.extractedSummary}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm" type="button">
-                          {file.status === "uploading" || file.status === "parsing" ? "取消" : "详情"}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
-              <span>共 {files.length} 条</span>
-              <span>10 条/页</span>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-foreground">知识库质量评估</h2>
-            <div className="space-y-4">
-              {[
-                { label: "内容覆盖度", score: quality.coverage.score, hint: quality.coverage.label },
-                { label: "结构完整性", score: quality.structure.score, hint: quality.structure.label },
-                { label: "内容可读性", score: quality.readability.score, hint: quality.readability.label },
-              ].map((item) => (
-                <div key={item.label}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{item.label}</span>
-                    <span className="text-xs text-muted-foreground">{item.hint}</span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <StarRating score={item.score} />
-                    <span className="text-sm font-medium text-foreground">{item.score}</span>
-                  </div>
-                </div>
-              ))}
-              <div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">重复内容占比</span>
-                  <span className="text-xs text-emerald-600">{quality.duplicateLabel}</span>
-                </div>
-                <div className="mt-2">
-                  <ProgressBar value={quality.duplicateRate} />
-                  <span className="mt-1 block text-xs text-muted-foreground">{quality.duplicateRate}%</span>
-                </div>
+            {documentsLoading && !documents.length ? (
+              <div className="space-y-3 p-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
-              <div className="rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
-                {quality.suggestion}
+            ) : documents.length ? (
+              <ul className="divide-y divide-border">
+                {documents.map((document) => (
+                  <li key={document.id} className="space-y-3 px-4 py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{document.fileName}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {formatFileSize(document.sizeBytes)} ·{" "}
+                          {DOCUMENT_DISPLAY_STATUS_LABELS[document.status]}
+                          {document.chunkCount != null ? ` · ${document.chunkCount} 块` : ""}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          document.status === "ready"
+                            ? "success"
+                            : document.status === "failed"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                      >
+                        {DOCUMENT_DISPLAY_STATUS_LABELS[document.status]}
+                      </Badge>
+                    </div>
+                    {document.status !== "ready" && document.status !== "failed" ? (
+                      <DocumentPipelineStepper status={document.status} compact />
+                    ) : null}
+                    {document.status === "failed" ? (
+                      <DocumentFailurePanel
+                        errorCode={document.errorCode}
+                        errorMessage={document.errorMessage}
+                        fileType={document.fileType}
+                        compact
+                        onRetry={() => void handleRetryDocument(document.id)}
+                      />
+                    ) : null}
+                    <div className="flex flex-wrap gap-2">
+                      {(document.status === "failed" || document.status === "ready") && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={busyDocumentId === document.id}
+                            onClick={() => void handleRetryDocument(document.id)}
+                          >
+                            重试索引
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={busyDocumentId === document.id}
+                            onClick={() => void handleReparseDocument(document.id)}
+                          >
+                            重新解析
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={
+                          busyDocumentId === document.id ||
+                          !(capabilities?.documentDeleteAvailable ?? false)
+                        }
+                        title={
+                          capabilities?.documentDeleteAvailable
+                            ? "删除文档"
+                            : capabilities?.documentDeleteHint || "单文档删除尚未接通"
+                        }
+                        onClick={() => void handleDeleteDocument(document.id)}
+                      >
+                        删除
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="p-6">
+                <ConsoleEmptyState preset="noDocuments" />
               </div>
-              <Button variant="outline" size="sm" className="w-full" type="button">
-                去优化
-              </Button>
-            </div>
+            )}
           </section>
         </div>
-      </div>
+      )}
     </ConsolePage>
   );
 }

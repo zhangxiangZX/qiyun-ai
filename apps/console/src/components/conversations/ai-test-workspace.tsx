@@ -23,6 +23,10 @@ import {
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ChatResponseOutcomeBadge } from "@/components/shared/chat-response-outcome";
+import {
+  KnowledgeCitationList,
+  mapStreamCitation,
+} from "@/components/shared/knowledge-citation-list";
 import { getBotDetail } from "@/lib/bots/data";
 import {
   getPreviewBotContext,
@@ -35,7 +39,6 @@ import {
   AI_TEST_BOTS,
   formatTime,
   getAiTestInitialMessages,
-  getAiTestMockReply,
   inferAiTestOutcome,
   type AiTestBot,
   type AiTestMessage,
@@ -43,11 +46,12 @@ import {
 import {
   AI_TEST_CONFIG,
   AI_TEST_INTENT,
-  AI_TEST_KB_SNIPPETS,
   AI_TEST_KNOWLEDGE_BASES,
   AI_TEST_QUALITY,
   AI_TEST_SOURCES,
 } from "@/lib/conversations/ai-test-panel-mock";
+import { listKnowledgeBases } from "@/lib/knowledge/api";
+import type { KnowledgeBase } from "@/lib/knowledge/types";
 
 const MAX_INPUT = 1000;
 
@@ -94,6 +98,7 @@ export function AiTestWorkspace() {
 
   const [selectedBotId, setSelectedBotId] = useState("");
   const [selectedKbId, setSelectedKbId] = useState(AI_TEST_KNOWLEDGE_BASES[0]!.id);
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [messages, setMessages] = useState<AiTestMessage[]>([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -108,6 +113,43 @@ export function AiTestWorkspace() {
     () => bots.find((b) => b.id === selectedBotId) ?? bots[0],
     [bots, selectedBotId],
   );
+
+  const lastCitations = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const message = messages[i];
+      if (message.role === "assistant" && message.citations?.length) {
+        return message.citations.map((item) =>
+          mapStreamCitation({
+            title: item.title,
+            snippet: item.excerpt,
+            score: item.score,
+            chunkId: item.id,
+          }),
+        );
+      }
+    }
+    return [];
+  }, [messages]);
+
+  const emptySelectedKb = useMemo(() => {
+    const base = knowledgeBases.find((item) => item.id === selectedKbId);
+    return base ? base.readyDocumentCount === 0 : false;
+  }, [knowledgeBases, selectedKbId]);
+
+  useEffect(() => {
+    void listKnowledgeBases()
+      .then((bases) => {
+        setKnowledgeBases(bases);
+        if (bases[0]) {
+          setSelectedKbId((current) =>
+            bases.some((base) => base.id === current) ? current : bases[0]!.id,
+          );
+        }
+      })
+      .catch(() => {
+        setKnowledgeBases([]);
+      });
+  }, []);
 
   useEffect(() => {
     if (!selectedBotId && bots.length > 0) {
@@ -204,20 +246,28 @@ export function AiTestWorkspace() {
         });
         setConversationId(result.conversationId);
 
-        const kbHits = result.citations?.length ?? 0;
+        const citations = result.citations.map((item) => ({
+          id: item.chunkId ?? item.title,
+          title: item.title,
+          excerpt: item.snippet,
+          score: item.score,
+        }));
         const outcome = result.needsLeadCapture
           ? "needs_lead"
-          : inferAiTestOutcome(question, kbHits);
+          : inferAiTestOutcome(question, citations, {
+              emptyKnowledgeBase: emptySelectedKb && citations.length === 0,
+            });
         const reply: AiTestMessage = {
           id: result.messageId || `assistant-${Date.now()}`,
           role: "assistant",
           content: result.content,
           time: formatTime(),
           outcome,
+          citations,
           debug: {
             tokens: Math.max(32, Math.round(result.content.length / 2)),
             latencyMs: Math.max(1, Date.now() - startedAt),
-            kbHits,
+            kbHits: citations.length,
             model: selectedBot.model,
           },
         };
@@ -225,12 +275,18 @@ export function AiTestWorkspace() {
       } catch (streamError) {
         try {
           const result = await testBotChat(selectedBot.id, question);
+          const emptyKb = result.reply.includes("知识库未激活") || emptySelectedKb;
           const reply: AiTestMessage = {
             id: `assistant-${Date.now()}`,
             role: "assistant",
             content: result.reply,
             time: formatTime(),
-            outcome: result.reply.includes("知识库未激活") ? "no_knowledge" : "knowledge_hit",
+            outcome: emptyKb
+              ? "empty_kb"
+              : result.reply.includes("已检索到")
+                ? "knowledge_hit"
+                : "no_knowledge",
+            citations: [],
             debug: {
               tokens: Math.max(32, Math.round(result.reply.length / 2)),
               latencyMs: Math.max(1, Date.now() - startedAt),
@@ -249,11 +305,12 @@ export function AiTestWorkspace() {
           setMessages((prev) => [
             ...prev,
             {
-              id: `assistant-fallback-${Date.now()}`,
+              id: `assistant-error-${Date.now()}`,
               role: "assistant",
-              content: `暂时无法完成真实 RAG 回答（${reason}）。已回退到本地示例回复，仅供界面预览。\n\n${getAiTestMockReply(selectedBot.id, question).content}`,
+              content: `问答服务暂时不可用：${reason}。请稍后重试，或检查上游 API / 知识库绑定状态。`,
               time: formatTime(),
-              outcome: "no_knowledge",
+              outcome: "service_error",
+              citations: [],
               debug: {
                 tokens: 0,
                 latencyMs: Math.max(1, Date.now() - startedAt),
@@ -273,7 +330,11 @@ export function AiTestWorkspace() {
   if (loading && !isPreview) {
     return (
       <ConsolePage>
-        <PageHeader title="AI 对话测试" description="在发布前测试助手回复效果，验证知识库命中与留资引导" />
+        <PageHeader
+          variant="compact"
+          title="AI 测试"
+          description="在发布前测试助手回复效果，验证知识库命中与留资引导"
+        />
         <Skeleton className="h-[70vh] w-full rounded-2xl" />
       </ConsolePage>
     );
@@ -286,8 +347,9 @@ export function AiTestWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
-        title="AI 对话测试"
-        description="管理企业专属 AI 助手，配置知识与能力，持续优化客户对话体验"
+        variant="compact"
+        title="AI 测试"
+        description="在发布前测试助手回复效果，验证知识库命中与留资引导"
       />
 
       <div className="space-y-4">
@@ -295,7 +357,7 @@ export function AiTestWorkspace() {
           <label className="min-w-[200px] flex-1 text-sm">
             <span className="mb-1 block text-muted-foreground">选择助手</span>
             <select
-              className="w-full rounded-md border border-border bg-background px-3 py-2"
+              className="w-full rounded-md border border-input bg-background px-3 py-2"
               value={selectedBotId}
               onChange={(event) => {
                 setSelectedBotId(event.target.value);
@@ -312,11 +374,17 @@ export function AiTestWorkspace() {
           <label className="min-w-[200px] flex-1 text-sm">
             <span className="mb-1 block text-muted-foreground">选择知识库</span>
             <select
-              className="w-full rounded-md border border-border bg-background px-3 py-2"
+              className="w-full rounded-md border border-input bg-background px-3 py-2"
               value={selectedKbId}
               onChange={(event) => setSelectedKbId(event.target.value)}
             >
-              {AI_TEST_KNOWLEDGE_BASES.map((kb) => (
+              {(knowledgeBases.length
+                ? knowledgeBases.map((kb) => ({
+                    id: kb.id,
+                    name: `${kb.name}（可用 ${kb.readyDocumentCount}/${kb.documentCount}）`,
+                  }))
+                : AI_TEST_KNOWLEDGE_BASES.map((kb) => ({ id: kb.id, name: kb.name }))
+              ).map((kb) => (
                 <option key={kb.id} value={kb.id}>
                   {kb.name}
                 </option>
@@ -376,6 +444,34 @@ export function AiTestWorkspace() {
                           <div className="whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-border bg-background px-3.5 py-2.5 text-sm leading-relaxed">
                             <StreamingText text={message.content} active={message.id === lastAssistantId} />
                           </div>
+                          {message.citations && message.citations.length > 0 ? (
+                            <div className="mt-2">
+                              <KnowledgeCitationList
+                                citations={message.citations.map((item) =>
+                                  mapStreamCitation({
+                                    title: item.title,
+                                    snippet: item.excerpt,
+                                    score: item.score,
+                                    chunkId: item.id,
+                                  }),
+                                )}
+                                compact
+                              />
+                            </div>
+                          ) : message.outcome === "no_knowledge" ||
+                            message.outcome === "empty_kb" ||
+                            message.outcome === "low_score" ||
+                            message.outcome === "service_error" ? (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {message.outcome === "empty_kb"
+                                ? "知识库为空：请先上传文档并等待索引完成。"
+                                : message.outcome === "low_score"
+                                  ? "仅命中低相关片段，请核对回答是否准确。"
+                                  : message.outcome === "service_error"
+                                    ? "服务错误，未返回可用来源。"
+                                    : "本次未返回引用来源。"}
+                            </p>
+                          ) : null}
                           <div className="mt-1 text-[11px] text-muted-foreground">{message.time}</div>
                         </div>
                       </div>
@@ -419,7 +515,7 @@ export function AiTestWorkspace() {
                 }}
                 disabled={!started || thinking}
                 placeholder="请输入你的问题，Enter 发送，Shift + Enter 换行"
-                className="min-h-20 w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                className="min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
               />
               <div className="mt-2 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -467,27 +563,21 @@ export function AiTestWorkspace() {
               </div>
             </Panel>
 
-            <Panel
-              title="命中知识片段"
-              action={
-                <button type="button" className="text-xs text-primary hover:underline">
-                  查看全部 &gt;
-                </button>
-              }
-            >
-              <ul className="space-y-3">
-                {AI_TEST_KB_SNIPPETS.map((item) => (
-                  <li key={item.id} className="rounded-lg border border-border/70 bg-muted/20 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge variant={item.tone === "high" ? "success" : "warning"}>
-                        {item.score.toFixed(2)}
-                      </Badge>
-                      <span className="text-xs text-primary">{item.source}</span>
-                    </div>
-                    <p className="mt-2 text-sm text-foreground">{item.text}</p>
-                  </li>
-                ))}
-              </ul>
+            <Panel title="命中知识片段">
+              <KnowledgeCitationList
+                citations={lastCitations}
+                emptyTitle={
+                  emptySelectedKb ? "知识库为空" : started ? "暂无引用来源" : "尚未开始测试"
+                }
+                emptyDescription={
+                  emptySelectedKb
+                    ? "当前知识库没有可用文档，上传并完成索引后再测试。"
+                    : started
+                      ? "当 API 返回 citations/sources 时会展示在此；未命中或低相关会有明确提示。"
+                      : "开始测试并发送问题后，这里展示最近一次回答的引用。"
+                }
+                compact
+              />
             </Panel>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">

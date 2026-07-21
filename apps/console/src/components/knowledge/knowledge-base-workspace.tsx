@@ -51,6 +51,7 @@ import {
   listKnowledgeBaseDocuments,
   listKnowledgeBases,
   reindexDocument,
+  reparseDocument,
   uploadDocumentFiles,
 } from "@/lib/knowledge/api";
 import {
@@ -395,6 +396,25 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
     }
   }
 
+  async function handleReparseDocument(documentId: string) {
+    setReindexingDocumentId(documentId);
+    setFeedback(null);
+    try {
+      const updated = await reparseDocument(documentId);
+      setDocuments((current) =>
+        current.map((document) => (document.id === documentId ? updated : document)),
+      );
+      setFeedback({ variant: "success", title: "已重新排队解析，请稍候查看处理状态。" });
+    } catch (error) {
+      setFeedback({
+        variant: "error",
+        title: resolveRequestErrorPresentation(error, "重新解析失败。").message,
+      });
+    } finally {
+      setReindexingDocumentId(null);
+    }
+  }
+
   async function handleDeleteDocument(documentId: string) {
     const target = documents.find((document) => document.id === documentId);
     if (!target) return;
@@ -430,7 +450,7 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature="知识库" />
         </ConsolePageAlerts>
-        <PageHeader title={pageTitle} description={pageDescription} />
+        <PageHeader variant="compact" title={pageTitle} description={pageDescription} />
         <Skeleton className="h-96 w-full rounded-card" />
       </ConsolePage>
     );
@@ -442,7 +462,7 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature="知识库" />
         </ConsolePageAlerts>
-        <PageHeader title={pageTitle} description={pageDescription} />
+        <PageHeader variant="compact" title={pageTitle} description={pageDescription} />
         <ConsoleRequestError
           {...resolveRequestErrorPresentation(pageError, "知识库列表加载失败。")}
           onRetry={() => void loadKnowledgeBases()}
@@ -459,6 +479,7 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
           <KnowledgeStorageNotice />
         </ConsolePageAlerts>
         <PageHeader
+          variant="compact"
           title={pageTitle}
           description={pageDescription}
           actions={
@@ -506,6 +527,7 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         title={pageTitle}
         description={
           selectedBase
@@ -599,11 +621,14 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
 
           <UploadZone
             loading={uploading}
+            autoUpload
             disabled={!selectedBaseId || selectedBase?.status === "disabled"}
             disabledReason={
               selectedBase?.status === "disabled"
                 ? "知识库已停用，无法上传新文档。"
-                : undefined
+                : !selectedBaseId
+                  ? "请先创建或选择知识库，再上传文档。"
+                  : undefined
             }
             onFilesSelected={handleUpload}
           />
@@ -637,6 +662,7 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
               documents={documents}
               loading={documentsLoading}
               onRetry={handleRetryDocument}
+              onReparse={handleReparseDocument}
               onPreviewChunks={(documentId, fileName) =>
                 setChunksPanel({ documentId, fileName })
               }
@@ -646,6 +672,7 @@ export function KnowledgeBaseWorkspace({ focusUpload = false }: { focusUpload?: 
                 capabilities?.documentDeleteHint ?? "单文档删除尚未接通。"
               }
               deletingDocumentId={deletingDocumentId}
+              reprocessingDocumentId={reindexingDocumentId}
             />
           ) : (
             <ConsoleEmptyState preset="noDocuments" />

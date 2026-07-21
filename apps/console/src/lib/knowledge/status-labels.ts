@@ -64,12 +64,23 @@ export function getPipelineStepMeta(step: DocumentPipelineStep) {
   return DOCUMENT_PIPELINE_STEPS.find((item) => item.key === step)!;
 }
 
+/**
+ * 展示态（含客户端排队）：queued 仅存在于上传队列，DocumentStatus 从 uploaded 起。
+ * 映射：queued(客户端) → uploaded → parsing → indexing → ready | failed
+ */
+export type DocumentDisplayStatus = "queued" | DocumentStatus;
+
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
   uploaded: "已接收",
   parsing: "解析中",
   indexing: "建索引中",
   ready: "已完成",
   failed: "失败",
+};
+
+export const DOCUMENT_DISPLAY_STATUS_LABELS: Record<DocumentDisplayStatus, string> = {
+  queued: "排队中",
+  ...DOCUMENT_STATUS_LABELS,
 };
 
 export const DOCUMENT_STATUS_DESCRIPTIONS: Record<DocumentStatus, string> = {

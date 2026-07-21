@@ -114,50 +114,6 @@ function formatBytes(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function buildMockQuoteDocuments(quoteId: string): QuoteDocumentVersion[] {
-  const base = Date.now();
-  return [3, 2, 1].map((version) => {
-    const created = new Date(base - (4 - version) * 2 * 86400000);
-    return {
-      id: `qd_mock_${quoteId}_${version}`,
-      version,
-      fileName: `quote-${quoteId}-v${version}.pdf`,
-      sizeBytes: 120000 + version * 18432,
-      contentHash: `sha256-mock-${version}`,
-      createdBy: "sales_admin",
-      createdAt: created.toISOString(),
-    };
-  });
-}
-
-function buildMockDeliveryLogs(quoteId: string): QuoteDeliveryLog[] {
-  const base = Date.now();
-  return [
-    {
-      id: "qdl_mock_1",
-      quoteOpportunityId: quoteId,
-      quoteDocumentId: `qd_mock_${quoteId}_3`,
-      channel: "email",
-      recipient: "procurement@acme-industrial.com",
-      status: "delivered",
-      errorMessage: null,
-      createdAt: new Date(base - 86400000).toISOString(),
-      deliveredAt: new Date(base - 86400000 + 90000).toISOString(),
-    },
-    {
-      id: "qdl_mock_2",
-      quoteOpportunityId: quoteId,
-      quoteDocumentId: `qd_mock_${quoteId}_2`,
-      channel: "email",
-      recipient: "buyer@acme-industrial.com",
-      status: "failed",
-      errorMessage: "收件邮箱不存在或拒收",
-      createdAt: new Date(base - 2 * 86400000).toISOString(),
-      deliveredAt: null,
-    },
-  ];
-}
-
 const DELIVERY_STATUS_META: Record<string, { label: string; cls: string }> = {
   queued: { label: "排队中", cls: "bg-amber-100 text-amber-700" },
   sent: { label: "已发送", cls: "bg-blue-100 text-blue-700" },
@@ -285,18 +241,18 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
     if (!resolvedId) return;
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       if (preview) {
-        setDocuments(buildMockQuoteDocuments(resolvedId));
-        setDeliveries(buildMockDeliveryLogs(resolvedId));
-      } else {
-        const [docs, logs] = await Promise.all([
-          listQuoteDocuments(resolvedId),
-          listQuoteDeliveryLogs(resolvedId),
-        ]);
-        setDocuments(docs);
-        setDeliveries(logs);
+        setDocuments([]);
+        setDeliveries([]);
+        return;
       }
+      const [docs, logs] = await Promise.all([
+        listQuoteDocuments(resolvedId),
+        listQuoteDeliveryLogs(resolvedId),
+      ]);
+      setDocuments(docs);
+      setDeliveries(logs);
     } catch {
       setDocuments([]);
       setDeliveries([]);
@@ -346,13 +302,13 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
       setSendOpen(false);
       setSendRecipient("");
       setNotice("报价已发送，可在「发送记录」中查看状态。");
-      await loadArtifacts();
+      await Promise.all([load(), loadArtifacts()]);
     } catch (nextError) {
       setSendError(getApiErrorMessage(nextError, "发送失败，请稍后重试。"));
     } finally {
       setSending(false);
     }
-  }, [detail, sendChannel, sendRecipient, loadArtifacts]);
+  }, [detail, sendChannel, sendRecipient, loadArtifacts, load]);
 
   const handleRetryDelivery = useCallback(
     async (log: QuoteDeliveryLog) => {
@@ -497,6 +453,9 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
           >
             <Download size={14} /> {downloading === "current" ? "生成中" : "导出 PDF"}
           </button>
+          <Link href={`/dashboard/quotes/${detail.id}/preview`} className={styles.btnOutline}>
+            <FileText size={14} /> 预览报价
+          </Link>
           <button type="button" className={styles.btnOutline} onClick={copyQuoteNo}>
             <Copy size={14} /> 复制报价单号
           </button>

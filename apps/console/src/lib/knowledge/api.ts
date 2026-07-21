@@ -77,6 +77,13 @@ export async function reindexDocument(documentId: string): Promise<KnowledgeDocu
   });
 }
 
+/** 重新解析文档（重新提取文本后再索引）。上游未实现时 BFF 返回 503。 */
+export async function reparseDocument(documentId: string): Promise<KnowledgeDocument> {
+  return apiRequest<KnowledgeDocument>(`/documents/${documentId}/reparse`, {
+    method: "POST",
+  });
+}
+
 export async function deleteDocument(documentId: string): Promise<DeleteKnowledgeDocumentResult> {
   return apiRequest<DeleteKnowledgeDocumentResult>(`/documents/${documentId}`, {
     method: "DELETE",

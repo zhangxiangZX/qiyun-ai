@@ -26,22 +26,26 @@ import { RefreshCw, Layers3 } from "lucide-react";
 export interface DocumentListProps {
   documents: KnowledgeDocument[];
   onRetry: (documentId: string) => void;
+  onReparse?: (documentId: string) => void;
   onPreviewChunks?: (documentId: string, fileName: string) => void;
   onDelete?: (documentId: string) => void;
   documentDeleteAvailable?: boolean;
   documentDeleteHint?: string;
   deletingDocumentId?: string | null;
+  reprocessingDocumentId?: string | null;
   loading?: boolean;
 }
 
 export function DocumentList({
   documents,
   onRetry,
+  onReparse,
   onPreviewChunks,
   onDelete,
   documentDeleteAvailable = false,
   documentDeleteHint = "单文档删除尚未接通。",
   deletingDocumentId = null,
+  reprocessingDocumentId = null,
   loading = false,
 }: DocumentListProps) {
   if (!loading && !documents.length) {
@@ -112,27 +116,43 @@ export function DocumentList({
                 <TableCell>
                   <div className="flex flex-col gap-2">
                     {document.status === "ready" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11 w-fit gap-1.5"
+                        onClick={() => onPreviewChunks?.(document.id, document.fileName)}
+                      >
+                        <Layers3 className="h-3.5 w-3.5" aria-hidden />
+                        查看切分块
+                      </Button>
+                    ) : null}
+                    {document.status === "ready" || document.status === "failed" ? (
                       <>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="min-h-11 w-fit gap-1.5"
-                          onClick={() => onPreviewChunks?.(document.id, document.fileName)}
-                        >
-                          <Layers3 className="h-3.5 w-3.5" aria-hidden />
-                          查看切分块
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="min-h-11 w-fit gap-1.5"
+                          disabled={reprocessingDocumentId === document.id}
                           onClick={() => onRetry(document.id)}
                         >
                           <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-                          重新索引
+                          重试索引
                         </Button>
+                        {onReparse ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="min-h-11 w-fit gap-1.5"
+                            disabled={reprocessingDocumentId === document.id}
+                            onClick={() => onReparse(document.id)}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                            重新解析
+                          </Button>
+                        ) : null}
                       </>
                     ) : null}
                     <DocumentDeleteAction
@@ -190,28 +210,44 @@ export function DocumentList({
                 />
               </div>
             ) : null}
-            {document.status === "ready" ? (
+            {document.status === "ready" || document.status === "failed" ? (
               <div className="mt-3 flex flex-wrap gap-2">
+                {document.status === "ready" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11 gap-1.5"
+                    onClick={() => onPreviewChunks?.(document.id, document.fileName)}
+                  >
+                    <Layers3 className="h-3.5 w-3.5" aria-hidden />
+                    查看切分块
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="min-h-11 gap-1.5"
-                  onClick={() => onPreviewChunks?.(document.id, document.fileName)}
-                >
-                  <Layers3 className="h-3.5 w-3.5" aria-hidden />
-                  查看切分块
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 gap-1.5"
+                  disabled={reprocessingDocumentId === document.id}
                   onClick={() => onRetry(document.id)}
                 >
                   <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-                  重新索引
+                  重试索引
                 </Button>
+                {onReparse ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11 gap-1.5"
+                    disabled={reprocessingDocumentId === document.id}
+                    onClick={() => onReparse(document.id)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                    重新解析
+                  </Button>
+                ) : null}
               </div>
             ) : null}
             <DocumentDeleteAction

@@ -159,6 +159,9 @@ export function QuotationEditWorkspace() {
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="报价编辑" />
         {error ? <ConsoleRequestError message={error} onRetry={() => void load()} /> : null}
+        <div className="rounded-control border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          产品明细与条款目前为界面示意，保存仅同步标题与报价金额到 API；完整行项目契约见 BACKEND-GAPS。发送请前往详情页，避免未接通操作显示成功。
+        </div>
       </ConsolePageAlerts>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -191,8 +194,19 @@ export function QuotationEditWorkspace() {
           <Button variant="outline" leftIcon={<Download size={16} />} type="button" disabled title="另存版本暂未开放">
             另存版本
           </Button>
-          <Button variant="default" leftIcon={<Send size={16} />}>
-            发送客户
+          <Button
+            variant="outline"
+            leftIcon={<Send size={16} />}
+            asChild
+          >
+            <Link href={quoteId ? `/dashboard/quotes/${quoteId}` : "/dashboard/quotes"}>
+              去详情发送
+            </Link>
+          </Button>
+          <Button variant="outline" leftIcon={<Eye size={16} />} asChild>
+            <Link href={quoteId ? `/dashboard/quotes/${quoteId}/preview` : "/dashboard/quotes"}>
+              PDF 预览
+            </Link>
           </Button>
         </div>
       </div>
@@ -229,9 +243,6 @@ export function QuotationEditWorkspace() {
                   </Button>
                   <Button size="sm" variant="outline">
                     导入
-                  </Button>
-                  <Button size="sm" variant="outline" leftIcon={<Download size={14} />}>
-                    导出
                   </Button>
                   <Button size="sm" variant="outline" leftIcon={<Download size={14} />}>
                     导出

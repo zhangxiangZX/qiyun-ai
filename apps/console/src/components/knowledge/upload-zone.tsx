@@ -13,6 +13,8 @@ export interface UploadZoneProps {
   disabled?: boolean;
   disabledReason?: string;
   loading?: boolean;
+  /** 选中/拖入文件后立即触发上传，无需再点「开始上传」 */
+  autoUpload?: boolean;
   onFilesSelected: (files: File[]) => void;
 }
 
@@ -23,7 +25,7 @@ export interface UploadZoneHandle {
 }
 
 export const UploadZone = forwardRef<UploadZoneHandle, UploadZoneProps>(function UploadZone(
-  { disabled = false, disabledReason, loading = false, onFilesSelected },
+  { disabled = false, disabledReason, loading = false, autoUpload = false, onFilesSelected },
   ref,
 ) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +45,12 @@ export const UploadZone = forwardRef<UploadZoneHandle, UploadZoneProps>(function
     }
 
     setError(null);
+
+    if (autoUpload) {
+      onFilesSelected(files);
+      return;
+    }
+
     setStagedFiles((current) => {
       const existing = new Set(current.map((file) => `${file.name}:${file.size}`));
       const next = [...current];

@@ -1,6 +1,6 @@
 import type { DocumentStatus } from "./types";
 
-export const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"] as const;
+export const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md", ".html", ".htm"] as const;
 
 export const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 

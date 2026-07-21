@@ -109,6 +109,7 @@ export function NewQuotationWorkspace() {
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null);
+  const [appliedTemplateId, setAppliedTemplateId] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<InquiryListItem[]>([]);
   const [selectedInquiryId, setSelectedInquiryId] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -117,7 +118,6 @@ export function NewQuotationWorkspace() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [listLoading, setListLoading] = useState(true);
-  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     setListLoading(true);
@@ -130,11 +130,9 @@ export function NewQuotationWorkspace() {
           setCustomerName(items[0].customerName);
           setContactName(items[0].customerContact ?? "");
         }
-        setIsPreview(false);
       })
       .catch((error) => {
         setInquiries([]);
-        setIsPreview(false);
         setListError(getApiErrorMessage(error, "询盘列表加载失败，请稍后重试。"));
       })
       .finally(() => setListLoading(false));
@@ -217,6 +215,11 @@ export function NewQuotationWorkspace() {
           </Button>
         </div>
       </div>
+      {appliedTemplateId ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          已选择模板「{appliedTemplate}」（{appliedTemplateId}）。创建接口暂不接收 templateId，生成后仍使用默认版式；详见 BACKEND-GAPS。
+        </p>
+      ) : null}
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
         {/* Left ~28% */}
@@ -570,7 +573,12 @@ export function NewQuotationWorkspace() {
               >
                 预览报价
               </Button>
-              <Button variant="outline" className="flex-1" disabled={isPreview}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled
+                title="草稿保存接口尚未开放；当前仅支持直接生成报价"
+              >
                 保存草稿
               </Button>
             </div>
@@ -586,6 +594,7 @@ export function NewQuotationWorkspace() {
         onClose={() => setPickerOpen(false)}
         onSelect={(tpl) => {
           setAppliedTemplate(tpl.templateName);
+          setAppliedTemplateId(tpl.id);
           setPickerOpen(false);
         }}
       />
