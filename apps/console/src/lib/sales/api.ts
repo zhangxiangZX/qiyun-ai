@@ -217,8 +217,28 @@ export async function createQuoteOpportunity(input: {
   inquiryId: string;
   title?: string;
   estimatedAmount?: number | null;
+  templateId?: string | null;
 }): Promise<QuoteDetail> {
   return apiRequest<QuoteDetail>("/quote-opportunities", { method: "POST", body: input });
+}
+
+export type QuoteLostReason =
+  | "price"
+  | "delivery"
+  | "spec_mismatch"
+  | "project_paused"
+  | "competitor"
+  | "no_follow_up"
+  | "other";
+
+export async function markQuoteLost(
+  id: string,
+  input?: { lostReason?: QuoteLostReason },
+): Promise<QuoteDetail> {
+  return apiRequest<QuoteDetail>(`/quote-opportunities/${id}/lost`, {
+    method: "POST",
+    body: input ?? {},
+  });
 }
 
 export async function getQuoteOpportunity(id: string): Promise<QuoteDetail> {

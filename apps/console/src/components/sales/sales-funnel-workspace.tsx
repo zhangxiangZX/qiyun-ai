@@ -35,6 +35,7 @@ import {
   listInquiries,
   listQuoteOpportunities,
 } from "@/lib/sales/api";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
 import type {
   ChannelAttributionItem,
   ConversionFunnelStep,
@@ -341,6 +342,7 @@ export function SalesFunnelWorkspace() {
         onRangeChange={setRange}
         onRefresh={() => void load()}
         refreshing={loading}
+        exportHref=""
       />
       <div className={styles.page}>
       <header className={styles.pageHeader}>
@@ -498,7 +500,7 @@ export function SalesFunnelWorkspace() {
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>渠道成交贡献</h2>
             <Link href="/dashboard/reports/channel" className={styles.cardLink}>
-              查看全部 <ChevronRight size={14} aria-hidden />
+              渠道分析 <ChevronRight size={14} aria-hidden />
             </Link>
           </div>
           {channelRows.length === 0 ? (
@@ -524,7 +526,7 @@ export function SalesFunnelWorkspace() {
                         >
                           <HomeAssetIcon src={homepageAssets.kpi.validInquiry} size={18} />
                         </div>
-                        {item.sourceLabel}
+                        {formatChannelSourceLabel(item)}
                       </div>
                     </td>
                     <td>{item.inquiryCount.toLocaleString("zh-CN")}</td>
@@ -633,7 +635,7 @@ export function SalesFunnelWorkspace() {
               <div className={styles.quickIcon} style={{ background: "#dbeafe" }}>
                 <FileDown size={22} color="#2563eb" aria-hidden />
               </div>
-              <span className={styles.quickLabel}>导出报表</span>
+              <span className={styles.quickLabel}>经营报表</span>
             </Link>
             <Link href="/dashboard/quotes" className={styles.quickItem}>
               <div className={styles.quickIcon} style={{ background: "#dcfce7" }}>

@@ -69,7 +69,7 @@ function buildRecords(items: CustomerOpportunityItem[], recommendations: Custome
     customer: item.customerName,
     plan: recommendations[i]?.title ?? "客户跟进计划",
     type: "电话回访",
-    owner: "张经理",
+    owner: "—",
     executedAt: item.updatedAt.slice(0, 16).replace("T", " "),
     nextAt: item.nextFollowUpAt?.slice(0, 16).replace("T", " ") ?? "—",
     status: item.lifecycleColumn === "won_or_repeat" ? "已完成" : "进行中",
@@ -98,6 +98,8 @@ export function CustomerOpsWorkspace() {
       setRecommendations(nextRecommendations);
     } catch (nextError) {
       setError(nextError);
+      setItems([]);
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }

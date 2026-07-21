@@ -485,6 +485,7 @@ export function ModalDemoWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="弹框样式系统"
         description="基于 36 个设计稿的统一弹框组件展示"
       />

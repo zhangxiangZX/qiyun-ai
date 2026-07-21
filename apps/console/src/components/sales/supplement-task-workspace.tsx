@@ -96,10 +96,14 @@ export function SupplementTaskWorkspace() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="flex h-9 w-9 items-center justify-center rounded-control border border-input hover:bg-accent">
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-control border border-input hover:bg-accent"
+          aria-label="返回任务列表"
+        >
           <ArrowLeft size={16} />
         </button>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">补充资料任务</h1>
+        <p className="text-sm text-muted-foreground">返回任务列表</p>
       </div>
 
       <div className="flex items-start gap-3 rounded-card border border-border bg-card p-4 shadow-card">

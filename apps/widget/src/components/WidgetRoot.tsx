@@ -176,6 +176,13 @@ export function WidgetRoot({ config }: { config: WidgetConfig }) {
                 ),
               );
             },
+            onCitations: (items) => {
+              setMessages((current) =>
+                current.map((item) =>
+                  item.id === assistantId ? { ...item, citations: items } : item,
+                ),
+              );
+            },
             onDone: (payload) => {
               setFollowUpQuestions(payload.suggestedQuestions ?? []);
               setMessages((current) =>
@@ -188,6 +195,7 @@ export function WidgetRoot({ config }: { config: WidgetConfig }) {
                             ? payload.content
                             : item.content,
                         suggestedQuestions: payload.suggestedQuestions ?? [],
+                        citations: payload.citations ?? item.citations,
                       }
                     : item,
                 ),
@@ -251,6 +259,7 @@ export function WidgetRoot({ config }: { config: WidgetConfig }) {
         statusTone={statusTone}
         recommendedQuestions={botDisplay.recommendedQuestions}
         showRecommendedQuestions={showRecommendedQuestions}
+        followUpQuestions={followUpQuestions}
         leadFields={leadFields}
         leadSubmitting={leadSubmitting}
         leadError={leadError}
@@ -266,7 +275,7 @@ export function WidgetRoot({ config }: { config: WidgetConfig }) {
         onDraftChange={setDraft}
         onSend={() => sendMessage(draft)}
       />
-      {!open ? <ChatLauncher open={open} badge={2} accent={config.accent} onOpen={openPanel} /> : null}
+      {!open ? <ChatLauncher open={open} badge={0} accent={config.accent} onOpen={openPanel} /> : null}
     </div>
   );
 }

@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Circle,
   Clock,
-  Download,
   Mail,
   MapPin,
   Pencil,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import { Badge, Button, PageHeader } from "@qiyun/ui";
 
+import { EnterpriseExportIcon } from "@/components/brand/enterprise-export-icon";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 
@@ -141,6 +141,7 @@ export function QuotationDetailWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         eyebrow={
           <Link
             href="/dashboard/quotes"
@@ -165,7 +166,7 @@ export function QuotationDetailWorkspace() {
             </Button>
             <Button variant="outline" asChild>
               <Link href="/dashboard/quotes/q1/preview">
-                <Download size={16} className="mr-1.5" />
+                <EnterpriseExportIcon size={16} className="mr-1.5" />
                 导出 PDF
               </Link>
             </Button>

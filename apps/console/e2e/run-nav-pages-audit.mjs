@@ -26,9 +26,9 @@ const maxClicks = Number(process.env.MAX_CLICKS_PER_PAGE || 5);
 
 /** Primary sidebar pages in navigation.ts group order */
 const PAGES = [
-  { order: 1, path: "/dashboard/boss", name: "boss", label: "老板首页" },
-  { order: 2, path: "/dashboard/admin", name: "admin", label: "管理员首页" },
-  { order: 3, path: "/dashboard/sales-rep", name: "sales-rep", label: "销售首页" },
+  { order: 1, path: "/dashboard/boss", name: "boss", label: "首页" },
+  { order: 2, path: "/dashboard/admin", name: "admin", label: "首页" },
+  { order: 3, path: "/dashboard/sales-rep", name: "sales-rep", label: "首页" },
   { order: 4, path: "/dashboard/quick-entry", name: "quick-entry", label: "快速录入" },
   { order: 5, path: "/dashboard/inquiries", name: "inquiries", label: "询盘中心" },
   { order: 6, path: "/dashboard/tasks", name: "tasks", label: "跟进任务" },
@@ -41,7 +41,7 @@ const PAGES = [
   { order: 13, path: "/dashboard/conversations/test", name: "ai-test", label: "AI测试" },
   { order: 14, path: "/dashboard/quotes", name: "quotes", label: "报价列表" },
   { order: 15, path: "/dashboard/quotes/templates", name: "templates", label: "报价模板" },
-  { order: 16, path: "/dashboard/sales", name: "sales", label: "成交漏斗" },
+  { order: 16, path: "/dashboard/reports/channel", name: "channel", label: "渠道分析" },
   { order: 17, path: "/dashboard/reports/channel", name: "channel", label: "渠道分析" },
   { order: 18, path: "/dashboard/reports/follow-up", name: "follow-up", label: "销售分析" },
   { order: 19, path: "/dashboard/reports/export", name: "export", label: "报表导出" },

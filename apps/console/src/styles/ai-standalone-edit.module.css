@@ -79,7 +79,7 @@
   gap: 6px;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -129,8 +129,8 @@
 .titleRow h1,
 .pageTitle {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #111827;
   min-width: 0;
   overflow: hidden;
@@ -231,7 +231,7 @@
 
 .panel {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 20px 24px;
   min-width: 0;
@@ -281,7 +281,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 14px;
   color: #111827;
@@ -361,7 +361,7 @@
 .metaValue {
   padding: 10px 14px;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 14px;
   color: #374151;
@@ -673,7 +673,7 @@
 }
 
 .advancedCard {
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   padding: 16px;
   text-align: center;
@@ -715,7 +715,7 @@
 .questionRow input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 13px;
 }
@@ -846,7 +846,7 @@
   width: 100%;
   max-width: 280px;
   margin: 0 auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 16px;
   overflow: hidden;
   background: #fff;
@@ -954,7 +954,7 @@
 .sortInput {
   width: 48px;
   padding: 4px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 6px;
   font-size: 12px;
   text-align: center;
@@ -997,7 +997,7 @@
 .mobileChip {
   flex-shrink: 0;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 10px;
   color: #374151;
@@ -1037,7 +1037,7 @@
   border-radius: 8px;
   font-size: 10px;
   text-align: center;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   background: #fff;
   color: #374151;
 }

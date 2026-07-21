@@ -15,6 +15,7 @@ export * from "./sheet";
 export * from "./skeleton";
 export * from "./stat-card";
 export * from "./table";
+export * from "./textarea";
 export * from "./panel-state";
 export * from "./timeline";
 export * from "./qr-code";

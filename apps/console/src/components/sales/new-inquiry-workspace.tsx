@@ -178,11 +178,11 @@ export function NewInquiryWorkspace() {
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleModeBadge />
-        <ConsoleDataModeBanner feature="新建询盘" />
+        <ConsoleDataModeBanner feature="表单新建询盘" />
       </ConsolePageAlerts>
 
       <div>
-        <InquiryModuleNav pageTitle="新建询盘" showNewAction={false} />
+        <InquiryModuleNav pageTitle="表单新建询盘" showNewAction={false} />
         <p className="mt-2 text-sm text-muted-foreground">
           请完善客户需求信息，AI 将自动提炼关键信息，助力快速响应
         </p>

@@ -1,12 +1,6 @@
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import { QuotationDetailWorkspace } from "@/components/sales/quotation-detail-workspace";
-import { PageSkeleton } from "@/components/layout/page-skeleton";
-
+/** Mock 报价详情已下线，统一到报价列表；真实详情走 /dashboard/quotes/[id]。 */
 export default function QuotationDetailPage() {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <QuotationDetailWorkspace />
-    </Suspense>
-  );
+  redirect("/dashboard/quotes");
 }

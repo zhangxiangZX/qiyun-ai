@@ -36,19 +36,13 @@ const KPI_VISUAL: Record<
 const QUICK_LINKS = [
   { title: "询盘中心", description: "查看客户咨询并进入跟进流程", href: INQUIRY_LIST_PATH },
   { title: "报价管理", description: "从询盘发起报价，跟踪发送与确认进度", href: "/dashboard/quotes" },
-  { title: "快速录入", description: "录入电话、微信或转介绍客户", href: "/dashboard/quick-entry" },
+  { title: "AI 快速录入", description: "录入电话、微信或转介绍客户", href: "/dashboard/quick-entry" },
   { title: "知识库", description: "上传资料与管理文档", href: "/dashboard/knowledge-bases" },
   { title: "AI 助手", description: "管理欢迎语与接待规则", href: "/dashboard/bots" },
   { title: "AI 测试", description: "验证知识库回答与留资引导", href: "/dashboard/conversations/test" },
   { title: "销售链接 / 二维码", description: "生成专属链接并追踪渠道转化", href: "/dashboard/channels/links" },
   { title: "AI 选型页", description: "管理客户选型页与留资入口", href: "/dashboard/bots/landing" },
   { title: "官网 Widget", description: "安装代码与域名白名单", href: "/dashboard/sites" },
-] as const;
-
-const ROLE_HOMES = [
-  { title: "老板首页", href: "/dashboard/boss" },
-  { title: "管理员首页", href: "/dashboard/admin" },
-  { title: "销售首页", href: "/dashboard/sales-rep" },
 ] as const;
 
 function statusLabel(status: RecentLead["status"]) {
@@ -136,11 +130,9 @@ export function HomeOverviewWorkspace() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">首页概览</p>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                {displayName}，今天继续把询盘转起来
-              </h1>
+              {/* 顶栏已展示工作台标题，正文区只保留引导说明 */}
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                收口 V1 核心链路：查看数据、处理询盘、维护知识库、检查会话与站点挂载状态。
+                {displayName}，今天继续把询盘转起来。收口 V1 核心链路：查看数据、处理询盘、维护知识库、检查会话与站点挂载状态。
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -157,17 +149,6 @@ export function HomeOverviewWorkspace() {
                 查看报价进度
               </Link>
             </div>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {ROLE_HOMES.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-primary"
-              >
-                {item.title}
-              </Link>
-            ))}
           </div>
         </section>
 

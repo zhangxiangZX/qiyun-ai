@@ -16,7 +16,7 @@
   align-items: center;
   gap: 14px;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 18px 20px;
 }
@@ -104,7 +104,7 @@
 
 .createCard {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
@@ -131,7 +131,7 @@
 .input {
   width: 100%;
   padding: 9px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 13px;
   color: #111827;
@@ -167,7 +167,7 @@
   background: #fff;
   border: 1px dashed #e5e7eb;
   border-radius: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
   text-align: center;
 }
@@ -178,7 +178,7 @@
   justify-content: space-between;
   gap: 16px;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 16px 18px;
   transition: border-color 0.15s ease;

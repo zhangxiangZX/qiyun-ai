@@ -15,7 +15,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -46,7 +46,7 @@
 .label {
   margin: 0 0 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   white-space: nowrap;
 }
 
@@ -55,7 +55,7 @@
   font-size: 24px;
   font-weight: 700;
   line-height: 1.1;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 

@@ -33,7 +33,7 @@
   align-items: flex-start;
   gap: 16px;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-card);
@@ -86,7 +86,7 @@
 
 .sectionCard {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 24px;
@@ -135,7 +135,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   color: #4b5563;
@@ -259,7 +259,7 @@
 
 .pageBtn {
   padding: 4px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 4px;
   background: #fff;
   cursor: pointer;
@@ -275,7 +275,7 @@
 .pageSizeSelect {
   margin-left: 8px;
   padding: 4px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 4px;
   font-size: 12px;
 }
@@ -295,7 +295,7 @@
 
 .panel {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 20px;
 }
@@ -381,7 +381,7 @@
 .field textarea {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 13px;
   box-sizing: border-box;
@@ -530,7 +530,7 @@
 .chipActive {
   padding: 6px 16px;
   font-size: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 999px;
   background: #fff;
   color: #6b7280;
@@ -547,7 +547,7 @@
 .chipRectActive {
   padding: 6px 16px;
   font-size: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   color: #6b7280;
@@ -579,7 +579,7 @@
   width: 40px;
   text-align: center;
   padding: 2px 4px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 4px;
   font-size: 12px;
 }
@@ -588,7 +588,7 @@
   width: 100%;
   padding: 8px;
   margin-top: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -613,7 +613,7 @@
 }
 
 .browserFrame {
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -813,7 +813,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   color: #4b5563;

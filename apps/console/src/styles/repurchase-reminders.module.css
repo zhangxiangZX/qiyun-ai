@@ -23,7 +23,7 @@
 .pageHeaderRow p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   max-width: 520px;
 }
 
@@ -40,10 +40,10 @@
   gap: 8px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   min-width: 260px;
 }
 
@@ -52,7 +52,7 @@
   border: none;
   outline: none;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   background: transparent;
 }
 
@@ -62,7 +62,7 @@
   gap: 6px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -86,7 +86,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -119,13 +119,13 @@
 .kpiLabel {
   margin-bottom: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .kpiValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   line-height: 1.1;
 }
 
@@ -155,7 +155,7 @@
 
 .card {
   padding: 16px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -175,12 +175,12 @@
   border-bottom: 2px solid transparent;
   background: none;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .tabBtn:hover {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .tabBtnActive {
@@ -192,7 +192,7 @@
 .tabCount {
   margin-left: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-weight: 400;
 }
 
@@ -206,7 +206,7 @@
 .filterSelect {
   height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -221,10 +221,10 @@
   gap: 8px;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .filterSearch input {
@@ -232,7 +232,7 @@
   border: none;
   outline: none;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   background: transparent;
 }
 
@@ -265,7 +265,7 @@
 .dataTable th {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #f8fafc;
   white-space: nowrap;
 }
@@ -302,12 +302,12 @@
 
 .cellPrimary {
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cellMuted {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .daysOverdue {
@@ -376,7 +376,7 @@
 
 .actionMore {
   background: #f8fafc;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .pagination {
@@ -387,7 +387,7 @@
   gap: 12px;
   margin-top: 16px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .paginationRight {
@@ -401,7 +401,7 @@
   min-width: 32px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
   font-size: 13px;
@@ -422,7 +422,7 @@
 .pageSelect {
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   font-size: 13px;
 }
@@ -431,7 +431,7 @@
   width: 40px;
   height: 32px;
   padding: 0 6px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   text-align: center;
   font-size: 13px;
@@ -441,7 +441,7 @@
   margin: 0 0 14px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardTitleRow {
@@ -455,7 +455,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardLink {
@@ -477,7 +477,7 @@
   margin: 0 0 4px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .tagBlue {
@@ -498,12 +498,12 @@
 }
 
 .detailLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 .detailValue {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   text-align: right;
 }
 
@@ -523,13 +523,13 @@
 .predLabel {
   margin-bottom: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .predValue {
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .predProb {
@@ -554,14 +554,14 @@
 
 .bigMetricLabel {
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-bottom: 4px;
 }
 
 .bigMetricValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cycleChart {
@@ -615,7 +615,7 @@
   justify-content: center;
   gap: 6px;
   height: 40px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #475569;
@@ -630,7 +630,7 @@
 
 .loadingText {
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-bottom: 12px;
 }
 
@@ -638,7 +638,7 @@
   padding: 24px;
   text-align: center;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1100px) {

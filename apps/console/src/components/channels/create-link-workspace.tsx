@@ -198,7 +198,7 @@ export function CreateLinkWorkspace() {
     return toAbsoluteUrl(shortLinkBase, salesLinkPath(draftSlug));
   }, [createdLinkUrl, draftSlug, shortLinkBase]);
 
-  const backHref = isQrcode ? "/dashboard/channels/qrcodes" : "/dashboard/channels/links";
+  const backHref = isQrcode ? "/dashboard/channels/links?tab=qrcode" : "/dashboard/channels/links";
   const pageTitle = isQrcode ? "创建二维码" : "创建销售链接";
   const namePlaceholder = isQrcode ? "例如：展会机柜手册二维码" : "例如：展会现场咨询链接";
 
@@ -267,7 +267,7 @@ export function CreateLinkWorkspace() {
         <div className={styles.createTopBar}>
           <Link href={backHref} className={styles.createBack}>
             <ChevronLeft className="h-4 w-4" />
-            {isQrcode ? "返回二维码管理" : "返回销售链接列表"}
+            {isQrcode ? "返回二维码" : "返回销售链接"}
           </Link>
           <div className={styles.createTopActions}>
             <Link href={backHref} className={styles.btnOutline}>
@@ -288,9 +288,8 @@ export function CreateLinkWorkspace() {
           <div className={styles.createMain}>
             <section className={styles.formCard}>
               <div className={styles.formCardHead}>
-                <h1 className={styles.createTitle}>{pageTitle}</h1>
                 <p className={styles.createHint}>
-                  选择已发布的 AI 选型页作为落地页；地址使用当前本地环境，暂不配置自定义域名。
+                  {pageTitle}：选择已发布的 AI 选型页作为落地页；地址使用当前本地环境，暂不配置自定义域名。
                 </p>
               </div>
 

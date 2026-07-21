@@ -1,12 +1,6 @@
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import { QrcodeManagementWorkspace } from "@/components/channels/qrcode-management-workspace";
-import { PageSkeleton } from "@/components/layout/page-skeleton";
-
+/** 二维码与销售链接为同一实体，统一入口到获客链接 Tab。 */
 export default function QrcodeManagementPage() {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <QrcodeManagementWorkspace />
-    </Suspense>
-  );
+  redirect("/dashboard/channels/links?tab=qrcode");
 }

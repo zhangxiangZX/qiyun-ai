@@ -64,7 +64,7 @@ export interface QuotePreviewSample {
   date: string;
   validUntil: string;
   currency: string;
-  company: { name: string; enName: string; address: string; phone: string };
+  company: { name: string; enName: string; address: string; phone: string; logoUrl?: string };
   customer: { name: string; contact: string; phone: string; email: string };
   products: QuotePreviewProduct[];
   remark?: string;

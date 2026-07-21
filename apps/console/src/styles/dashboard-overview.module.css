@@ -22,7 +22,7 @@
   height: 33px;
   min-width: 190px;
   padding: 0 12px 0 10px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 17px;
   background: #fff;
   cursor: pointer;
@@ -41,7 +41,7 @@
   padding-right: 18px;
   border: 0;
   outline: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: transparent;
   font-size: 11px;
   cursor: pointer;
@@ -52,7 +52,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .filterChevron {
@@ -60,7 +60,7 @@
   right: 10px;
   width: 14px;
   height: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   pointer-events: none;
 }
 
@@ -68,10 +68,10 @@
   height: 33px;
   min-width: 190px;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 17px;
   outline: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #fff;
   font-size: 11px;
 }
@@ -96,7 +96,7 @@
   gap: 16px;
   min-height: 0;
   padding: var(--card-pad);
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: var(--radius-card);
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -148,7 +148,7 @@
 
 .kpiCard p {
   margin: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
   line-height: 1.2;
 }
@@ -156,7 +156,7 @@
 .kpiCard strong {
   display: block;
   margin-top: 4px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 24px;
   font-weight: 700;
   line-height: 1.1;
@@ -171,13 +171,13 @@
 }
 
 .kpiEmpty {
-  color: var(--muted-foreground) !important;
+  color: hsl(var(--muted-foreground)) !important;
   font-size: 22px !important;
   font-weight: 600 !important;
 }
 
 .kpiMuted {
-  color: var(--muted-foreground) !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 .chartWrap {
@@ -224,7 +224,7 @@
 }
 
 .card {
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: var(--radius-card);
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -277,18 +277,18 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--card-pad-sm) var(--card-pad);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .cardHeader h2 {
   margin: 0;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: var(--fs-h3);
 }
 
 .cardHeader button {
   border: 0;
-  color: var(--primary);
+  color: hsl(var(--primary));
   background: transparent;
   font-size: 11px;
   font-weight: 700;
@@ -307,7 +307,7 @@
   padding: 5px 8px;
   border-radius: 14px;
   border: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: transparent;
   cursor: pointer;
   transition:
@@ -322,7 +322,7 @@
 }
 
 .headerActions .rangeActive {
-  color: var(--primary);
+  color: hsl(var(--primary));
   border: 1px solid #cbd9ff;
   background: #f7f9ff;
   box-shadow: 0 4px 12px rgba(63, 94, 255, 0.12);
@@ -334,13 +334,13 @@
 
 .legend {
   padding: 15px 37px 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 11px;
 }
 
 .legendBlue {
   margin-right: 5px;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .legendGreen {
@@ -430,7 +430,7 @@
 }
 
 .chart text {
-  fill: var(--muted-foreground);
+  fill: hsl(var(--muted-foreground));
   font-size: 10px;
 }
 
@@ -494,14 +494,14 @@
 
 .donut strong {
   display: block;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 28px;
 }
 
 .donut span {
   display: block;
   margin-top: 4px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 11px;
 }
 
@@ -524,7 +524,7 @@
 
 .sourceBody b {
   margin-left: auto;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .sourceBody li span {
@@ -564,7 +564,7 @@
 .panelStatus {
   margin: 0;
   padding: 24px 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
   text-align: center;
 }
@@ -575,7 +575,7 @@
   align-items: center;
   gap: 9px;
   padding: 13px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   transition:
     background 0.2s ease,
     transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
@@ -606,7 +606,7 @@
 
 .robotName b {
   display: block;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 11px;
 }
 
@@ -626,14 +626,14 @@
 
 .robotRow > div:not(.robotName) small {
   display: block;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 9px;
 }
 
 .robotRow > div:not(.robotName) b {
   display: block;
   margin-top: 3px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 11px;
 }
 
@@ -661,7 +661,7 @@
   width: 100%;
   padding: 12px 0;
   border: 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -710,7 +710,7 @@
 
 .chatContent b {
   display: block;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 11px;
 }
 
@@ -728,7 +728,7 @@
   max-width: 240px;
   margin-top: 5px;
   overflow: hidden;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -743,14 +743,14 @@
 .chatMeta em {
   padding: 3px 6px;
   border-radius: 7px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #f3f6fa;
   font-size: 9px;
   font-style: normal;
 }
 
 .chatMeta span {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 10px;
 }
 
@@ -774,7 +774,7 @@
   width: 100%;
   padding: 15px 0;
   border: 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -790,14 +790,14 @@
 
 .leadRow b {
   display: block;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 11px;
 }
 
 .leadRow small {
   display: block;
   margin-top: 6px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 10px;
 }
 
@@ -819,7 +819,7 @@
 }
 
 .leadRow time {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 10px;
 }
 
@@ -840,7 +840,7 @@
   justify-items: center;
   gap: 8px;
   border: 0;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   background: transparent;
   font-size: 10px;
   cursor: pointer;
@@ -860,7 +860,7 @@
   width: 54px;
   height: 54px;
   border-radius: 12px;
-  color: var(--primary);
+  color: hsl(var(--primary));
   background: linear-gradient(145deg, #f3f6ff, #eff3ff);
   transition:
     transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
@@ -897,24 +897,24 @@
 
 .emptyState {
   padding: 48px 24px;
-  border: 1px dashed var(--border);
+  border: 1px dashed hsl(var(--border));
   border-radius: 10px;
   background: #fff;
   text-align: center;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
 }
 
 .emptyState strong {
   display: block;
   margin-bottom: 8px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-size: 16px;
 }
 
 .skeletonBlock {
   border-radius: 10px;
-  background: linear-gradient(90deg, var(--border) 25%, #f6f9ff 50%, var(--border) 75%);
+  background: linear-gradient(90deg, hsl(var(--border)) 25%, #f6f9ff 50%, hsl(var(--border)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }
@@ -1109,13 +1109,13 @@
 }
 
 .searchBox input::placeholder {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .searchBox svg {
   width: 18px;
   flex-shrink: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .toolButton {
@@ -1158,7 +1158,7 @@
   gap: 8px;
   max-width: 220px;
   border: 0;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   background: transparent;
   font-size: 12px;
   font-weight: 700;
@@ -1190,5 +1190,5 @@
 .companyChevron {
   flex-shrink: 0;
   font-style: normal;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }

@@ -634,7 +634,7 @@
 }
 
 .messageHint {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .helperCard {
@@ -643,7 +643,7 @@
   border: 1px solid #e4ebf7;
   border-radius: 8px;
   background: #f8fbff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 11px;
   line-height: 1.7;
   text-align: left;
@@ -884,7 +884,7 @@
 
 .infoBody {
   margin-top: 18px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 12px;
   line-height: 1.7;
   text-align: center;
@@ -914,7 +914,7 @@
 }
 
 .devCodeCard small {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 11px;
 }
 
@@ -937,7 +937,7 @@
 
 .legalSection p {
   margin: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 12px;
   line-height: 1.75;
 }
@@ -976,7 +976,7 @@
   margin-bottom: 18px;
   font-size: 12px;
   line-height: 1.75;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .homeFlow {
@@ -997,7 +997,7 @@
 }
 
 .homeFlowItem + .homeFlowItem {
-  border-top: 1px dashed var(--border);
+  border-top: 1px dashed hsl(var(--border));
 }
 
 .homeFlowStep {
@@ -1116,7 +1116,7 @@
 .homeHighlightCard small {
   display: block;
   margin-top: 2px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 10px;
   line-height: 1.45;
 }
@@ -1157,7 +1157,7 @@
   margin-bottom: 0;
   font-size: 12px;
   line-height: 1.75;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .trialSuccessSla {
@@ -1234,7 +1234,7 @@
 }
 
 .trialSuccessSummaryRow + .trialSuccessSummaryRow {
-  border-top: 1px dashed var(--border);
+  border-top: 1px dashed hsl(var(--border));
 }
 
 .trialSuccessSummaryRow dt {
@@ -1277,7 +1277,7 @@
 }
 
 .trialSuccessStep + .trialSuccessStep {
-  border-top: 1px dashed var(--border);
+  border-top: 1px dashed hsl(var(--border));
 }
 
 .trialSuccessStepActive {

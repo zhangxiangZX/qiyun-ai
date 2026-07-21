@@ -53,8 +53,8 @@ export function DataCenterLostReasonsPlaceholder() {
 
 export function DataCenterExportPlaceholder() {
   return <PlaceholderPage
-    title="报表导出"
-    description="支持将渠道转化、销售跟进、丢单分析等报表导出为 PDF / Excel 格式。"
+    title="经营报表导出"
+    description="支持将渠道转化、销售跟进、丢单分析等经营报表导出为 PDF / Excel 格式。"
     iconBg="#dcfce7"
     iconColor="#166534"
   />;

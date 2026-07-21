@@ -34,6 +34,7 @@ import {
   formatAmount,
   listInquiries,
 } from "@/lib/sales/api";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
 import type {
   ChannelAttributionItem,
   ConversionFunnelStep,
@@ -255,7 +256,7 @@ export function SalesOverviewPanel() {
               channels.map((item) => (
                 <li key={`${item.sourceCode ?? "none"}-${item.sourceType}`} className="flex justify-between gap-3 text-sm">
                   <div>
-                    <p className="font-medium">{item.sourceLabel}</p>
+                    <p className="font-medium">{formatChannelSourceLabel(item)}</p>
                     <p className="text-muted-foreground">
                       {item.inquiryCount} 询盘 · {item.quoteCount} 报价 · {item.wonCount} 成交
                     </p>
@@ -291,6 +292,7 @@ export function SalesOverviewWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="成交数据看板"
         description="从询盘到成交的经营视角，不展示虚构金额。"
       />

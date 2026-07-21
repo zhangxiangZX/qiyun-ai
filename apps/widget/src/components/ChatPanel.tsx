@@ -22,6 +22,7 @@ interface ChatPanelProps {
   statusTone?: "info" | "error" | "success";
   recommendedQuestions?: string[];
   showRecommendedQuestions?: boolean;
+  followUpQuestions?: string[];
   leadFields?: string[] | null;
   leadSubmitting?: boolean;
   leadError?: string;
@@ -46,6 +47,7 @@ export function ChatPanel({
   statusTone = "info",
   recommendedQuestions = [],
   showRecommendedQuestions = false,
+  followUpQuestions = [],
   leadFields = null,
   leadSubmitting = false,
   leadError,
@@ -131,6 +133,20 @@ export function ChatPanel({
           questions={recommendedQuestions}
           accent={accent}
           label="首次咨询可以先这样问："
+          disabled={busy}
+          onSelect={onRecommendedQuestion}
+        />
+      ) : null}
+
+      {!showRecommendedQuestions && followUpQuestions.length > 0 && onRecommendedQuestion ? (
+        <RecommendedQuestions
+          questions={followUpQuestions}
+          accent={accent}
+          label={
+            leadFields?.length
+              ? "为了更快推进报价或交期，建议继续确认："
+              : "继续把需求推进下去，可以这样问："
+          }
           disabled={busy}
           onSelect={onRecommendedQuestion}
         />

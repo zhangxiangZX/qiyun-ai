@@ -1539,7 +1539,7 @@ export function AiStandaloneEditWorkspace() {
             <ArrowLeft size={14} />
             返回列表
           </button>
-          <h1 className={styles.pageTitle}>{pageName}</h1>
+          <span className={styles.pageTitle}>{pageName}</span>
           <span
             className={`${styles.statusBadge} ${
               pageStatus === "published"

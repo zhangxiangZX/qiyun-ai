@@ -166,6 +166,7 @@ export function TemplateListWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         title="报价模板管理"
         description="统一管理报价单样式，新建报价时可一键套用。"
         actions={
@@ -207,10 +208,10 @@ export function TemplateListWorkspace() {
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            <select className="rounded-md border border-border bg-background px-3 py-2 text-sm">
+            <select className="rounded-md border border-input bg-background px-3 py-2 text-sm">
               <option>全部行业</option>
             </select>
-            <select className="rounded-md border border-border bg-background px-3 py-2 text-sm">
+            <select className="rounded-md border border-input bg-background px-3 py-2 text-sm">
               <option>全部状态</option>
             </select>
           </div>

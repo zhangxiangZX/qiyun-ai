@@ -9,16 +9,13 @@
 }
 
 .pageHeader h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #0f172a;
+  display: none;
 }
 
 .pageHeader p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .breadcrumb {
@@ -27,7 +24,7 @@
   gap: 8px;
   margin-bottom: 16px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .ticketHeader {
@@ -38,7 +35,7 @@
   gap: 16px;
   padding: 20px;
   margin-bottom: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -52,14 +49,14 @@
 
 .ticketTitle {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: #0f172a;
 }
 
 .ticketMeta {
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .headerActions {
@@ -73,7 +70,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #475569;
@@ -112,7 +109,7 @@
 
 .infoCard {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -140,12 +137,12 @@
 }
 
 .infoLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 .infoValue {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   text-align: right;
 }
 
@@ -181,7 +178,7 @@
   display: grid;
   place-items: center;
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
@@ -217,7 +214,7 @@
   left: 16px;
   right: 16px;
   height: 2px;
-  background: var(--border);
+  background: hsl(var(--border));
   z-index: 0;
 }
 
@@ -259,8 +256,8 @@
 }
 
 .stagePending {
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
 }
 
 .stageLabel {
@@ -275,7 +272,7 @@
 
 .stageTime {
   font-size: 10px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .gridMain {
@@ -287,7 +284,7 @@
 
 .card {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -333,7 +330,7 @@
   border-radius: 12px;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .chatCustomer {
@@ -348,19 +345,19 @@
 
 .chatStaff {
   background: #fff;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-bottom-right-radius: 4px;
 }
 
 .chatTime {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 .replyCard {
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 10px;
   margin-bottom: 12px;
 }
@@ -385,7 +382,7 @@
 .replyTools {
   display: flex;
   gap: 8px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .iconBtn {
@@ -404,7 +401,7 @@
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .replyLink {
@@ -453,7 +450,7 @@
   top: 18px;
   bottom: -12px;
   width: 2px;
-  background: var(--border);
+  background: hsl(var(--border));
 }
 
 .timelineTime {
@@ -470,7 +467,7 @@
 
 .timelineDesc {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-top: 2px;
 }
 
@@ -512,12 +509,12 @@
   min-width: 0;
   font-size: 13px;
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .attachMeta {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-top: 2px;
 }
 
@@ -533,7 +530,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -570,7 +567,7 @@
 
 .tagGray {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .tagYellow {
@@ -590,7 +587,7 @@
 
 .searchInput {
   padding: 8px 12px 8px 32px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   width: 280px;
@@ -606,7 +603,7 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .dataTable {
@@ -617,10 +614,10 @@
 
 .dataTable th {
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   text-align: left;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #f8fafc;
 }
 
@@ -645,7 +642,7 @@
 .emptyHint {
   padding: 48px;
   text-align: center;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
 }
 

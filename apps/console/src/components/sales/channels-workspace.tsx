@@ -11,22 +11,14 @@ import {
 import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
 import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/components/console/console-request-error";
 import { createSource, fetchSourceAnalytics, formatAmount, listSources } from "@/lib/sales/api";
-import type { SourceCodeItem } from "@/lib/sales/types";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
+import type { ChannelAttributionItem, SourceCodeItem } from "@/lib/sales/types";
 
 export function ChannelsWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [sources, setSources] = useState<SourceCodeItem[]>([]);
-  const [analytics, setAnalytics] = useState<
-    Array<{
-      sourceLabel: string;
-      inquiryCount: number;
-      quoteCount: number;
-      wonCount: number;
-      wonAmountTotal: number | null;
-      roi: number | null;
-    }>
-  >([]);
+  const [analytics, setAnalytics] = useState<Array<ChannelAttributionItem & { roi: number | null }>>([]);
   const [code, setCode] = useState("");
   const [label, setLabel] = useState("");
 
@@ -94,8 +86,8 @@ export function ChannelsWorkspace() {
               </TableHeader>
               <TableBody>
                 {analytics.map((item) => (
-                  <TableRow key={item.sourceLabel}>
-                    <TableCell>{item.sourceLabel}</TableCell>
+                  <TableRow key={`${item.sourceCode ?? "none"}-${item.sourceType}`}>
+                    <TableCell>{formatChannelSourceLabel(item)}</TableCell>
                     <TableCell>{item.inquiryCount}</TableCell>
                     <TableCell>{item.quoteCount}</TableCell>
                     <TableCell>{item.wonCount}</TableCell>

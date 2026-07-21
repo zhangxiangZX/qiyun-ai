@@ -18,16 +18,15 @@
   flex-wrap: wrap;
 }
 
+/* 顶栏已有页面名，隐藏正文大标题，避免双头 */
+.pageHeader > h1,
 .titleRow h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--foreground);
+  display: none;
 }
 
 .titleRow p {
   margin: 0.25rem 0 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 0.9rem;
   max-width: 60ch;
 }
@@ -54,7 +53,7 @@
 }
 
 .kpiCard {
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   background: #fff;
   border-radius: 12px;
   padding: 20px;
@@ -70,13 +69,13 @@
 .kpiLabel {
   margin-bottom: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .kpiValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   line-height: 1.1;
 }
 
@@ -101,9 +100,9 @@
 .upstreamNote {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--primary) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+  color: hsl(var(--muted-foreground));
+  background: color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
+  border: 1px solid color-mix(in srgb, hsl(var(--primary)) 18%, transparent);
   border-radius: 0.6rem;
   padding: 0.6rem 0.85rem;
 }
@@ -152,7 +151,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .toolbar {
@@ -176,15 +175,15 @@
 .table th {
   text-align: left;
   padding: 0.6rem 0.75rem;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-weight: 600;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   white-space: nowrap;
 }
 
 .table td {
   padding: 0.7rem 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, hsl(var(--border)) 60%, transparent);
   vertical-align: middle;
 }
 
@@ -212,7 +211,7 @@
 
 .docName {
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -220,7 +219,7 @@
 
 .docMeta {
   font-size: 0.75rem;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .catTag {
@@ -240,8 +239,8 @@
   font-size: 0.72rem;
   padding: 0.12rem 0.5rem;
   border-radius: 9999px;
-  border: 1px solid var(--border);
-  color: var(--muted-foreground);
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
 }
 
 .wmOn {
@@ -259,11 +258,11 @@
 .emptyHint {
   padding: 2.5rem 1rem;
   text-align: center;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 0.9rem;
 }
 
 .loadingText {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 0.9rem;
 }

@@ -244,6 +244,7 @@ export function SelectionEditorWorkspace() {
         ) : null}
 
         <PageHeader
+          variant="compact"
           title="编辑 AI 选型页"
           description={
             pageId

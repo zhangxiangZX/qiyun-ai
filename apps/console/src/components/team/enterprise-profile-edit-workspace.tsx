@@ -16,6 +16,8 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { fetchAuthSession } from "@/lib/auth/client";
 import { unwrapEnvelope } from "@/lib/api/envelope";
 import { isPreviewModeError } from "@/lib/api/use-api-resource";
+import { uploadDocumentToApi } from "@/lib/documents/api";
+import type { DocumentCategory } from "@/lib/documents/types";
 import {
   INDUSTRY_OPTIONS,
   REGION_CITIES,
@@ -28,12 +30,28 @@ import {
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
 import styles from "@/styles/enterprise-profile-edit.module.css";
 
-const UPLOAD_ITEMS = [
-  { key: "logo", title: "Logo", hint: "建议 200×200px", file: "logo.png", uploaded: true, image: true },
-  { key: "license", title: "营业执照", hint: "jpg/png/pdf，≤5MB", file: "business_license.pdf", uploaded: true, required: true },
-  { key: "catalog", title: "产品说明书/手册", hint: "pdf/doc，≤10MB", file: "product_catalog.pdf", uploaded: true },
-  { key: "cert", title: "认证资质", hint: "支持多文件打包", file: "certificates.zip", uploaded: true },
-] as const;
+type AssetKey = "logo" | "license" | "catalog" | "cert";
+
+interface AssetMeta {
+  fileName: string;
+  documentId?: string;
+}
+
+const UPLOAD_ITEMS: Array<{
+  key: AssetKey;
+  title: string;
+  hint: string;
+  file: string;
+  category: DocumentCategory;
+  image?: boolean;
+  required?: boolean;
+  accept: string;
+}> = [
+  { key: "logo", title: "Logo", hint: "建议 200×200px，jpg/png，≤2MB", file: "logo.png", category: "other", image: true, accept: "image/*" },
+  { key: "license", title: "营业执照", hint: "jpg/png/pdf，≤5MB", file: "business_license.pdf", category: "other", required: true, accept: "image/*,.pdf,application/pdf" },
+  { key: "catalog", title: "产品说明书/手册", hint: "pdf/docx，≤10MB", file: "product_catalog.pdf", category: "brochure", accept: ".pdf,.docx,application/pdf" },
+  { key: "cert", title: "认证资质", hint: "pdf/图片，≤10MB", file: "certificates.pdf", category: "other", accept: "image/*,.pdf,application/pdf" },
+];
 
 function SectionCard({
   number,
@@ -85,6 +103,8 @@ export function EnterpriseProfileEditWorkspace() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [assets, setAssets] = useState<Partial<Record<AssetKey, AssetMeta>>>({});
+  const [uploadingKey, setUploadingKey] = useState<AssetKey | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,7 +120,13 @@ export function EnterpriseProfileEditWorkspace() {
         const body = await res.json().catch(() => null);
         const workspace = unwrapEnvelope<{ name?: string; companyProfile?: Record<string, unknown> }>(body);
         if (workspace) {
-          setForm(mergeProfile(workspace.companyProfile, workspace.name));
+          const next = mergeProfile(workspace.companyProfile, workspace.name);
+          setForm(next);
+          setLogoPreview(next.logoUrl || null);
+          const rawAssets = workspace.companyProfile?.assetUploads;
+          if (rawAssets && typeof rawAssets === "object") {
+            setAssets(rawAssets as Partial<Record<AssetKey, AssetMeta>>);
+          }
         }
       }
     } finally {
@@ -121,6 +147,33 @@ export function EnterpriseProfileEditWorkspace() {
     setSaveError(null);
   }
 
+  async function persistProfile(nextForm: EnterpriseProfileForm, nextAssets: Partial<Record<AssetKey, AssetMeta>>) {
+    if (!workspaceId) {
+      throw new Error("未找到当前工作空间，无法保存。");
+    }
+    const payload = {
+      ...nextForm,
+      logoUrl: nextForm.logoUrl || "",
+      assetUploads: nextAssets,
+    };
+    const res = await fetch(`/api/auth/workspaces/${workspaceId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      const message =
+        body && typeof body === "object" && "message" in body
+          ? String((body as { message?: string }).message)
+          : "保存失败，请稍后重试。";
+      throw new Error(message);
+    }
+    setForm(nextForm);
+    setAssets(nextAssets);
+  }
+
   async function handleSave(publish: boolean) {
     if (!workspaceId) {
       setSaveError("未找到当前工作空间，无法保存。");
@@ -129,24 +182,14 @@ export function EnterpriseProfileEditWorkspace() {
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/auth/workspaces/${workspaceId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(form),
-        cache: "no-store",
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const message =
-          body && typeof body === "object" && "message" in body
-            ? String((body as { message?: string }).message)
-            : "保存失败，请稍后重试。";
-        throw new Error(message);
-      }
+      const nextForm = {
+        ...form,
+        logoUrl: logoPreview || form.logoUrl || "",
+      };
+      await persistProfile(nextForm, assets);
+      setLogoPreview(nextForm.logoUrl || null);
       setSuccessOpen(true);
-      if (publish) {
-        // V1: publish is same as save
-      }
+      void publish;
     } catch (err: unknown) {
       if (isPreviewModeError(err)) {
         setSuccessOpen(true);
@@ -161,11 +204,73 @@ export function EnterpriseProfileEditWorkspace() {
   function handleLogoSelect(files: FileList | null) {
     const file = files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setSaveError("Logo 需小于 2MB，请压缩后重试。");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === "string") setLogoPreview(reader.result);
+      if (typeof reader.result !== "string") return;
+      const dataUrl = reader.result;
+      setLogoPreview(dataUrl);
+      updateField("logoUrl", dataUrl);
+      setSaveError(null);
+      const nextForm = { ...form, logoUrl: dataUrl };
+      const nextAssets = {
+        ...assets,
+        logo: { fileName: file.name },
+      };
+      void persistProfile(nextForm, nextAssets).catch((err: unknown) => {
+        setSaveError(err instanceof Error ? err.message : "Logo 保存失败，请点击底部保存重试。");
+      });
     };
     reader.readAsDataURL(file);
+  }
+
+  async function handleAssetSelect(key: AssetKey, category: DocumentCategory, files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setSaveError("附件需小于 10MB，请压缩后重试。");
+      return;
+    }
+    setUploadingKey(key);
+    setSaveError(null);
+    try {
+      const uploaded = await uploadDocumentToApi({
+        file,
+        category,
+        uploadedBy: "企业资料",
+      });
+      const nextAssets = {
+        ...assets,
+        [key]: { fileName: uploaded.name || file.name, documentId: uploaded.id },
+      };
+      await persistProfile(form, nextAssets);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "附件上传失败，请稍后重试。");
+    } finally {
+      setUploadingKey(null);
+    }
+  }
+
+  function handleAssetRemove(key: AssetKey) {
+    if (key === "logo") {
+      setLogoPreview(null);
+      updateField("logoUrl", "");
+      const nextForm = { ...form, logoUrl: "" };
+      const nextAssets = { ...assets };
+      delete nextAssets.logo;
+      void persistProfile(nextForm, nextAssets).catch((err: unknown) => {
+        setSaveError(err instanceof Error ? err.message : "删除失败，请重试。");
+      });
+      return;
+    }
+    const nextAssets = { ...assets };
+    delete nextAssets[key];
+    void persistProfile(form, nextAssets).catch((err: unknown) => {
+      setSaveError(err instanceof Error ? err.message : "删除失败，请重试。");
+    });
   }
 
   const companyInitial = form.companyName.trim().charAt(0) || "企";
@@ -397,52 +502,66 @@ export function EnterpriseProfileEditWorkspace() {
 
       <SectionCard number={3} title="资质与品牌">
         <div className={styles.uploadGrid}>
-          {UPLOAD_ITEMS.map((item) => (
+          {UPLOAD_ITEMS.map((item) => {
+            const meta = assets[item.key];
+            const uploaded = item.key === "logo" ? Boolean(logoPreview || form.logoUrl) : Boolean(meta?.fileName);
+            return (
             <div key={item.key} className={styles.uploadCard}>
               <h3 className={styles.uploadCardTitle}>
                 {item.title}
-                {"required" in item && item.required ? <span className={styles.required}> *</span> : null}
+                {item.required ? <span className={styles.required}> *</span> : null}
               </h3>
               <div className={styles.uploadPreview}>
-                {"image" in item && item.image && logoPreview ? (
+                {item.image && logoPreview ? (
                   <img src={logoPreview} alt={item.title} />
-                ) : "image" in item && item.image ? (
+                ) : item.image ? (
                   <span className={styles.logoPlaceholder}>{companyInitial}</span>
                 ) : (
                   <FileText size={28} className={styles.uploadPreviewIcon} />
                 )}
               </div>
               <p className={styles.uploadHint}>{item.hint}</p>
-              <p className={styles.uploadFileName}>{item.file}</p>
-              {item.uploaded ? (
+              <p className={styles.uploadFileName}>{meta?.fileName || item.file}</p>
+              {uploaded ? (
                 <span className={styles.uploadStatus}>
-                  <CheckCircle2 size={12} /> 已上传
+                  <CheckCircle2 size={12} /> {uploadingKey === item.key ? "上传中…" : "已上传"}
                 </span>
+              ) : uploadingKey === item.key ? (
+                <span className={styles.uploadStatus}>上传中…</span>
               ) : null}
               <div className={styles.uploadActions}>
-                {"image" in item && item.image ? (
-                  <label className={styles.uploadAction}>
-                    更换
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={(e) => handleLogoSelect(e.target.files)}
-                    />
-                  </label>
-                ) : (
-                  <button type="button" className={styles.uploadAction}>
-                    更换
-                  </button>
-                )}
-                <button type="button" className={`${styles.uploadAction} ${styles.uploadActionDanger}`}>
+                <label className={styles.uploadAction}>
+                  {uploaded ? "更换" : "上传"}
+                  <input
+                    type="file"
+                    accept={item.accept}
+                    style={{ display: "none" }}
+                    disabled={uploadingKey !== null}
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (item.key === "logo") {
+                        handleLogoSelect(files);
+                      } else {
+                        void handleAssetSelect(item.key, item.category, files);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={`${styles.uploadAction} ${styles.uploadActionDanger}`}
+                  disabled={!uploaded || uploadingKey !== null}
+                  onClick={() => handleAssetRemove(item.key)}
+                >
                   删除
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
-        <p className={styles.v1Hint}>V1 附件上传仅本地预览，不会同步到后端。</p>
+        <p className={styles.v1Hint}>Logo 与资质附件上传后会自动保存到当前企业资料。</p>
       </SectionCard>
 
       <SectionCard number={4} title="对外展示信息">

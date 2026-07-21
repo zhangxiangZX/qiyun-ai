@@ -42,4 +42,5 @@ export interface StreamDonePayload {
   messageId?: string;
   content?: string;
   suggestedQuestions?: string[];
+  citations?: CitationItem[];
 }

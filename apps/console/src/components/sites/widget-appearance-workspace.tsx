@@ -179,6 +179,7 @@ export function WidgetAppearanceWorkspace() {
       <ConsoleDataModeBanner feature="官网 Widget 外观设置" />
 
       <PageHeader
+        variant="compact"
         title="官网 Widget"
         description="自定义智能客服 Widget 的外观与预览效果"
       />

@@ -289,6 +289,12 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
   },
   {
     groupId: "data-center",
+    id: "sales-funnel",
+    title: "成交漏斗",
+    href: "/dashboard/sales",
+  },
+  {
+    groupId: "data-center",
     id: "bot-insights",
     title: "机器人洞察",
     href: "/dashboard/reports/bot-insights",
@@ -463,7 +469,6 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
     title: "数据中心",
     icon: BarChart3,
     children: [
-      { id: "sales-funnel", title: "成交漏斗", href: "/dashboard/sales" },
       { id: "channel-analysis", title: "渠道分析", href: "/dashboard/reports/channel" },
       { id: "follow-up-analysis", title: "销售分析", href: "/dashboard/reports/follow-up" },
       { id: "report-export", title: "经营报表导出", href: "/dashboard/reports/export" },

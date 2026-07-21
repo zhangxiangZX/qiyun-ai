@@ -18,7 +18,7 @@
 .pageHeader p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .banner {
@@ -27,7 +27,7 @@
   gap: 12px;
   margin-bottom: 24px;
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -47,7 +47,7 @@
   flex: 1;
   font-size: 14px;
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .guideLink {
@@ -55,7 +55,7 @@
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-decoration: none;
   flex-shrink: 0;
 }
@@ -80,7 +80,7 @@
 
 .card {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -128,7 +128,7 @@
 
 .inputTab {
   padding: 6px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -150,7 +150,7 @@
 .select {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   color: #475569;
@@ -162,10 +162,10 @@
   width: 100%;
   min-height: 128px;
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   resize: vertical;
   outline: none;
   box-sizing: border-box;
@@ -188,7 +188,7 @@
 .toolbarLeft {
   display: flex;
   gap: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
 }
 
@@ -199,13 +199,13 @@
   border: none;
   background: none;
   padding: 0;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
   cursor: pointer;
 }
 
 .toolBtn:hover {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .btnPrimary {
@@ -271,7 +271,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--foreground);
+  background: hsl(var(--foreground));
   color: #fff;
   flex-shrink: 0;
 }
@@ -328,7 +328,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--muted-foreground);
+  background: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
@@ -363,7 +363,7 @@
 
 .specTable {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   border-collapse: collapse;
   font-size: 13px;
@@ -380,7 +380,7 @@
 
 .specTable td:first-child {
   width: 120px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .aiFooter {
@@ -391,7 +391,7 @@
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .feedbackBtns {
@@ -407,7 +407,7 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
@@ -443,7 +443,7 @@
 
 .tagGray {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .tagOrange {
@@ -465,7 +465,7 @@
 
 .statLabel {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .customerRow {
@@ -491,7 +491,7 @@
   gap: 4px 16px;
   margin-top: 8px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .customerMeta span.value {
@@ -522,7 +522,7 @@
 
 .historyTime {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   white-space: nowrap;
 }
 
@@ -534,7 +534,7 @@
 .historyStatus {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .docItem {
@@ -564,7 +564,7 @@
 .docName {
   font-size: 13px;
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -573,7 +573,7 @@
 .docMeta {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .suggestItem {
@@ -623,7 +623,7 @@
 .emptyHint {
   margin: 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1024px) {

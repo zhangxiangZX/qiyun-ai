@@ -8,6 +8,13 @@ function normalizeMemberRole(role: WorkspaceMemberSummary["role"]): MemberRole {
   return "member";
 }
 
+/** 团队列表只展示当前企业其他人员，不展示当前登录账号本人。 */
+export function filterEnterpriseTeamMembers<T extends { isCurrentUser?: boolean }>(
+  members: T[],
+): T[] {
+  return members.filter((member) => !member.isCurrentUser);
+}
+
 export function mapWorkspaceMemberToDisplay(member: WorkspaceMemberSummary): MockMember {
   const initials = member.name?.trim().slice(0, 1) || member.email.slice(0, 1).toUpperCase();
   return {

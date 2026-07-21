@@ -11,6 +11,7 @@ import type { SiteConfig } from "@/lib/sites/types";
 import { resolveSalesLinkPublicUrl } from "@/lib/channels/api";
 import type { DashboardSnapshot, TrendPoint, TrendRange } from "@/lib/dashboard/types";
 import { formatAmount } from "@/lib/sales/api";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
 import type {
   ChannelAttributionItem,
   InquiryAssignStats,
@@ -194,10 +195,10 @@ export function mapTrendSeries(
       : range;
 
   const days = eachDateInclusive(bounds.from, bounds.to);
-  const sourcePoints = [
+  const sourcePoints: TrendPoint[] = [
     ...(snapshot.trend30 ?? []),
     ...(snapshot.trend7 ?? []),
-  ];
+  ].filter((point): point is TrendPoint => typeof point?.date === "string");
   const byDate = new Map(sourcePoints.map((point) => [point.date.slice(0, 10), point]));
 
   const inquiryByDate = new Map<string, number>();
@@ -242,19 +243,7 @@ export function mapSalesTrendSeries(
 }
 
 function resolveChannelLabel(item: ChannelAttributionItem, sites: SiteConfig[]): string {
-  // 后端 sourceLabel 若是站点 ID，则尝试用站点主域名替换
-  const rawLabel = item.sourceLabel?.trim();
-  if (rawLabel && !rawLabel.startsWith("site_")) {
-    return rawLabel;
-  }
-  const siteId = rawLabel ?? item.sourceCode;
-  if (siteId) {
-    const site = sites.find((s) => s.id === siteId);
-    if (site?.allowedDomains.length) {
-      return site.allowedDomains[0];
-    }
-  }
-  return SOURCE_TYPE_LABELS[item.sourceType] ?? item.sourceType;
+  return formatChannelSourceLabel(item, sites);
 }
 
 export function mapChannelDistribution(

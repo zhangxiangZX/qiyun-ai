@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { AuthFieldError, AuthFormFeedback } from "@/components/auth/auth-form-feedback";
+import { BRAND_NAME } from "@/lib/brand";
 import { defaultWorkspacePlan, workspacePlanLabel, workspacePlanOptions } from "@/lib/platform/plans";
 import { AUTH_VALIDATION, localizeAuthError } from "@/lib/auth/messages";
 import styles from "@/styles/login.module.css";
@@ -187,7 +188,7 @@ export function TrialRequestForm() {
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <header className={styles.header}>
           <span className={styles.eyebrow}>企业试用</span>
-          <h2>申请试用 AI云</h2>
+          <h2>申请试用 {BRAND_NAME}</h2>
           <p>
             第一版由平台管理员统一开通工作区。提交申请后，我们会通过邮箱联系您完成审核与邀请激活。
           </p>

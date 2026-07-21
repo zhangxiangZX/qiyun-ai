@@ -3,7 +3,7 @@
 .breadcrumb {
   margin: 0 0 8px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .breadcrumbSep {
@@ -11,13 +11,12 @@
   color: #cbd5e1;
 }
 
-.pageTitle h1 {
-  margin: 0 0 20px;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--foreground);
+/* 顶栏已有页面名；.pageTitle 仅承载返回链路 */
+.pageTitle {
+  margin: 0 0 12px;
 }
 
+.pageTitle h1,
 .pageTitle p {
   display: none;
 }
@@ -26,7 +25,7 @@
   display: flex;
   gap: 28px;
   margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .pageTab {
@@ -34,13 +33,13 @@
   border: none;
   background: none;
   font-size: 15px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   position: relative;
 }
 
 .pageTab:hover {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .pageTabActive {
@@ -77,7 +76,7 @@
 
 .formCard {
   padding: 24px 24px 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -113,11 +112,11 @@
 .fieldSelect,
 .fieldTextarea {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   outline: none;
 }
 
@@ -143,7 +142,7 @@
 .phoneGroup {
   display: flex;
   align-items: stretch;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -154,10 +153,10 @@
   align-items: center;
   gap: 4px;
   padding: 0 10px;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid hsl(var(--border));
   background: #f8fafc;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   white-space: nowrap;
 }
 
@@ -192,12 +191,12 @@
   position: relative;
   min-height: 44px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 14px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-align: center;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -205,7 +204,7 @@
 
 .roleCard:hover {
   border-color: #cbd5e1;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .roleCardActive {
@@ -233,12 +232,12 @@
   position: relative;
   min-height: 44px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 14px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-align: center;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -246,7 +245,7 @@
 
 .rolePill:hover {
   border-color: #cbd5e1;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .rolePillActive {
@@ -268,7 +267,7 @@
   display: flex;
   gap: 10px;
   padding: 14px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 10px;
   background: #fff;
   opacity: 0.5;
@@ -309,14 +308,14 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .scopeDesc {
   margin: 4px 0 0;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .textareaWrap {
@@ -334,7 +333,7 @@
   right: 10px;
   bottom: 8px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .methodGroup {
@@ -349,17 +348,17 @@
   gap: 6px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .methodBtn:hover:not(:disabled) {
   border-color: #cbd5e1;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .methodBtnActive {
@@ -380,23 +379,23 @@
   gap: 10px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .btnSecondary {
   height: 38px;
   padding: 0 18px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .btnSecondary:hover {
   background: #f8fafc;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .btnPrimary {
@@ -426,7 +425,7 @@
 .previewCard {
   position: relative;
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -442,7 +441,7 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .previewProfile {
@@ -484,7 +483,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .tagSales {
@@ -538,28 +537,28 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .previewContactIcon {
   display: grid;
   place-items: center;
   width: 16px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 .previewDivider {
   height: 1px;
   margin: 14px 0;
-  background: var(--border);
+  background: hsl(var(--border));
 }
 
 .previewSectionTitle {
   margin: 0 0 12px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .previewPermissionList {
@@ -588,7 +587,7 @@
   margin: 0 0 2px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .previewPermissionValue {
@@ -602,13 +601,13 @@
   margin: 0 0 14px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .recordsCard {
   margin-top: 20px;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -616,10 +615,10 @@
 
 .recordsHeader {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .tableWrap {
@@ -638,15 +637,15 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #fafbfc;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   white-space: nowrap;
 }
 
 .dataTable td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   vertical-align: middle;
 }
 
@@ -676,13 +675,13 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .memberMeta p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .roleTagSales {
@@ -710,7 +709,7 @@
   padding: 3px 10px;
   border-radius: 10px;
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 12px;
   font-weight: 500;
 }
@@ -773,9 +772,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid hsl(var(--border));
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .paginationRight {
@@ -788,10 +787,10 @@
 .pageBtn {
   min-width: 28px;
   height: 28px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 12px;
   cursor: pointer;
   display: grid;
@@ -812,31 +811,31 @@
 .v1Hint {
   margin-top: 12px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   line-height: 1.5;
 }
 
 .hintText {
   margin-top: 8px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .pageSizeSelect {
   height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .methodCell {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .feedback {
@@ -848,8 +847,8 @@
 
 .feedbackInfo {
   background: #f8fafc;
-  border: 1px solid var(--border);
-  color: var(--muted-foreground);
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
 }
 
 .feedbackError {
@@ -862,7 +861,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 10px;
   background: #fafbfc;
 }

@@ -19,14 +19,18 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@qiyun/ui";
 
+import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/components/console/console-request-error";
 import { loadReportSnapshot } from "@/lib/reports/data";
 import { reportWithBots } from "@/lib/reports/mock-data";
 import type { ReportSnapshot } from "@/lib/reports/types";
 import { fetchChannelAttribution } from "@/lib/sales/api";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
 import type { ChannelAttributionItem, SourceType } from "@/lib/sales/types";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { MOCK_CHANNEL_ATTRIBUTION } from "@/lib/sales/analytics-mock-data";
+import { buildChannelsCsv, reportFileName } from "@/lib/reports/export-helpers";
+import { triggerDownload } from "@/lib/reports/export-api";
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
 import styles from "@/styles/channel-conversion.module.css";
 
@@ -44,15 +48,14 @@ interface ChannelRow {
   leadRate: string;
   trend: number[];
   color: string;
+  won: number;
 }
 
-const DEMO_CHANNELS: ChannelRow[] = [];
-
 const FUNNEL_STEPS = [
-  { key: "visits", label: "页面访问", icon: Eye, color: "linear-gradient(90deg,#60a5fa,#3b82f6)", pct: 100 },
-  { key: "chat", label: "发起对话", icon: MessageCircle, color: "linear-gradient(90deg,#c084fc,#a855f7)", pct: 29.5 },
-  { key: "effective", label: "有效对话", icon: MessageSquare, color: "linear-gradient(90deg,#22d3ee,#06b6d4)", pct: 20.6 },
-  { key: "leads", label: "收集线索", icon: UserPlus, color: "linear-gradient(90deg,#4ade80,#22c55e)", pct: 5.0 },
+  { key: "visits", label: "询盘数", icon: Eye, color: "linear-gradient(90deg,#60a5fa,#3b82f6)", pct: 100 },
+  { key: "chat", label: "进入报价", icon: MessageCircle, color: "linear-gradient(90deg,#c084fc,#a855f7)", pct: 29.5 },
+  { key: "effective", label: "报价跟进", icon: MessageSquare, color: "linear-gradient(90deg,#22d3ee,#06b6d4)", pct: 20.6 },
+  { key: "leads", label: "有效询盘", icon: UserPlus, color: "linear-gradient(90deg,#4ade80,#22c55e)", pct: 5.0 },
   { key: "won", label: "成交客户", icon: Handshake, color: "linear-gradient(90deg,#fb923c,#f97316)", pct: 0.8 },
 ];
 
@@ -78,18 +81,27 @@ function mapSourceToRow(item: ChannelAttributionItem, index: number): ChannelRow
     sales_link: { name: "AI独立页", sub: "独立落地页", icon: "link", iconBg: "#f5f3ff", iconColor: "#8b5cf6", color: "#10b981" },
     wechat: { name: "微信渠道", sub: "微信接入", icon: "link", iconBg: "#f0fdf4", iconColor: "#22c55e", color: "#22c55e" },
     expo: { name: "展会活动", sub: "线下展会", icon: "globe", iconBg: "#fff7ed", iconColor: "#f97316", color: "#f97316" },
-    other: { name: item.sourceLabel, sub: "其他渠道", icon: "link", iconBg: "#f3f4f6", iconColor: "#6b7280", color: "#94a3b8" },
+    other: {
+      name: formatChannelSourceLabel(item),
+      sub: "其他渠道",
+      icon: "link",
+      iconBg: "#f3f4f6",
+      iconColor: "#6b7280",
+      color: "#94a3b8",
+    },
   };
+  const readable = formatChannelSourceLabel(item);
   const base = templates[item.sourceType] ?? templates.other;
-  const visits = Math.round(item.inquiryCount * 3.2);
-  const conversations = Math.max(item.quoteCount, Math.round(visits * 0.29));
-  const leads = Math.max(1, Math.round(conversations * 0.17));
-  const trend: number[] = [];
+  // 仅使用归因 API 真实字段，不推算访问量/对话量
+  const visits = item.inquiryCount;
+  const conversations = item.quoteCount;
+  const leads = item.inquiryCount;
+  const won = item.wonCount;
 
   return {
     id: `${item.sourceType}-${item.sourceCode ?? index}`,
-    name: base.name ?? item.sourceLabel,
-    sub: base.sub ?? item.sourceLabel,
+    name: base.name && item.sourceType !== "other" ? base.name : readable,
+    sub: base.sub ?? readable,
     icon: base.icon ?? "link",
     iconBg: base.iconBg ?? "#f3f4f6",
     iconColor: base.iconColor ?? "#6b7280",
@@ -97,13 +109,17 @@ function mapSourceToRow(item: ChannelAttributionItem, index: number): ChannelRow
     conversations,
     chatRate: pct(conversations, visits),
     leads,
-    leadRate: pct(leads, conversations),
-    trend,
+    leadRate: pct(won, leads),
+    trend: [],
     color: base.color ?? "#3b82f6",
+    won,
   };
 }
 
 function Sparkline({ values }: { values: number[] }) {
+  if (values.length === 0) {
+    return <span style={{ color: "#9ca3af", fontSize: 12 }}>暂无</span>;
+  }
   return (
     <div className={styles.sparkline} aria-hidden>
       {values.map((h, i) => (
@@ -154,14 +170,14 @@ function LeadDonut({ total, segments }: { total: number; segments: Array<{ color
 }
 
 function buildChannelsFromApi(items: ChannelAttributionItem[]): ChannelRow[] {
-  return items.map(mapSourceToRow).slice(0, 5);
+  return items.map(mapSourceToRow);
 }
 
 function buildKpis(rows: ChannelRow[], report: ReportSnapshot | null) {
   const visits = rows.reduce((s, r) => s + r.visits, 0);
   const conversations = rows.reduce((s, r) => s + r.conversations, 0);
   const leads = report?.period.leads7d ?? rows.reduce((s, r) => s + r.leads, 0);
-  const conversion = pct(leads, conversations);
+  const conversion = pct(leads, Math.max(visits, 1));
 
   return {
     visits,
@@ -171,19 +187,23 @@ function buildKpis(rows: ChannelRow[], report: ReportSnapshot | null) {
   };
 }
 
-function buildFunnelCounts(kpis: { visits: number; conversations: number; leads: number }) {
+function buildFunnelCounts(rows: ChannelRow[]) {
+  const inquiries = rows.reduce((s, r) => s + r.visits, 0);
+  const quotes = rows.reduce((s, r) => s + r.conversations, 0);
+  const won = rows.reduce((s, r) => s + r.won, 0);
   return {
-    visits: kpis.visits,
-    chat: kpis.conversations,
-    effective: Math.round(kpis.conversations * 0.7),
-    leads: kpis.leads,
-    won: Math.max(1, Math.round(kpis.leads * 0.15)),
+    visits: inquiries,
+    chat: quotes,
+    effective: quotes,
+    leads: inquiries,
+    won,
   };
 }
 
 export function ChannelConversionWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
+  const [isPreview, setIsPreview] = useState(false);
   const [channels, setChannels] = useState<ChannelAttributionItem[]>([]);
   const [report, setReport] = useState<ReportSnapshot | null>(null);
   const [period, setPeriod] = useState("7d");
@@ -195,18 +215,20 @@ export function ChannelConversionWorkspace() {
     try {
       const mode = await fetchConsoleMode().catch(() => null);
       const preview = mode ? isPreviewMode(mode) : true;
+      setIsPreview(preview);
       if (preview) {
         setChannels(MOCK_CHANNEL_ATTRIBUTION);
         setReport(reportWithBots);
-        setLoading(false);
         return;
       }
       const [nextChannels, nextReport] = await Promise.all([fetchChannelAttribution(), loadReportSnapshot()]);
       setChannels(nextChannels);
       setReport(nextReport);
-    } catch {
-      setChannels(MOCK_CHANNEL_ATTRIBUTION);
-      setReport(reportWithBots);
+    } catch (reason) {
+      setError(reason);
+      setIsPreview(false);
+      setChannels([]);
+      setReport(null);
     } finally {
       setLoading(false);
     }
@@ -222,7 +244,17 @@ export function ChannelConversionWorkspace() {
 
   const rows = useMemo(() => buildChannelsFromApi(channels), [channels]);
   const kpis = useMemo(() => buildKpis(rows, report), [rows, report]);
-  const funnelCounts = useMemo(() => buildFunnelCounts(kpis), [kpis]);
+  const funnelCounts = useMemo(() => buildFunnelCounts(rows), [rows]);
+
+  const handleExport = useCallback(() => {
+    const periodLabel =
+      period === "7d" ? "最近7天" : period === "30d" ? "最近30天" : period === "month" ? "本月" : "本季度";
+    const csv = buildChannelsCsv(channels, periodLabel);
+    triggerDownload(
+      new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }),
+      reportFileName("channels"),
+    );
+  }, [channels, period]);
 
   const totals = useMemo(
     () => ({
@@ -249,8 +281,9 @@ export function ChannelConversionWorkspace() {
 
   return (
     <div className={styles.page}>
+      {isPreview ? <ConsoleDataModeBanner feature="渠道转化分析" /> : null}
       {error ? (
-        <ConsoleRequestError {...resolveRequestErrorPresentation(error, "部分渠道数据加载失败。")} />
+        <ConsoleRequestError {...resolveRequestErrorPresentation(error, "渠道数据加载失败，请稍后重试。")} />
       ) : null}
 
       <div className={styles.pageHeader}>
@@ -277,15 +310,15 @@ export function ChannelConversionWorkspace() {
         <button type="button" className={styles.btnOutline}>
           <Calendar size={14} aria-hidden /> 自定义
         </button>
-        <button type="button" className={styles.btnOutline}>
+        <button type="button" className={styles.btnOutline} onClick={handleExport} disabled={!channels.length}>
           <Download size={14} aria-hidden /> 导出
         </button>
       </div>
 
       <div className={styles.kpiGrid}>
         {[
-          { icon: Eye, bg: "#3b82f6", color: "#fff", label: "总访问量", value: formatNum(kpis.visits), trend: null },
-          { icon: MessageSquare, bg: "#8b5cf6", color: "#fff", label: "总对话数", value: formatNum(kpis.conversations), trend: null },
+          { icon: Eye, bg: "#3b82f6", color: "#fff", label: "总询盘数", value: formatNum(kpis.visits), trend: null },
+          { icon: MessageSquare, bg: "#8b5cf6", color: "#fff", label: "总报价数", value: formatNum(kpis.conversations), trend: null },
           { icon: Users, bg: "#22c55e", color: "#fff", label: "收集线索", value: formatNum(kpis.leads), trend: null },
           { icon: Percent, bg: "#f59e0b", color: "#fff", label: "整体转化率", value: kpis.conversion, trend: null },
         ].map(({ icon: Icon, bg, color, label, value, trend }) => (
@@ -310,10 +343,10 @@ export function ChannelConversionWorkspace() {
           <h3>渠道对比明细</h3>
           <div className={styles.legend}>
             <span className={styles.legendItem}>
-              <span className={styles.legendDot} style={{ background: "#3b82f6" }} /> 访问量
+              <span className={styles.legendDot} style={{ background: "#3b82f6" }} /> 询盘数
             </span>
             <span className={styles.legendItem}>
-              <span className={styles.legendDot} style={{ background: "#a855f7" }} /> 对话数
+              <span className={styles.legendDot} style={{ background: "#a855f7" }} /> 报价数
             </span>
             <span className={styles.legendItem}>
               <span className={styles.legendDot} style={{ background: "#22c55e" }} /> 线索数
@@ -325,9 +358,9 @@ export function ChannelConversionWorkspace() {
             <thead>
               <tr>
                 <th>渠道名称</th>
-                <th>访问量</th>
-                <th>对话数</th>
-                <th>对话率</th>
+                <th>询盘数</th>
+                <th>报价数</th>
+                <th>报价率</th>
                 <th>线索数</th>
                 <th>线索转化率</th>
                 <th>7日趋势</th>
@@ -335,47 +368,57 @@ export function ChannelConversionWorkspace() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <div className={styles.channelCell}>
-                      <div className={styles.channelIcon} style={{ background: row.iconBg }}>
-                        <ChannelIcon type={row.icon} color={row.iconColor} />
-                      </div>
-                      <div>
-                        <div className={styles.channelName}>{row.name}</div>
-                        <div className={styles.channelSub}>{row.sub}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: 500, color: "#111827" }}>{formatNum(row.visits)}</td>
-                  <td>{formatNum(row.conversations)}</td>
-                  <td className={styles.rateBlue}>{row.chatRate}</td>
-                  <td className={styles.rateGreen}>{formatNum(row.leads)}</td>
-                  <td className={styles.rateGreen}>{row.leadRate}</td>
-                  <td>
-                    <Sparkline values={row.trend} />
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <button type="button" className={styles.linkBtn}>
-                      详情
-                    </button>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>
+                    暂无渠道归因数据
                   </td>
                 </tr>
-              ))}
+              ) : (
+                rows.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <div className={styles.channelCell}>
+                        <div className={styles.channelIcon} style={{ background: row.iconBg }}>
+                          <ChannelIcon type={row.icon} color={row.iconColor} />
+                        </div>
+                        <div>
+                          <div className={styles.channelName}>{row.name}</div>
+                          <div className={styles.channelSub}>{row.sub}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: 500, color: "#111827" }}>{formatNum(row.visits)}</td>
+                    <td>{formatNum(row.conversations)}</td>
+                    <td className={styles.rateBlue}>{row.chatRate}</td>
+                    <td className={styles.rateGreen}>{formatNum(row.leads)}</td>
+                    <td className={styles.rateGreen}>{row.leadRate}</td>
+                    <td>
+                      <Sparkline values={row.trend} />
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button type="button" className={styles.linkBtn}>
+                        详情
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
-            <tfoot>
-              <tr>
-                <td>合计</td>
-                <td>{formatNum(totals.visits)}</td>
-                <td>{formatNum(totals.conversations)}</td>
-                <td className={styles.rateBlue}>{pct(totals.conversations, totals.visits)}</td>
-                <td className={styles.rateGreen}>{formatNum(totals.leads)}</td>
-                <td className={styles.rateGreen}>{pct(totals.leads, totals.conversations)}</td>
-                <td />
-                <td />
-              </tr>
-            </tfoot>
+            {rows.length > 0 ? (
+              <tfoot>
+                <tr>
+                  <td>合计</td>
+                  <td>{formatNum(totals.visits)}</td>
+                  <td>{formatNum(totals.conversations)}</td>
+                  <td className={styles.rateBlue}>{pct(totals.conversations, totals.visits)}</td>
+                  <td className={styles.rateGreen}>{formatNum(totals.leads)}</td>
+                  <td className={styles.rateGreen}>{pct(rows.reduce((s, r) => s + r.won, 0), totals.leads)}</td>
+                  <td />
+                  <td />
+                </tr>
+              </tfoot>
+            ) : null}
           </table>
         </div>
       </div>
@@ -396,7 +439,8 @@ export function ChannelConversionWorkspace() {
           <div className={styles.funnelList}>
             {FUNNEL_STEPS.map((step) => {
               const count = funnelCounts[step.key as keyof typeof funnelCounts];
-              const widthPct = step.key === "visits" ? 100 : (count / funnelCounts.visits) * 100;
+              const base = Math.max(funnelCounts.visits, 1);
+              const widthPct = step.key === "visits" ? 100 : (count / base) * 100;
               const Icon = step.icon;
               return (
                 <div key={step.key}>
@@ -410,12 +454,16 @@ export function ChannelConversionWorkspace() {
                     <div
                       className={styles.funnelBar}
                       style={{
-                        width: `${Math.max(widthPct, step.key === "won" ? 8 : 12)}%`,
+                        width: `${funnelCounts.visits === 0 ? 0 : Math.max(widthPct, step.key === "won" ? 8 : 12)}%`,
                         background: step.color,
                       }}
                     >
                       <span className={styles.funnelBarText}>
-                        {step.key === "visits" ? "100%" : `${((count / funnelCounts.visits) * 100).toFixed(1)}%`}
+                        {step.key === "visits"
+                          ? funnelCounts.visits === 0
+                            ? "—"
+                            : "100%"
+                          : pct(count, funnelCounts.visits)}
                       </span>
                     </div>
                   </div>
@@ -425,15 +473,15 @@ export function ChannelConversionWorkspace() {
           </div>
           <div className={styles.funnelStats}>
             <div className={styles.funnelStatRow}>
-              <span style={{ color: "#9ca3af" }}>访问→对话</span>
+              <span style={{ color: "#9ca3af" }}>询盘→报价</span>
               <span className={styles.rateBlue}>{pct(funnelCounts.chat, funnelCounts.visits)}</span>
             </div>
             <div className={styles.funnelStatRow}>
-              <span style={{ color: "#9ca3af" }}>对话→线索</span>
-              <span className={styles.rateGreen}>{pct(funnelCounts.leads, funnelCounts.chat)}</span>
+              <span style={{ color: "#9ca3af" }}>报价→跟进</span>
+              <span className={styles.rateGreen}>{pct(funnelCounts.effective, funnelCounts.chat)}</span>
             </div>
             <div className={styles.funnelStatRow}>
-              <span style={{ color: "#9ca3af" }}>线索→成交</span>
+              <span style={{ color: "#9ca3af" }}>询盘→成交</span>
               <span style={{ color: "#f97316", fontWeight: 500 }}>{pct(funnelCounts.won, funnelCounts.leads)}</span>
             </div>
             <div className={styles.funnelStatRow}>
@@ -459,7 +507,7 @@ export function ChannelConversionWorkspace() {
                 className={metricTab === "visits" ? styles.tabActive : styles.tab}
                 onClick={() => setMetricTab("visits")}
               >
-                访问量
+                询盘数
               </button>
             </div>
           </div>

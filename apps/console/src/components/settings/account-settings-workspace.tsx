@@ -33,6 +33,7 @@ import {
   type AccountSettings,
   type NotificationPreferences,
 } from "@/lib/settings/account-mock-data";
+import { readStoredAvatar, writeStoredAvatar } from "@/lib/settings/avatar-storage";
 import styles from "@/styles/account-settings.module.css";
 
 const NOTIF_ITEMS: Array<{
@@ -117,7 +118,9 @@ export function AccountSettingsWorkspace() {
       quoteStatus: account.notificationPrefs.quoteStatus ?? true,
       marketing: account.notificationPrefs.marketing ?? false,
     });
-    setAvatarUrl(account.avatarUrl);
+    const stored = readStoredAvatar(account.id);
+    setAvatarUrl(account.avatarUrl || stored || "");
+    setAvatarPreview(null);
     setFormReady(true);
   }
 
@@ -129,15 +132,34 @@ export function AccountSettingsWorkspace() {
   const [successMessage, setSuccessMessage] = useState("");
   const [confirmPasswordOpen, setConfirmPasswordOpen] = useState(false);
 
-  const handleAvatarFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => setAvatarPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  }, []);
+  const handleAvatarFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const file = files[0];
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 2 * 1024 * 1024) {
+        setSaveError("头像需小于 2MB，请压缩后重试。");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setAvatarPreview(dataUrl);
+        setAvatarUrl(dataUrl);
+        writeStoredAvatar(account.id, dataUrl);
+        setSaveError(null);
+        // 上传后立即落库，避免只预览、刷新后丢失
+        void apiMutate("/settings/account", "PATCH", { avatarUrl: dataUrl }).catch((err: unknown) => {
+          if (!isPreviewModeError(err)) {
+            setSaveError(err instanceof Error ? err.message : "头像保存失败，请点击「保存修改」重试。");
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    },
+    [account.id],
+  );
 
   const validateConfirmPassword = useCallback(
     (value: string) => {
@@ -150,6 +172,7 @@ export function AccountSettingsWorkspace() {
   const handleSaveProfile = useCallback(async () => {
     setSavingProfile(true);
     setSaveError(null);
+    const nextAvatar = avatarPreview || avatarUrl;
     try {
       await apiMutate("/settings/account", "PATCH", {
         nickname,
@@ -157,13 +180,21 @@ export function AccountSettingsWorkspace() {
         email,
         jobTitle,
         bio,
+        avatarUrl: nextAvatar,
         notificationPrefs: notifPrefs,
       });
+      setAvatarUrl(nextAvatar);
+      setAvatarPreview(null);
+      writeStoredAvatar(account.id, nextAvatar);
       setSuccessMessage("个人资料已成功更新。");
       setSuccessOpen(true);
+      setFormReady(false);
       refetch();
     } catch (err: unknown) {
       if (isPreviewModeError(err)) {
+        setAvatarUrl(nextAvatar);
+        setAvatarPreview(null);
+        writeStoredAvatar(account.id, nextAvatar);
         setSuccessMessage("个人资料已成功更新。（预览模式）");
         setSuccessOpen(true);
       } else {
@@ -172,7 +203,7 @@ export function AccountSettingsWorkspace() {
     } finally {
       setSavingProfile(false);
     }
-  }, [nickname, phone, email, jobTitle, bio, notifPrefs, refetch]);
+  }, [nickname, phone, email, jobTitle, bio, notifPrefs, avatarPreview, avatarUrl, account.id, refetch]);
 
   const handleChangePassword = useCallback(async () => {
     if (newPassword !== confirmPassword) {

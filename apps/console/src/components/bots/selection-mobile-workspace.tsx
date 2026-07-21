@@ -180,6 +180,7 @@ export function SelectionMobileWorkspace() {
         ) : null}
 
         <PageHeader
+          variant="compact"
           title="AI 选型页 · 手机端预览"
           description="模拟访客在手机端填写需求与留资的完整路径。"
           actions={

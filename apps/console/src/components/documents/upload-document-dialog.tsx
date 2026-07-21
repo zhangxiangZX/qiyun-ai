@@ -49,7 +49,10 @@ export function UploadDocumentDialog({
 
   function stageFile(fileList: FileList | null) {
     if (!fileList?.length || loading) return;
-    setStaged(fileList[0]);
+    const next = fileList[0];
+    setStaged(next);
+    // 选完文件后直接进入上传，避免「选了但没点上传」
+    onUpload(next, category);
   }
 
   function handleUpload() {

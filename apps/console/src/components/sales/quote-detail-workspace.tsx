@@ -33,16 +33,21 @@ import {
   getQuoteOpportunity,
   listQuoteDeliveryLogs,
   listQuoteDocuments,
+  markQuoteLost,
   retryQuoteDelivery,
   sendQuote,
   updateQuoteOpportunity,
   type QuoteDeliveryLog,
   type QuoteDocumentVersion,
+  type QuoteLostReason,
 } from "@/lib/sales/api";
+import { LOST_REASON_LABELS } from "@/lib/reports/lost-reasons-data";
 import { resolveReturnTo } from "@/lib/sales/list-return";
 import type { InquiryDetail, QuoteDetail } from "@/lib/sales/types";
 import { QUOTE_STAGE_LABELS } from "@/lib/sales/types";
 import styles from "@/styles/quote-detail.module.css";
+
+const LOST_REASON_OPTIONS = Object.entries(LOST_REASON_LABELS) as Array<[QuoteLostReason, string]>;
 
 interface ProgressStep {
   id: string;
@@ -209,6 +214,8 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [stageUpdating, setStageUpdating] = useState(false);
+  const [lostPickerOpen, setLostPickerOpen] = useState(false);
+  const [lostReasonDraft, setLostReasonDraft] = useState<QuoteLostReason>("price");
 
   const load = useCallback(async () => {
     if (!resolvedId) return;
@@ -379,14 +386,34 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
 
   async function handleStageUpdate(stage: QuoteDetail["stage"]) {
     if (!detail || stageUpdating) return;
+    if (stage === "lost") {
+      setLostPickerOpen(true);
+      return;
+    }
     setStageUpdating(true);
     setNotice(null);
     try {
       const updated = await updateQuoteOpportunity(detail.id, { stage });
       setDetail(updated);
-      setNotice(stage === "won" ? "已标记成交。" : stage === "lost" ? "已标记丢单。" : "报价状态已更新。");
+      setNotice(stage === "won" ? "已标记成交。" : "报价状态已更新。");
     } catch (nextError) {
       setNotice(getApiErrorMessage(nextError, "更新报价状态失败，请稍后重试。"));
+    } finally {
+      setStageUpdating(false);
+    }
+  }
+
+  async function handleConfirmLost() {
+    if (!detail || stageUpdating) return;
+    setStageUpdating(true);
+    setNotice(null);
+    try {
+      const updated = await markQuoteLost(detail.id, { lostReason: lostReasonDraft });
+      setDetail(updated);
+      setLostPickerOpen(false);
+      setNotice(`已标记丢单（${LOST_REASON_LABELS[lostReasonDraft] ?? lostReasonDraft}）。`);
+    } catch (nextError) {
+      setNotice(getApiErrorMessage(nextError, "标记丢单失败，请稍后重试。"));
     } finally {
       setStageUpdating(false);
     }
@@ -572,7 +599,11 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
               </div>
               <div>
                 <div className={styles.fieldLabel}>丢单原因</div>
-                <div className={styles.fieldValueNormal}>{detail.lostReason ?? "--"}</div>
+                <div className={styles.fieldValueNormal}>
+                  {detail.lostReason
+                    ? (LOST_REASON_LABELS[detail.lostReason as QuoteLostReason] ?? detail.lostReason)
+                    : "--"}
+                </div>
               </div>
             </div>
           </section>
@@ -825,6 +856,41 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
                 <ListTodo size={14} color="#3b82f6" /> 新增跟进
               </button>
             </div>
+            {lostPickerOpen ? (
+              <div className="mt-3 space-y-2 rounded-control border border-border bg-muted/30 p-3">
+                <p className="text-xs font-medium text-foreground">请选择丢单原因</p>
+                <select
+                  className="w-full rounded-control border border-border bg-background px-2 py-1.5 text-sm"
+                  value={lostReasonDraft}
+                  disabled={stageUpdating}
+                  onChange={(event) => setLostReasonDraft(event.target.value as QuoteLostReason)}
+                >
+                  {LOST_REASON_OPTIONS.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={styles.quickBtn}
+                    disabled={stageUpdating}
+                    onClick={() => void handleConfirmLost()}
+                  >
+                    确认丢单
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.quickBtn}
+                    disabled={stageUpdating}
+                    onClick={() => setLostPickerOpen(false)}
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <section className={styles.card}>

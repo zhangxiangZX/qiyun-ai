@@ -15,6 +15,7 @@ export function SuperAdminWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="超级管理员"
         description="审核官网试用申请、手工开通客户工作区，并查看已开通租户列表。"
       />

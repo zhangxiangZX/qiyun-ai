@@ -56,7 +56,7 @@ export const upstreamAcceptanceChecklist: AcceptanceChecklistItem[] = [
     id: "lead-patch",
     group: "data",
     label: "线索：打开详情 → PATCH 保存成功",
-    href: "/dashboard/leads",
+    href: "/dashboard/inquiries",
     upstreamOnly: true,
   },
   {

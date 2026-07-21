@@ -197,6 +197,7 @@ export function SelectionWizardWorkspace() {
         ) : null}
 
         <PageHeader
+          variant="compact"
           title="新建 AI 选型页"
           description="配置页面名称、绑定助手、产品范围与留资表单，完成后发布对外访问。"
           actions={

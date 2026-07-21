@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Download,
   Maximize2,
   Printer,
   Star,
@@ -13,7 +12,9 @@ import {
 } from "lucide-react";
 import { Badge, Button } from "@qiyun/ui";
 
+import { EnterpriseExportIcon } from "@/components/brand/enterprise-export-icon";
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
+import { useEnterpriseLogo } from "@/hooks/use-enterprise-logo";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { previewQuoteTemplate, setDefaultQuoteTemplate } from "@/lib/quotes/api";
 import { mockQuoteTemplates } from "@/lib/quotes/template-mock-data";
@@ -26,6 +27,7 @@ export function TemplatePreviewWorkspace({ templateId }: { templateId: string })
   const [zoom, setZoom] = useState(100);
   const [usingMock, setUsingMock] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const logoUrl = useEnterpriseLogo();
 
   useEffect(() => {
     void (async () => {
@@ -46,6 +48,18 @@ export function TemplatePreviewWorkspace({ templateId }: { templateId: string })
       }
     })();
   }, [templateId]);
+
+  const previewSample = useMemo(() => {
+    if (!sample && !logoUrl) return sample;
+    if (!sample) return sample;
+    return {
+      ...sample,
+      company: {
+        ...sample.company,
+        logoUrl: logoUrl || sample.company.logoUrl,
+      },
+    };
+  }, [sample, logoUrl]);
 
   if (!tpl) {
     return <p className="p-6 text-sm text-muted-foreground">加载预览中…</p>;
@@ -101,7 +115,7 @@ export function TemplatePreviewWorkspace({ templateId }: { templateId: string })
           className="origin-top"
           style={{ transform: `scale(${zoom / 100})`, transformOrigin: "top center" }}
         >
-          <QuoteHtmlPreview ref={sheetRef} config={tpl} sample={sample} />
+          <QuoteHtmlPreview ref={sheetRef} config={tpl} sample={previewSample} />
         </div>
       </div>
 
@@ -114,7 +128,7 @@ export function TemplatePreviewWorkspace({ templateId }: { templateId: string })
         <Button variant="outline" leftIcon={<Star size={16} />} onClick={() => void handleSetDefault()} disabled={tpl.isDefault}>
           设为默认模板
         </Button>
-        <Button leftIcon={<Download size={16} />} onClick={() => window.print()}>
+        <Button leftIcon={<EnterpriseExportIcon size={16} />} onClick={() => window.print()}>
           下载 PDF
         </Button>
       </div>

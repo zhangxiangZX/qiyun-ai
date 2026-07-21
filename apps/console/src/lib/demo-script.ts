@@ -34,7 +34,7 @@ export const previewDemoScriptSteps: PreviewDemoStep[] = [
   {
     id: "leads",
     label: "线索：筛选与详情演示",
-    href: "/dashboard/leads",
+    href: "/dashboard/inquiries",
   },
   {
     id: "sites",

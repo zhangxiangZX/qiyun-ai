@@ -8,7 +8,7 @@
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   color: #263a5e;
   background: #fff;
@@ -18,7 +18,7 @@
 
 .trigger:hover {
   border-color: #9bbcf7;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .chevron {
@@ -32,7 +32,7 @@
   z-index: 50;
   width: min(320px, calc(100vw - 32px));
   padding: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 12px 32px rgba(21, 47, 88, 0.12);
@@ -68,20 +68,20 @@
 
 .preset:hover {
   background: #f4f7ff;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .presetActive {
   border-color: #8eb4ff;
   background: #f0f6ff;
-  color: var(--primary);
+  color: hsl(var(--primary));
   font-weight: 500;
 }
 
 .presetActive::after,
 .preset:hover::after {
   content: "✓";
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .preset:hover::after {
@@ -124,7 +124,7 @@
 .navBtn:hover {
   border-color: #d7e3fb;
   background: #f5f8ff;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .weekdays,
@@ -157,7 +157,7 @@
 
 .day:hover {
   background: #eef3ff;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .dayInRange {
@@ -167,7 +167,7 @@
 }
 
 .daySelected {
-  background: var(--primary);
+  background: hsl(var(--primary));
   color: #fff;
   font-weight: 600;
 }
@@ -212,19 +212,19 @@
 }
 
 .reset {
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   background: #fff;
   color: #65728a;
 }
 
 .reset:hover {
   border-color: #a9c2f9;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .confirm {
-  border: 1px solid var(--primary);
-  background: var(--primary);
+  border: 1px solid hsl(var(--primary));
+  background: hsl(var(--primary));
   color: #fff;
 }
 

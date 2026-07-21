@@ -27,6 +27,7 @@ import {
   listInquiries,
   listQuoteOpportunities,
 } from "@/lib/sales/api";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
 import type { ChannelAttributionItem, InquiryListItem, QuoteListItem, SalesOverviewMetrics } from "@/lib/sales/types";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { MOCK_CHANNEL_ATTRIBUTION, MOCK_SALES_OVERVIEW } from "@/lib/sales/analytics-mock-data";
@@ -223,7 +224,7 @@ export function ChannelAnalysisWorkspace() {
         const newCust = Math.max(1, Math.round(item.inquiryCount * 0.08));
         return {
           key: `${item.sourceCode ?? "none"}-${item.sourceType}`,
-          label: item.sourceLabel,
+          label: formatChannelSourceLabel(item),
           totalInquiries: item.inquiryCount,
           effectiveInquiries: effective,
           newCustomers: newCust,
@@ -262,7 +263,7 @@ export function ChannelAnalysisWorkspace() {
   const donutItems = useMemo(() => {
     const top = [...channels].sort((a, b) => b.inquiryCount - a.inquiryCount).slice(0, 6);
     return top.map((item, index) => ({
-      label: item.sourceLabel,
+      label: formatChannelSourceLabel(item),
       count: item.inquiryCount,
       color: DONUT_COLORS[index % DONUT_COLORS.length],
     }));

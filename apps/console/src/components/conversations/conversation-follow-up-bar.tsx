@@ -91,7 +91,7 @@ export function ConversationFollowUpBar({
 
         {listItem.hasLead ? (
           <Button type="button" variant="outline" size="sm" className="min-h-11" asChild>
-            <Link href="/dashboard/leads">查看线索</Link>
+            <Link href="/dashboard/inquiries">查看询盘</Link>
           </Button>
         ) : null}
 

@@ -7,9 +7,9 @@ import { Button, Select } from "@qiyun/ui";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 import {
-  buildPreviewExportTask,
   createReportExport,
   mapUiTypeToApiType,
+  type ReportExportApiType,
   type ReportExportTask,
   type ReportExportUiType,
 } from "@/lib/reports/export-api";
@@ -24,12 +24,13 @@ export function ReportExportModal({
   open,
   onClose,
   previewMode = false,
-  onCreated,
+  onExport,
 }: {
   open: boolean;
   onClose: () => void;
   previewMode?: boolean;
-  onCreated?: (task: ReportExportTask) => void;
+  /** 由页面拉取真实数据并生成 CSV；返回任务用于写入历史 */
+  onExport: (type: ReportExportApiType) => Promise<ReportExportTask>;
 }) {
   const [reportType, setReportType] = useState<ReportExportUiType>("sales");
   const [exporting, setExporting] = useState(false);
@@ -42,12 +43,16 @@ export function ReportExportModal({
     setExporting(true);
     setError(null);
     try {
+      const apiType = mapUiTypeToApiType(reportType);
       if (previewMode) {
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        onCreated?.(buildPreviewExportTask(mapUiTypeToApiType(reportType)));
+        await onExport(apiType);
       } else {
-        const task = await createReportExport(mapUiTypeToApiType(reportType));
-        onCreated?.(task);
+        try {
+          await createReportExport(apiType);
+        } catch {
+          // memory / 旧后端可能无法持久化导出任务；仍用前端 CSV 保证有数据可下。
+        }
+        await onExport(apiType);
       }
       onClose();
     } catch (nextError) {
@@ -73,7 +78,7 @@ export function ReportExportModal({
         <div className="space-y-5 px-6 py-5">
           {previewMode ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              预览模式下将生成示例导出任务并写入导出历史，但不会连接真实数据。
+              当前为演示环境：将按页面已加载的业务数据生成 CSV；若暂无数据会导出含表头的空表。
             </p>
           ) : null}
 

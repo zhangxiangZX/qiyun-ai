@@ -535,6 +535,7 @@ export function FollowUpTasksWorkspace() {
       dueAt: new Date(`${form.dueDate}T09:00:00`).toISOString(),
       customerName: form.customerName.trim(),
       note: `优先级：${form.priority === "high" ? "高" : form.priority === "medium" ? "中" : "低"}`,
+      priority: form.priority,
     })
       .then(async () => {
         setForm({ title: "", customerName: "", dueDate: "", priority: "medium" });

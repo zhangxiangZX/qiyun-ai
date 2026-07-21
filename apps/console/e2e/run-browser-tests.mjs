@@ -293,7 +293,7 @@ async function runTests(page, context, chromium) {
     const guestContext = await guest.newContext({ baseURL });
     const guestPage = await guestContext.newPage();
     await guestPage.goto("/login");
-    await guestPage.getByRole("button", { name: /忘记密码/ }).click();
+    await guestPage.getByLabel("登录区域").getByRole("link", { name: "忘记密码？重置密码" }).click();
     await guestPage.waitForURL(/\/forgot-password/, { timeout: 10_000 });
     await guestPage.getByRole("heading", { name: "找回密码" }).waitFor();
     await guest.close();
@@ -306,7 +306,7 @@ async function runTests(page, context, chromium) {
     await guestPage.goto("/login");
     await guestPage.getByLabel("登录区域").getByRole("link", { name: "申请试用" }).click();
     await guestPage.waitForURL(/\/trial/, { timeout: 10_000 });
-    await guestPage.getByRole("heading", { name: "申请试用 AI云" }).waitFor();
+    await guestPage.getByRole("heading", { name: "申请试用 企云图 AI" }).waitFor();
     await guestPage.goto("/login");
     await guestPage.getByRole("link", { name: "验证码登录" }).click();
     await guestPage.waitForURL(/\/login\/code/, { timeout: 10_000 });

@@ -222,6 +222,7 @@ export function AuditLogWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="操作日志"
         description="记录系统中所有用户的操作行为，支持按条件筛选和导出日志。"
       />
@@ -280,7 +281,7 @@ export function AuditLogWorkspace() {
             <label className="text-sm lg:col-span-2">
               <span className="mb-1 block text-xs text-muted-foreground">操作模块</span>
               <select
-                className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                className="w-full rounded-md border border-input px-3 py-2 text-sm"
                 value={moduleFilter}
                 onChange={(event) => {
                   setModuleFilter(event.target.value);
@@ -298,7 +299,7 @@ export function AuditLogWorkspace() {
             <label className="text-sm">
               <span className="mb-1 block text-xs text-muted-foreground">操作用户</span>
               <select
-                className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                className="w-full rounded-md border border-input px-3 py-2 text-sm"
                 value={userFilter}
                 onChange={(event) => {
                   setUserFilter(event.target.value);
@@ -316,7 +317,7 @@ export function AuditLogWorkspace() {
             <label className="text-sm">
               <span className="mb-1 block text-xs text-muted-foreground">操作类型</span>
               <select
-                className="w-full rounded-md border border-border px-3 py-2 text-sm"
+                className="w-full rounded-md border border-input px-3 py-2 text-sm"
                 value={actionFilter}
                 onChange={(event) => {
                   setActionFilter(event.target.value);
@@ -336,7 +337,7 @@ export function AuditLogWorkspace() {
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  className="w-full rounded-md border border-border py-2 pl-8 pr-3 text-sm"
+                  className="w-full rounded-md border border-input py-2 pl-8 pr-3 text-sm"
                   placeholder="搜索用户、模块或操作内容"
                   value={query}
                   onChange={(e) => {

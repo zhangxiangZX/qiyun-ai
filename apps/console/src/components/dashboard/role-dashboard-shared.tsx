@@ -441,8 +441,8 @@ export function RoleDashboardShell({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">{roleLabel}</p>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
-              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+              {/* 顶栏已有问候标题，这里只保留说明，避免双头 */}
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description || title}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {actions}

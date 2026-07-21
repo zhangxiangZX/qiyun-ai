@@ -10,6 +10,7 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { useApiResource } from "@/lib/api/use-api-resource";
 import type { WorkspaceMemberSummary } from "@/lib/auth/members";
+import { filterEnterpriseTeamMembers } from "@/lib/team/member-display";
 import type { WorkspaceMemberRole } from "@/lib/team/role-types";
 import {
   buildPlatformRoles,
@@ -184,7 +185,8 @@ export function RolePermissionsWorkspace() {
   const permissions = displayMap;
   const roleMembers = useMemo(() => {
     if (isPreview) return ROLE_MEMBERS_PREVIEW;
-    return listRoleMembers(members, selectedRole.id as WorkspaceMemberRole);
+    const enterpriseMembers = filterEnterpriseTeamMembers(members);
+    return listRoleMembers(enterpriseMembers, selectedRole.id as WorkspaceMemberRole);
   }, [isPreview, members, selectedRole.id]);
 
   const filteredRoles = useMemo(() => {
@@ -205,7 +207,7 @@ export function RolePermissionsWorkspace() {
   if (loading) {
     return (
       <ConsolePage>
-        <PageHeader title="角色权限" description="管理系统角色和权限，控制不同角色的功能访问和数据权限。" />
+        <PageHeader variant="compact" title="角色权限" description="管理系统角色和权限，控制不同角色的功能访问和数据权限。" />
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature="角色权限" />
         </ConsolePageAlerts>
@@ -224,7 +226,7 @@ export function RolePermissionsWorkspace() {
   if (error && !isPreview) {
     return (
       <ConsolePage>
-        <PageHeader title="角色权限" description="管理系统角色和权限，控制不同角色的功能访问和数据权限。" />
+        <PageHeader variant="compact" title="角色权限" description="管理系统角色和权限，控制不同角色的功能访问和数据权限。" />
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature="角色权限" />
         </ConsolePageAlerts>
@@ -236,6 +238,7 @@ export function RolePermissionsWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="角色权限"
         description="配置 V1 平台预置角色在各功能模块的访问权限。成员角色分配请在「邀请成员」页操作。"
         actions={

@@ -34,7 +34,7 @@ export function isInquiryModulePath(pathname: string): boolean {
 }
 
 export function getInquiryBreadcrumbLabel(pathname: string): string | null {
-  if (pathname === INQUIRY_NEW_PATH) return "新建询盘";
+  if (pathname === INQUIRY_NEW_PATH) return "表单新建询盘";
   if (isInquiryAssignTabActive(pathname)) return "询盘分配";
   if (pathname === INQUIRY_CENTER_PATH) return null;
   if (pathname.startsWith(`${INQUIRY_CENTER_PATH}/`)) return "询盘详情";

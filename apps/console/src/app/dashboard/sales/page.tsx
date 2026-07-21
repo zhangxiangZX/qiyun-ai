@@ -1,12 +1,6 @@
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import { SalesFunnelWorkspace } from "@/components/sales/sales-funnel-workspace";
-import { PageSkeleton } from "@/components/layout/page-skeleton";
-
+/** 成交漏斗已从 V1 交付导航移除；旧入口统一转到渠道分析。 */
 export default function SalesDashboardPage() {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <SalesFunnelWorkspace />
-    </Suspense>
-  );
+  redirect("/dashboard/reports/channel");
 }

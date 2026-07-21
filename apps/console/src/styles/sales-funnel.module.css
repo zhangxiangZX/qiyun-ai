@@ -15,7 +15,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .updateTime {
@@ -24,7 +24,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .datePicker {
@@ -33,11 +33,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
@@ -52,7 +52,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -62,14 +62,14 @@
   margin: 0 0 4px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .metricValue {
   margin-bottom: 6px;
   font-size: 24px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   line-height: 1.1;
 }
 
@@ -117,7 +117,7 @@
 
 .card {
   padding: 22px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -134,7 +134,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardLink {
@@ -189,27 +189,27 @@
 }
 
 .funnelRowHead {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
 .funnelLabel {
   width: 70px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .funnelNum {
   width: 60px;
   text-align: right;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .funnelRate {
   width: 50px;
   text-align: right;
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .funnelDelta {
@@ -234,7 +234,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .overallRate span {
@@ -255,19 +255,19 @@
   margin: 0 0 6px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .convBig {
   font-size: 26px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .convUnit {
   font-size: 16px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .convSub {
@@ -276,7 +276,7 @@
 }
 
 .convSubMuted {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .progressList {
@@ -294,13 +294,13 @@
 }
 
 .progressLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .progressBarBg {
   height: 8px;
   border-radius: 4px;
-  background: var(--border);
+  background: hsl(var(--border));
   overflow: hidden;
 }
 
@@ -312,7 +312,7 @@
 
 .progressRate {
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .progressDelta {
@@ -339,13 +339,13 @@
   border-bottom: 1px solid #f1f5f9;
   text-align: left;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .channelTable td {
   padding: 12px 0;
   border-bottom: 1px solid #f8fafc;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .channelTable tr:last-child td {
@@ -392,12 +392,12 @@
 .donutCenterNum {
   font-size: 22px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .donutCenterLabel {
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .legendList {
@@ -427,7 +427,7 @@
 }
 
 .legendValue {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .leadHead {
@@ -437,7 +437,7 @@
   margin-bottom: 4px;
   border-bottom: 1px solid #f1f5f9;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .leadItem {
@@ -455,7 +455,7 @@
 
 .leadName {
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .leadStage {
@@ -483,13 +483,13 @@
 
 .leadOwner {
   text-align: center;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .leadAmount {
   text-align: right;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .quickGrid {
@@ -504,7 +504,7 @@
   align-items: center;
   gap: 10px;
   padding: 18px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 10px;
   background: #f8fafc;
   text-decoration: none;
@@ -526,18 +526,18 @@
 .quickLabel {
   font-size: 13px;
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .emptyHint {
   margin: 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .skeleton {
   border-radius: 12px;
-  background: linear-gradient(90deg, var(--border) 25%, #f8fafc 50%, var(--border) 75%);
+  background: linear-gradient(90deg, hsl(var(--border)) 25%, #f8fafc 50%, hsl(var(--border)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }

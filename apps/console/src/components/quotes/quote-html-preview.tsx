@@ -92,12 +92,21 @@ export const QuoteHtmlPreview = forwardRef<HTMLDivElement, QuoteHtmlPreviewProps
           style={config.logoPosition === "center" || config.logoPosition === "right" ? { flexDirection: "row" } : undefined}
         >
           <div className={`flex items-center gap-3 ${config.logoPosition === "center" ? "flex-col text-center" : ""}`}>
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-lg text-white"
-              style={{ background: color }}
-            >
-              <span className="text-base font-bold">{sample.company.name.slice(0, 1)}</span>
-            </div>
+            {sample.company.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={sample.company.logoUrl}
+                alt={`${sample.company.name} Logo`}
+                className="h-12 w-12 rounded-lg object-contain"
+              />
+            ) : (
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-lg text-white"
+                style={{ background: color }}
+              >
+                <span className="text-base font-bold">{sample.company.name.slice(0, 1)}</span>
+              </div>
+            )}
             <div className={config.logoPosition === "center" ? "text-center" : ""}>
               <p className="text-lg font-bold" style={{ color }}>
                 {sample.company.name}

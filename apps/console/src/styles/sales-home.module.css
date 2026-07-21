@@ -37,7 +37,7 @@
 }
 
 .todoType[data-tone="blue"] {
-  color: var(--primary);
+  color: hsl(var(--primary));
   background: #e8f0ff;
 }
 
@@ -92,13 +92,13 @@
 }
 
 .todoMeta b[data-priority="低"] {
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .cardFooterLink {
   display: block;
   padding: 10px 16px 14px;
-  color: var(--primary);
+  color: hsl(var(--primary));
   font-size: 12px;
   text-align: center;
   text-decoration: none;
@@ -156,7 +156,7 @@
   height: 7px;
   margin-top: 2px;
   border-radius: 50%;
-  background: var(--primary);
+  background: hsl(var(--primary));
 }
 
 .timeline li[data-tone="success"] i {
@@ -198,7 +198,7 @@
 }
 
 .timeline li[data-tone="default"] em {
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .chartWrap {
@@ -234,7 +234,7 @@
 
 .customerList li:nth-child(n + 4) .customerRank {
   color: #49607e;
-  background: var(--border);
+  background: hsl(var(--border));
 }
 
 .intent {
@@ -256,7 +256,7 @@
 }
 
 .intent[data-level="低"] {
-  color: var(--primary);
+  color: hsl(var(--primary));
   background: #e7efff;
 }
 
@@ -369,9 +369,9 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 5px;
-  color: var(--primary);
+  color: hsl(var(--primary));
   background: #fff;
   font-size: 12px;
   cursor: pointer;

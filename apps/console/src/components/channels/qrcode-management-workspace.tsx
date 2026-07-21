@@ -497,7 +497,7 @@ export function QrcodeManagementWorkspace() {
                 <div className="space-y-3 border-b border-border p-4">
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     <select
-                      className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                       value={typeFilter}
                       onChange={(event) =>
                         setTypeFilter(event.target.value as "all" | QrcodeEntryKind)
@@ -508,7 +508,7 @@ export function QrcodeManagementWorkspace() {
                       <option value="sales_link">销售链接</option>
                     </select>
                     <select
-                      className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                       value={statusFilter}
                       onChange={(event) =>
                         setStatusFilter(event.target.value as "all" | QrcodeEntryStatus)
@@ -521,7 +521,7 @@ export function QrcodeManagementWorkspace() {
                       <option value="draft">草稿</option>
                     </select>
                     <select
-                      className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                       value={creatorFilter}
                       onChange={(event) => setCreatorFilter(event.target.value)}
                     >
@@ -553,7 +553,7 @@ export function QrcodeManagementWorkspace() {
                     <div className="relative min-w-0 flex-1">
                       <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <input
-                        className="w-full rounded-md border border-border py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full rounded-md border border-input py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="搜索名称或备注"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}

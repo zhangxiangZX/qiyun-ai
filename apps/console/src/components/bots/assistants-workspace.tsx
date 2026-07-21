@@ -310,6 +310,7 @@ export function AssistantsWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="AI 助手"
         description="管理企业专属 AI 助手，配置知识与能力，持续优化客户对话体验。"
         actions={
@@ -385,7 +386,7 @@ export function AssistantsWorkspace() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as OnlineStatus | "全部")}
-                  className="h-10 rounded-control border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="h-10 rounded-control border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="全部">全部状态</option>
                   <option value="在线">在线</option>
@@ -397,16 +398,12 @@ export function AssistantsWorkspace() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="搜索助手名称、场景、知识库..."
-                    className="h-10 w-full rounded-control border border-border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="h-10 w-full rounded-control border border-input bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </div>
                 <Button variant="outline" size="sm" type="button" onClick={() => refetch()}>
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                   刷新
-                </Button>
-                <Button size="sm" type="button" onClick={() => setDialogOpen(true)}>
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  新建助手
                 </Button>
               </div>
             </div>

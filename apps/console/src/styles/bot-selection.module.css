@@ -21,7 +21,7 @@
 
 .kpiCard {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -36,7 +36,7 @@
 .kpiLabel {
   margin-bottom: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .kpiValue {
@@ -73,7 +73,7 @@
 
 .card {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -109,13 +109,13 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   pointer-events: none;
 }
 
 .searchInput {
   padding: 6px 12px 6px 32px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   width: 176px;
@@ -129,7 +129,7 @@
 
 .select {
   padding: 6px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   color: #475569;
@@ -142,10 +142,10 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
@@ -161,7 +161,7 @@
 
 .assistantCard {
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   cursor: pointer;
@@ -198,7 +198,7 @@
   display: grid;
   place-items: center;
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
@@ -228,7 +228,7 @@
   gap: 4px;
   margin-bottom: 8px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .statsRow {
@@ -236,7 +236,7 @@
   flex-wrap: wrap;
   gap: 24px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .assistantActions {
@@ -252,7 +252,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .toggle {
@@ -288,7 +288,7 @@
 
 .actionBtn {
   padding: 6px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #475569;
@@ -314,7 +314,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
@@ -347,7 +347,7 @@
 
 .tagGray {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .tagOrange {
@@ -363,7 +363,7 @@
   padding-top: 16px;
   border-top: 1px solid #f1f5f9;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .pageControls {
@@ -376,7 +376,7 @@
   min-width: 32px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #475569;
@@ -436,7 +436,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #475569;
@@ -457,14 +457,14 @@
   padding: 48px 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .loadingText {
   padding: 48px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 /* Preview panel */
@@ -489,7 +489,7 @@
 }
 
 .previewFrame {
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -500,7 +500,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   background: #f8fafc;
 }
 
@@ -519,7 +519,7 @@
   flex: 1;
   text-align: center;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .previewBody {
@@ -539,7 +539,7 @@
   display: grid;
   place-items: center;
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
@@ -561,7 +561,7 @@
 
 .previewOnline {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .chatBubble {
@@ -577,7 +577,7 @@
 .chatTime {
   margin-top: 4px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .suggestTitle {
@@ -620,7 +620,7 @@
 .chatInput {
   width: 100%;
   padding: 8px 40px 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   outline: none;
@@ -655,7 +655,7 @@
   gap: 4px;
   margin-top: 8px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1024px) {

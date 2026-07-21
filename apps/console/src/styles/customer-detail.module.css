@@ -10,7 +10,7 @@
   gap: 8px;
   margin-bottom: 16px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .breadcrumbSep {
@@ -18,14 +18,14 @@
 }
 
 .breadcrumbActive {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-weight: 500;
 }
 
 .headerCard {
   padding: 24px;
   margin-bottom: 0;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px 12px 0 0;
   background: #fff;
 }
@@ -50,7 +50,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .metaRow {
@@ -58,7 +58,7 @@
   flex-wrap: wrap;
   gap: 20px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .metaRow span {
@@ -78,7 +78,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
@@ -105,12 +105,12 @@
 }
 
 .infoStripLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .infoStripValue {
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .infoStripLink {
@@ -120,7 +120,7 @@
 
 .tabBar {
   padding: 0 24px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-top: none;
   border-radius: 0 0 0 0;
   background: #fff;
@@ -130,7 +130,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .tabBtn {
@@ -140,12 +140,12 @@
   border-bottom: 2px solid transparent;
   background: none;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .tabBtn:hover {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .tabBtnActive {
@@ -157,7 +157,7 @@
 .tabCount {
   margin-left: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-weight: 400;
 }
 
@@ -177,7 +177,7 @@
 
 .card {
   padding: 18px 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -193,7 +193,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardLink {
@@ -216,12 +216,12 @@
 .fieldLabel {
   display: block;
   margin-bottom: 4px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .fieldValue {
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   line-height: 1.5;
 }
 
@@ -253,11 +253,11 @@
   border-radius: 50%;
   border: 2px solid #fff;
   background: #3b82f6;
-  box-shadow: 0 0 0 1px var(--border);
+  box-shadow: 0 0 0 1px hsl(var(--border));
 }
 
 .stageDotPending {
-  background: var(--border);
+  background: hsl(var(--border));
 }
 
 .stageLine {
@@ -266,7 +266,7 @@
   top: 18px;
   bottom: -14px;
   width: 2px;
-  background: var(--border);
+  background: hsl(var(--border));
 }
 
 .stageRow {
@@ -298,14 +298,14 @@
 }
 
 .stageBadgePending {
-  background: var(--border);
-  color: var(--muted-foreground);
+  background: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
 }
 
 .stageTitle {
   font-size: 13px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .stageTitleActive {
@@ -313,12 +313,12 @@
 }
 
 .stageTitlePending {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .stageSub {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .stageSubActive {
@@ -356,7 +356,7 @@
   top: 18px;
   bottom: -18px;
   width: 2px;
-  background: var(--border);
+  background: hsl(var(--border));
 }
 
 .followHead {
@@ -369,12 +369,12 @@
 
 .followTime {
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .followActor {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .followBody {
@@ -399,19 +399,19 @@
 .metricLabel {
   margin-bottom: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .metricValue {
   font-size: 20px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .metricUnit {
   font-size: 13px;
   font-weight: 400;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .tableWrap {
@@ -435,7 +435,7 @@
 .dataTable th {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #f8fafc;
   white-space: nowrap;
 }
@@ -449,12 +449,12 @@
 }
 
 .detailLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 .detailValue {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-weight: 500;
   text-align: right;
 }
@@ -582,7 +582,7 @@
 
 .quickIconGray {
   background: #f8fafc;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .quickLabel {
@@ -602,12 +602,12 @@
 }
 
 .taskTitle {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .taskTime {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .stars {
@@ -618,7 +618,7 @@
 
 .loadingText {
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-bottom: 12px;
 }
 
@@ -626,13 +626,13 @@
   padding: 48px 24px;
   text-align: center;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .actionIcons {
   display: flex;
   gap: 8px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1100px) {

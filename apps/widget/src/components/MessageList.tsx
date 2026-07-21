@@ -45,6 +45,7 @@ export function MessageList({ messages, accent }: MessageListProps) {
           accent={accent}
           streaming={message.status === "streaming"}
           loading={message.status === "streaming" && !message.content.trim()}
+          citations={message.citations}
         />
       ))}
     </div>

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
-  Download,
   Info,
   Phone,
   Target,
@@ -329,18 +328,9 @@ export function FollowUpAnalyticsWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         title="销售跟进分析"
         description="分析销售跟进效率、方式分布与阶段转化，优化客户成交节奏。"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" type="button" asChild>
-              <Link href="/dashboard/reports/export">
-                <Download className="mr-1.5 h-3.5 w-3.5" />
-                导出数据
-              </Link>
-            </Button>
-          </div>
-        }
       />
 
       <div className="space-y-4 pb-6">
@@ -442,7 +432,7 @@ export function FollowUpAnalyticsWorkspace() {
             <h3 className="font-semibold">跟进记录明细</h3>
             <div className="flex flex-wrap items-center gap-2">
               <input
-                className="rounded-md border border-border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                className="rounded-md border border-input px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                 placeholder="搜索客户、联系人..."
                 value={query}
                 onChange={(e) => {

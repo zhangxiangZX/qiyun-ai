@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@qiyun/ui";
 
+import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/components/console/console-request-error";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { listCustomerOpportunities, listQuoteOpportunities } from "@/lib/sales/api";
 import type { CustomerOpportunityItem, QuoteListItem } from "@/lib/sales/types";
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
@@ -373,13 +375,6 @@ function buildRowFromApi(item: CustomerOpportunityItem, quote: QuoteListItem | u
   };
 }
 
-function mergeRows(apiRows: RepurchaseRow[]): RepurchaseRow[] {
-  if (apiRows.length === 0) return DEMO_ROWS;
-  const names = new Set(apiRows.map((row) => row.customerName));
-  const extras = DEMO_ROWS.filter((row) => !names.has(row.customerName));
-  return [...apiRows, ...extras];
-}
-
 function tabMatch(row: RepurchaseRow, tab: TabId): boolean {
   if (tab === "all") return true;
   if (tab === "upcoming") return row.reminderStatus === "upcoming";
@@ -565,12 +560,13 @@ function SidebarDetail({ row, onCreateTask }: { row: RepurchaseRow; onCreateTask
 export function RepurchaseRemindersWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
-  const [rows, setRows] = useState<RepurchaseRow[]>(DEMO_ROWS);
+  const [isPreview, setIsPreview] = useState(false);
+  const [rows, setRows] = useState<RepurchaseRow[]>([]);
   const [activeTab, setActiveTab] = useState<TabId>("all");
   const [search, setSearch] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedId, setSelectedId] = useState<string | null>(DEMO_ROWS[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [jumpPage, setJumpPage] = useState("");
   const [creatingTask, setCreatingTask] = useState(false);
@@ -580,23 +576,30 @@ export function RepurchaseRemindersWorkspace() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const results = await Promise.allSettled([listCustomerOpportunities(), listQuoteOpportunities()]);
-    const failed = results.find((result) => result.status === "rejected");
-    if (failed?.status === "rejected") {
-      setError(failed.reason);
-    }
-    if (results[0]?.status === "fulfilled" && results[1]?.status === "fulfilled") {
-      const items = results[0].value;
-      const quotes = results[1].value;
+    try {
+      const mode = await fetchConsoleMode().catch(() => null);
+      const preview = mode ? isPreviewMode(mode) : true;
+      setIsPreview(preview);
+      if (preview) {
+        setRows(DEMO_ROWS);
+        setSelectedId(DEMO_ROWS[0]?.id ?? null);
+        return;
+      }
+      const [items, quotes] = await Promise.all([listCustomerOpportunities(), listQuoteOpportunities()]);
       const quoteByInquiry = new Map(quotes.map((q) => [q.inquiryId, q]));
       const apiRows = items
         .filter((item) => item.lifecycleColumn === "won_or_repeat")
         .map((item) => buildRowFromApi(item, quoteByInquiry.get(item.inquiryId)));
-      const merged = mergeRows(apiRows);
-      setRows(merged);
-      setSelectedId((prev) => (prev && merged.some((row) => row.id === prev) ? prev : merged[0]?.id ?? null));
+      setRows(apiRows);
+      setSelectedId((prev) => (prev && apiRows.some((row) => row.id === prev) ? prev : apiRows[0]?.id ?? null));
+    } catch (reason) {
+      setError(reason);
+      setIsPreview(false);
+      setRows([]);
+      setSelectedId(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -632,7 +635,7 @@ export function RepurchaseRemindersWorkspace() {
       total: rows.length,
       upcoming,
       overdue,
-      convertedThisMonth: converted || Math.max(1, Math.round(rows.length * 0.18)),
+      convertedThisMonth: converted,
     };
   }, [rows]);
 
@@ -701,6 +704,10 @@ export function RepurchaseRemindersWorkspace() {
 
   return (
     <div className={styles.page}>
+      {isPreview ? <ConsoleDataModeBanner feature="复购提醒" /> : null}
+      {error ? (
+        <ConsoleRequestError {...resolveRequestErrorPresentation(error, "部分复购数据加载失败，请稍后重试。")} />
+      ) : null}
       <div className={styles.pageHeaderRow}>
         <div>
           <p>基于客户购买周期和历史订单，智能提醒销售跟进，提升复购转化率</p>
@@ -730,7 +737,7 @@ export function RepurchaseRemindersWorkspace() {
           <div>
             <div className={styles.kpiLabel}>提醒客户</div>
             <div className={styles.kpiValue}>{kpis.total}</div>
-            <div className={styles.kpiChange}>↑ +18.7% 较上月</div>
+            <div className={styles.kpiChange}>—</div>
           </div>
         </div>
         <div className={styles.kpiCard}>
@@ -740,7 +747,7 @@ export function RepurchaseRemindersWorkspace() {
           <div>
             <div className={styles.kpiLabel}>即将到期 (30天内)</div>
             <div className={styles.kpiValue}>{kpis.upcoming}</div>
-            <div className={styles.kpiChange}>↑ +12.3% 较上月</div>
+            <div className={styles.kpiChange}>—</div>
           </div>
         </div>
         <div className={styles.kpiCard}>
@@ -750,7 +757,7 @@ export function RepurchaseRemindersWorkspace() {
           <div>
             <div className={styles.kpiLabel}>已逾期 (超过30天)</div>
             <div className={styles.kpiValue}>{kpis.overdue}</div>
-            <div className={`${styles.kpiChange} ${styles.kpiChangeDown}`}>↑ +25.6% 较上月</div>
+            <div className={styles.kpiChange}>—</div>
           </div>
         </div>
         <div className={styles.kpiCard}>
@@ -760,7 +767,7 @@ export function RepurchaseRemindersWorkspace() {
           <div>
             <div className={styles.kpiLabel}>本月复购订单</div>
             <div className={styles.kpiValue}>{kpis.convertedThisMonth}</div>
-            <div className={styles.kpiChange}>↑ +20.0% 较上月</div>
+            <div className={styles.kpiChange}>—</div>
           </div>
         </div>
       </div>

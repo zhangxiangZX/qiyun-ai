@@ -85,6 +85,7 @@ export function SettingsHubWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="系统设置"
         description="集中管理工作区成员、企业资料、AI 规则与审计入口；各子页保持独立配置。"
       />

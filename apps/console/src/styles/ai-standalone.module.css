@@ -9,11 +9,9 @@
   margin-bottom: 24px;
 }
 
+/* 顶栏已有页面名，隐藏正文大标题，避免双头 */
 .pageHeader h1 {
-  margin: 0 0 4px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #111827;
+  display: none;
 }
 
 .pageHeader p {
@@ -34,7 +32,7 @@
   align-items: flex-start;
   gap: 16px;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-card);
@@ -103,7 +101,7 @@
 
 .sectionCard {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   overflow: hidden;
 }
@@ -150,7 +148,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   color: #4b5563;
@@ -251,7 +249,7 @@
 
 .pageBtn {
   padding: 6px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 4px;
   background: #fff;
   color: #9ca3af;
@@ -266,7 +264,7 @@
 
 .pageSize {
   padding: 4px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 4px;
   font-size: 12px;
 }
@@ -279,7 +277,7 @@
 
 .panel {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 24px;
 }
@@ -314,7 +312,7 @@
 .field textarea {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   font-size: 13px;
   box-sizing: border-box;
@@ -673,7 +671,7 @@
 
 .productChip {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   color: #4b5563;
 }
 
@@ -762,7 +760,7 @@
 
 .channelCard {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 20px;
 }
@@ -819,7 +817,7 @@
   flex: 1;
   padding: 4px 8px;
   font-size: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 4px;
   background: #f9fafb;
   color: #4b5563;

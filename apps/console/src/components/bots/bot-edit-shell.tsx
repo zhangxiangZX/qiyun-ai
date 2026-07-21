@@ -132,6 +132,7 @@ export function BotEditShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <PageHeader
+        variant="compact"
         title={bot.name}
         description={t(defaultLocale, "bots.edit.description")}
         actions={<ConsoleModeBadge />}

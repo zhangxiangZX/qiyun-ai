@@ -25,6 +25,9 @@ const chatDoneSse = [
   "event: token",
   'data: {"text":"好的，我先帮您梳理关键参数。"}',
   "",
+  "event: citations",
+  'data: {"items":[{"documentTitle":"冷水机选型手册","snippet":"标准冷水机适用于连续工业冷却工况。"}]}',
+  "",
   "event: done",
   'data: {"needsLeadCapture":false,"messageId":"msg_e2e_q","content":"好的，我先帮您梳理关键参数。","suggestedQuestions":["这次预计采购多少台？","方便先提供尺寸或安装环境吗？","要不要我继续帮你判断报价所缺参数？"]}',
   "",
@@ -121,6 +124,8 @@ async function runWidgetRecommendedQuestionsTest(page) {
 
   await page.getByText("报价怎么估？").waitFor();
   await page.getByText("好的，我先帮您梳理关键参数。").waitFor();
+  await page.getByText("资料来源（1）").waitFor();
+  await page.getByText("冷水机选型手册").waitFor();
   await page.getByText("继续把需求推进下去，可以这样问：").waitFor();
   await page.getByRole("button", { name: "这次预计采购多少台？" }).waitFor();
 

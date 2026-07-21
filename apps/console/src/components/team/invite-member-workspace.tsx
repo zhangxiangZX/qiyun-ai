@@ -50,7 +50,7 @@ import {
   type MockInvitation,
   type MockMember,
 } from "@/lib/team/invite-mock-data";
-import { mapWorkspaceMemberToDisplay } from "@/lib/team/member-display";
+import { filterEnterpriseTeamMembers, mapWorkspaceMemberToDisplay } from "@/lib/team/member-display";
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
 import styles from "@/styles/invite-member.module.css";
 
@@ -209,10 +209,10 @@ export function InviteMemberWorkspace() {
     refetch: refetchMembers,
   } = useApiResource<WorkspaceMemberSummary[]>("/auth/workspace-members", []);
 
-  const members = useMemo(
-    () => (isPreview ? mockMembers : apiMembers.map(mapWorkspaceMemberToDisplay)),
-    [apiMembers, isPreview],
-  );
+  const members = useMemo(() => {
+    if (isPreview) return mockMembers.filter((member) => member.role !== "owner");
+    return filterEnterpriseTeamMembers(apiMembers).map(mapWorkspaceMemberToDisplay);
+  }, [apiMembers, isPreview]);
 
   const [invitations, setInvitations] = useState<MockInvitation[]>(mockInvitations);
   const [inviteError, setInviteError] = useState<string | null>(null);

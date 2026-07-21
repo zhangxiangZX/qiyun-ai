@@ -18,7 +18,7 @@ function sidebarChildTitles(): string[] {
 
 test("V1 sidebar excludes V2 / prototype-only titles", () => {
   const titles = sidebarTitles();
-  for (const forbidden of ["弹窗测试", "提交成功", "套餐与账单"]) {
+  for (const forbidden of ["弹窗测试", "提交成功", "套餐与账单", "成交漏斗"]) {
     assert.ok(!titles.includes(forbidden), `sidebar must not include ${forbidden}`);
   }
 });

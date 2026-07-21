@@ -67,8 +67,7 @@ export function WidgetInstallWorkspace() {
           </Link>
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold text-foreground">Widget 安装说明</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             按步骤将 {BRAND_NAME} 智能客服嵌入企业官网，完整密钥与代码请在站点管理页获取。
           </p>
         </div>

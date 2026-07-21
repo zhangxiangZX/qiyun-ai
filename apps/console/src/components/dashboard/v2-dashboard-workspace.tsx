@@ -26,6 +26,7 @@ import {
   formatAmount,
   listInquiries,
 } from "@/lib/sales/api";
+import { formatChannelSourceLabel } from "@/lib/sales/channel-label";
 import type {
   ChannelAttributionItem,
   ConversionFunnelStep,
@@ -57,11 +58,6 @@ function formatInquiryTime(value: string | null | undefined): string {
   return `${month}-${day} ${hours}:${minutes}`;
 }
 
-function rateLabel(numerator: number, denominator: number): string {
-  if (denominator <= 0) return "—";
-  return `${((numerator / denominator) * 100).toFixed(1)}%`;
-}
-
 function stepCount(steps: ConversionFunnelStep[], key: string): number {
   return steps.find((step) => step.key === key)?.count ?? 0;
 }
@@ -83,7 +79,7 @@ function ChannelDonut({ channels }: { channels: ChannelAttributionItem[] }) {
         {top.map((item, index) => (
           <li key={`${item.sourceCode ?? "none"}-${item.sourceType}`}>
             <span style={{ background: CHANNEL_COLORS[index % CHANNEL_COLORS.length] }} />
-            {item.sourceLabel}{" "}
+            {formatChannelSourceLabel(item)}{" "}
             <b>{((item.inquiryCount / total) * 100).toFixed(1)}%</b>
           </li>
         ))}
@@ -366,43 +362,6 @@ export function V2DashboardWorkspace() {
                 </table>
               </div>
             )}
-          </div>
-        </article>
-
-        <article className="card">
-          <div className="sectionTitle">
-            成交漏斗
-            <button type="button" className="btn" onClick={() => void load(true)}>
-              <RefreshCw className="mr-1 inline h-3.5 w-3.5" aria-hidden />
-              刷新
-            </button>
-          </div>
-          <div className="funnel">
-            <div className="funnel-chart">
-              <div>询盘数 {funnelCounts.inquiries}</div>
-              <div>高意向 {funnelCounts.highIntent}</div>
-              <div>待报价 {funnelCounts.pendingQuote}</div>
-              <div>已报价 {funnelCounts.quoted}</div>
-              <div>成交 {funnelCounts.won}</div>
-            </div>
-            <div className="funnel-metrics">
-              <div className="funnel-metric">
-                <label>询盘转高意向</label>
-                <strong>{rateLabel(funnelCounts.highIntent, funnelCounts.inquiries)}</strong>
-              </div>
-              <div className="funnel-metric">
-                <label>高意向转报价</label>
-                <strong>{rateLabel(funnelCounts.pendingQuote + funnelCounts.quoted, funnelCounts.highIntent)}</strong>
-              </div>
-              <div className="funnel-metric">
-                <label>报价转成交</label>
-                <strong>{rateLabel(funnelCounts.won, funnelCounts.quoted)}</strong>
-              </div>
-              <div className="funnel-metric">
-                <label>整体成交率</label>
-                <strong>{rateLabel(funnelCounts.won, funnelCounts.inquiries)}</strong>
-              </div>
-            </div>
           </div>
         </article>
       </div>

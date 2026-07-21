@@ -1,5 +1,5 @@
 import styles from "../styles/widget.module.css";
-import { EmojiIcon, PaperclipIcon, SendIcon } from "./icons";
+import { SendIcon } from "./icons";
 
 interface ChatComposerProps {
   value: string;
@@ -15,15 +15,6 @@ export function ChatComposer({ value, disabled, accent, onChange, onSend }: Chat
   return (
     <div className={styles.composer}>
       <div className={styles.inputWrapper}>
-        <button
-          type="button"
-          className={styles.composerIconButton}
-          aria-label="发送附件"
-          disabled={disabled}
-          onClick={() => undefined}
-        >
-          <PaperclipIcon size={18} />
-        </button>
         <input
           className={styles.input}
           type="text"
@@ -39,15 +30,6 @@ export function ChatComposer({ value, disabled, accent, onChange, onSend }: Chat
             }
           }}
         />
-        <button
-          type="button"
-          className={styles.composerIconButton}
-          aria-label="表情"
-          disabled={disabled}
-          onClick={() => undefined}
-        >
-          <EmojiIcon size={18} />
-        </button>
       </div>
       <button
         type="button"

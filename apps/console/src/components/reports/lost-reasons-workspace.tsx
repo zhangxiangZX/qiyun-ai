@@ -256,6 +256,7 @@ export function LostReasonsWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="丢单原因分析"
         actions={
           <>

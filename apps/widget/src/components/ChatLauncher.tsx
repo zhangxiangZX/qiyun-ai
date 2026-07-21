@@ -8,7 +8,7 @@ interface ChatLauncherProps {
   onOpen: () => void;
 }
 
-export function ChatLauncher({ open, badge = 2, accent = "#1f64eb", onOpen }: ChatLauncherProps) {
+export function ChatLauncher({ open, badge = 0, accent = "#1f64eb", onOpen }: ChatLauncherProps) {
   return (
     <button
       type="button"

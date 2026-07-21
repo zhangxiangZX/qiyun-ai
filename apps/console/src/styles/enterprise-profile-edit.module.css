@@ -3,7 +3,7 @@
 .breadcrumb {
   margin: 0 0 8px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .breadcrumbSep {
@@ -11,11 +11,13 @@
   color: #cbd5e1;
 }
 
+/* 顶栏已有页面名；.pageTitle 仅承载返回链路 */
+.pageTitle {
+  margin: 0 0 12px;
+}
+
 .pageTitle h1 {
-  margin: 0 0 20px;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--foreground);
+  display: none;
 }
 
 .summaryCard {
@@ -26,7 +28,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   margin-bottom: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -44,7 +46,7 @@
   width: 72px;
   height: 72px;
   border-radius: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   background: #fff;
   display: grid;
   place-items: center;
@@ -68,7 +70,7 @@
   margin: 0 0 8px;
   font-size: 18px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .summaryMeta {
@@ -76,7 +78,7 @@
   flex-wrap: wrap;
   gap: 16px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .copyBtn {
@@ -117,13 +119,13 @@
 
 .certSub {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .sectionCard {
   padding: 24px;
   margin-bottom: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -153,7 +155,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .formGrid {
@@ -186,11 +188,11 @@
 .fieldSelect,
 .fieldTextarea {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   outline: none;
 }
 
@@ -236,7 +238,7 @@
   right: 10px;
   bottom: 8px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .uploadGrid {
@@ -246,7 +248,7 @@
 }
 
 .uploadCard {
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   padding: 16px;
   background: #fafbfc;
@@ -262,7 +264,7 @@
 .uploadPreview {
   height: 100px;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   background: #fff;
   display: grid;
   place-items: center;
@@ -277,13 +279,13 @@
 }
 
 .uploadPreviewIcon {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .uploadHint {
   margin: 0 0 8px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .uploadFileName {
@@ -344,7 +346,7 @@
 
 .uploadDropText {
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .footerBar {
@@ -357,7 +359,7 @@
   gap: 10px;
   margin-top: 8px;
   padding: 16px 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
@@ -371,12 +373,12 @@
   border-radius: 8px;
   background: transparent;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .btnGhost:hover {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .btnOutline {
@@ -430,7 +432,7 @@
 .v1Hint {
   margin-top: 12px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1100px) {

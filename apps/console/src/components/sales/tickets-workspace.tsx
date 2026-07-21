@@ -115,6 +115,7 @@ export function TicketsWorkspace() {
     <div className={styles.page}>
       <ConsoleDataModeBanner />
       <PageHeader
+        variant="compact"
         title="工单中心"
         description="将会话、留资线索中需要人工跟进的事项转为工单，跟踪处理状态与负责人。"
       />

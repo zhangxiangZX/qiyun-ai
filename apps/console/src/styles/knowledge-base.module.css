@@ -18,7 +18,7 @@
 .pageHeader p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .topActions {
@@ -38,7 +38,7 @@
 
 .kpiCard {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -53,7 +53,7 @@
 .kpiLabel {
   margin-bottom: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .kpiValue {
@@ -88,7 +88,7 @@
 
 .card {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -148,7 +148,7 @@
 
 .uploadHint {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .toolbar {
@@ -195,7 +195,7 @@
 
 .select {
   padding: 6px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   color: #475569;
@@ -211,13 +211,13 @@
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   pointer-events: none;
 }
 
 .searchInput {
   padding: 6px 10px 6px 32px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   width: 160px;
@@ -240,7 +240,7 @@
   border-bottom: 1px solid #f1f5f9;
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-align: left;
 }
 
@@ -286,7 +286,7 @@
 
 .nameSub {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-top: 2px;
 }
 
@@ -320,7 +320,7 @@
 
 .tagGray {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .actionBtns {
@@ -333,7 +333,7 @@
   border: none;
   border-radius: 6px;
   background: none;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
@@ -350,7 +350,7 @@
   padding-top: 16px;
   border-top: 1px solid #f1f5f9;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .pageControls {
@@ -363,7 +363,7 @@
   min-width: 32px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 12px;
@@ -436,7 +436,7 @@
 
 .donutLabel {
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .legend {
@@ -486,7 +486,7 @@
 
 .hotMeta {
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-top: 4px;
 }
 
@@ -508,7 +508,7 @@
 
 .updateName {
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -516,7 +516,7 @@
 
 .updateMeta {
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-top: 4px;
 }
 
@@ -543,13 +543,13 @@
   display: block;
   margin-bottom: 6px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .settingsInput {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   outline: none;
@@ -571,7 +571,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #475569;
@@ -626,7 +626,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #f8fafc;
   font-size: 13px;
@@ -636,7 +636,7 @@
   padding: 32px 0;
   text-align: center;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .notice {
@@ -676,7 +676,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
   color: #475569;
@@ -757,7 +757,7 @@
   padding: 48px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 

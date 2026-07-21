@@ -17,7 +17,7 @@ const previewNotifications = normalizeNotificationFeed(
         title: "有新的线索等待跟进",
         body: "华东制造 · 工业冷水机报价需求",
         timeLabel: "10 分钟前",
-        href: "/dashboard/leads",
+        href: "/dashboard/inquiries",
         unread: true,
         kind: "lead",
       },

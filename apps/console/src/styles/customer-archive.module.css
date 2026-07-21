@@ -21,20 +21,20 @@
   display: flex;
   gap: 28px;
   margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .pageTab {
   padding: 10px 0 14px;
   font-size: 15px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-decoration: none;
   position: relative;
   transition: color 0.15s;
 }
 
 .pageTab:hover {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .pageTabActive {
@@ -60,7 +60,7 @@
   gap: 12px;
   margin-bottom: 20px;
   padding: 14px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -73,10 +73,10 @@
   gap: 8px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 18px;
   background: #f8fafc;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 13px;
 }
 
@@ -86,11 +86,11 @@
   background: transparent;
   outline: none;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .filterSearch input::placeholder {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .filterSelect {
@@ -101,11 +101,11 @@
   height: 36px;
   min-width: 120px;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--input));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   cursor: pointer;
 }
 
@@ -141,12 +141,12 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .statItem strong {
   font-size: 15px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .statDot {
@@ -157,7 +157,7 @@
 
 .dataCard {
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -179,15 +179,15 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #fafbfc;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   white-space: nowrap;
 }
 
 .dataTable td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
   vertical-align: middle;
 }
 
@@ -221,17 +221,17 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .customerMeta p {
   margin: 2px 0 0;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .phone {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .stageBadge {
@@ -260,16 +260,16 @@
 
 .stageLost {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .orderStatus {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .orderId {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-weight: 500;
 }
 
@@ -298,7 +298,7 @@
 }
 
 .statusMuted {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .salesOwner {
@@ -322,7 +322,7 @@
 
 .followDate {
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .followUrgent {
@@ -363,7 +363,7 @@
 
 .tagGray {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .actionBtns {
@@ -379,7 +379,7 @@
   display: grid;
   place-items: center;
   background: transparent;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
@@ -393,9 +393,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid hsl(var(--border));
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .paginationRight {
@@ -408,10 +408,10 @@
 .pageBtn {
   min-width: 28px;
   height: 28px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 12px;
   cursor: pointer;
   display: grid;
@@ -436,7 +436,7 @@
 .pageJumpInput {
   width: 40px;
   height: 28px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   text-align: center;
   font-size: 12px;
@@ -444,7 +444,7 @@
 
 .cardSection {
   padding: 18px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -457,7 +457,7 @@
   margin-bottom: 16px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardSectionMore {
@@ -477,13 +477,13 @@
 .cardSectionSubtitle {
   margin: -12px 0 16px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .updateTime {
   margin-bottom: 12px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-align: right;
 }
 
@@ -509,7 +509,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .legendDot {
@@ -520,12 +520,12 @@
 
 .legendValue {
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .legendPct {
   margin-left: 4px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .reminderItem,
@@ -534,7 +534,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .reminderItem:first-child,
@@ -572,14 +572,14 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .reminderMeta p,
 .opportunityMeta p {
   margin: 4px 0 0;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .reminderTag {
@@ -605,7 +605,7 @@
   padding: 48px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1200px) {

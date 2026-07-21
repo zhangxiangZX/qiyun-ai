@@ -11,7 +11,7 @@
   gap: 16px;
   margin: -4px 0 4px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .toolbarLeft {
@@ -25,7 +25,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   flex-shrink: 0;
 }
 
@@ -46,7 +46,7 @@
 }
 
 .headerTab {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .headerTab:hover {
@@ -74,29 +74,29 @@
   gap: 8px;
   height: 34px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .btnIcon {
   width: 34px;
   height: 34px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   display: grid;
   place-items: center;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .btnIcon:hover:not(:disabled) {
   border-color: #cbd5e1;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .btnIcon:disabled {
@@ -110,11 +110,11 @@
   gap: 6px;
   height: 34px;
   padding: 0 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   cursor: pointer;
   text-decoration: none;
 }
@@ -144,7 +144,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-card);
@@ -168,13 +168,13 @@
 .kpiLabel {
   margin-bottom: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .kpiValue {
   font-size: 24px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   line-height: 1.1;
 }
 
@@ -202,7 +202,7 @@
 
 .card {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -216,7 +216,7 @@
   margin: 0 0 16px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .chartHeader {
@@ -231,7 +231,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .chartHeaderRight {
@@ -247,7 +247,7 @@
   flex-wrap: wrap;
   gap: 12px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .legendItem {
@@ -265,7 +265,7 @@
 
 .timeTabs {
   display: flex;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   overflow: hidden;
 }
@@ -276,17 +276,17 @@
   border: none;
   background: #fff;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
 .timeTab:not(:last-child) {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid hsl(var(--border));
 }
 
 .timeTabActive {
   background: #f1f5f9;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-weight: 600;
 }
 
@@ -310,11 +310,11 @@
   justify-content: space-between;
   margin-top: 8px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .funnelFooter strong {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .trendUp {
@@ -340,12 +340,12 @@
 .donutCenterValue {
   font-size: 20px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .donutCenterLabel {
   font-size: 10px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .donutLegendGrid {
@@ -377,13 +377,13 @@
 .dataTable td {
   padding: 12px 8px;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .dataTable th {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   background: #fafbfc;
 }
 
@@ -400,7 +400,7 @@
   font-size: 12px;
   font-weight: 700;
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .rankTop {
@@ -421,7 +421,7 @@
   gap: 12px;
   margin-top: 12px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .pageBtns {
@@ -432,7 +432,7 @@
 .pageBtn,
 .pageBtnActive {
   padding: 4px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
   font-size: 12px;
@@ -476,19 +476,19 @@
 .insightTitle {
   margin-bottom: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .insightValue {
   font-size: 16px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .insightSub {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .insightSubUp {
@@ -498,7 +498,7 @@
 .emptyHint {
   margin: 0;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .placeholderPage {
@@ -509,7 +509,7 @@
   min-height: 320px;
   padding: 48px 24px;
   text-align: center;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
 }
 
@@ -526,13 +526,13 @@
   margin: 0 0 8px;
   font-size: 18px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .placeholderPageDesc {
   margin: 0 0 20px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   max-width: 320px;
 }
 
@@ -544,13 +544,13 @@
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
 }
 
 .skeleton {
   border-radius: 12px;
-  background: linear-gradient(90deg, var(--border) 25%, #f8fafc 50%, var(--border) 75%);
+  background: linear-gradient(90deg, hsl(var(--border)) 25%, #f8fafc 50%, hsl(var(--border)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
 }

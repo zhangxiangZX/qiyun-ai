@@ -99,16 +99,11 @@ export function FollowUpDetailWorkspace({ leadId }: { leadId: string }) {
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/leads">
+              <Link href="/dashboard/inquiries">
                 <ArrowLeft className="h-4 w-4" aria-hidden />
-                线索列表
+                询盘中心
               </Link>
             </Button>
-            {lead ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/leads/${lead.id}`}>线索详情</Link>
-              </Button>
-            ) : null}
             <Button variant="outline" size="sm" asChild>
               <Link href="/dashboard/tasks">跟进任务</Link>
             </Button>

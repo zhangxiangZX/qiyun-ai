@@ -32,7 +32,7 @@
   place-items: center;
   border-radius: 50%;
   color: #fff;
-  background: var(--primary);
+  background: hsl(var(--primary));
   font-size: 12px;
   font-style: normal;
 }
@@ -78,7 +78,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--primary);
+  background: hsl(var(--primary));
 }
 
 .priority {
@@ -242,7 +242,7 @@
   padding: 6px;
   border: 1px solid #dfe7f1;
   border-radius: 4px;
-  color: var(--primary);
+  color: hsl(var(--primary));
   font-size: 12px;
   text-align: center;
   text-decoration: none;
@@ -272,7 +272,7 @@
 
 .readAll {
   border: 0;
-  color: var(--primary);
+  color: hsl(var(--primary));
   background: transparent;
   font-size: 12px;
   cursor: pointer;
@@ -305,7 +305,7 @@
 }
 
 .noticeIcon[data-tone="blue"] {
-  background: var(--primary);
+  background: hsl(var(--primary));
 }
 
 .noticeIcon[data-tone="green"] {

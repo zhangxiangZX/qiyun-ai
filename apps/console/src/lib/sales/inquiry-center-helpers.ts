@@ -1,4 +1,5 @@
 import type { InquiryTabKey } from "@/lib/sales/inquiries-center-mock";
+import { formatChannelSourceLabel, isRawSiteSourceCode } from "@/lib/sales/channel-label";
 import type { InquiryListItem, IntentLevel } from "@/lib/sales/types";
 
 export function matchesInquiryTab(item: InquiryListItem, tab: InquiryTabKey): boolean {
@@ -101,6 +102,51 @@ export function computeTabCounts(items: InquiryListItem[]) {
   }));
 }
 
+/** 侧栏快速筛选角标，必须与当前列表同源计数 */
+export function computeQuickFilters(items: InquiryListItem[]) {
+  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  const unassigned = items.filter((item) => item.status === "open" && !item.ownerId).length;
+  const stale = items.filter((item) => {
+    if (item.status !== "open") return false;
+    const updated = Date.parse(item.updatedAt ?? item.createdAt);
+    return Number.isFinite(updated) && updated < threeDaysAgo;
+  }).length;
+  const highNoQuote = items.filter(
+    (item) =>
+      item.status === "open" &&
+      item.intentLevel === "high" &&
+      !["quoted", "confirming", "won"].includes(item.quoteStatus),
+  ).length;
+  const needSupplement = items.filter(
+    (item) => item.status === "open" && item.missingFields.length > 0,
+  ).length;
+  return [
+    { label: "待分配", count: unassigned, tab: "new" as InquiryTabKey },
+    { label: "超3天未跟进", count: stale, tab: "followup" as InquiryTabKey },
+    { label: "高意向未报价", count: highNoQuote, tab: "to_quote" as InquiryTabKey },
+    { label: "待补充资料", count: needSupplement, tab: "supplement" as InquiryTabKey },
+  ];
+}
+
+export function computeUnassignedAlerts(items: InquiryListItem[], limit = 3) {
+  return items
+    .filter((item) => item.status === "open" && !item.ownerId)
+    .slice(0, limit)
+    .map((item, index) => {
+      const mapped = mapInquiryRowDisplay(item, index);
+      const created = Date.parse(item.createdAt);
+      const hours = Number.isFinite(created)
+        ? Math.max(1, Math.round((Date.now() - created) / (60 * 60 * 1000)))
+        : null;
+      return {
+        id: mapped.displayId,
+        company: item.customerName?.trim() || "未命名客户",
+        channel: mapped.channelLabel,
+        time: hours == null ? "—" : hours < 24 ? `${hours}小时前` : `${Math.round(hours / 24)}天前`,
+      };
+    });
+}
+
 export function mapInquiryRowDisplay(item: InquiryListItem, index: number) {
   const statusTone =
     item.quoteStatus === "won"
@@ -125,7 +171,7 @@ export function mapInquiryRowDisplay(item: InquiryListItem, index: number) {
   };
 
   const channelLabels: Record<string, string> = {
-    website: "官网",
+    website: "官网 Widget",
     douyin: "抖音",
     wechat: "微信",
     expo: "展会",
@@ -138,11 +184,19 @@ export function mapInquiryRowDisplay(item: InquiryListItem, index: number) {
     ? `INQ-${item.id.slice(-8).toUpperCase()}`
     : `INQ-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}-${String(index + 1).padStart(3, "0")}`;
 
+  const channelLabel = isRawSiteSourceCode(item.sourceCode)
+    ? formatChannelSourceLabel({
+        sourceCode: item.sourceCode,
+        sourceLabel: item.sourceCode,
+        sourceType: item.sourceType,
+      })
+    : (channelLabels[item.sourceType] ?? "官网 Widget");
+
   return {
     ...item,
     displayId,
-    channelLabel: channelLabels[item.sourceType] ?? "官网",
-    channelTone: item.sourceType === "website" ? "site" : "social",
+    channelLabel,
+    channelTone: item.sourceType === "website" || isRawSiteSourceCode(item.sourceCode) ? "site" : "social",
     productNeed: item.summary?.slice(0, 24) ?? "—",
     statusLabel: statusLabels[statusTone] ?? "待跟进",
     statusTone,

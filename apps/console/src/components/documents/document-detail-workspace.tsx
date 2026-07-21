@@ -115,7 +115,7 @@ export function DocumentDetailWorkspace({ documentId }: DocumentDetailWorkspaceP
               {current.status}
             </span>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">{current.name}</h1>
+          <h2 className="text-lg font-semibold text-foreground">{current.name}</h2>
           <p className="text-sm text-muted-foreground">
             文件大小 {formatFileSize(current.sizeBytes)} · 上传时间 {formatDateLabel(current.uploadedAt)} · 上传人{" "}
             {current.uploadedBy}

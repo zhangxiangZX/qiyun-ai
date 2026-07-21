@@ -40,7 +40,7 @@ const quickActions = [
   { label: "创建AI助手", icon: "robot", href: "/dashboard/bots" },
   { label: "AI 测试", icon: "chat", href: "/dashboard/conversations/test" },
   { label: "询盘中心", icon: "users", href: "/dashboard/inquiries" },
-  { label: "数据分析", icon: "bars", href: "/dashboard/sales" },
+  { label: "数据分析", icon: "bars", href: "/dashboard/reports/channel" },
   { label: "站点接入", icon: "pulse", href: "/dashboard/sites" },
   { label: "系统设置", icon: "settings", href: "/dashboard/team" },
 ] as const;

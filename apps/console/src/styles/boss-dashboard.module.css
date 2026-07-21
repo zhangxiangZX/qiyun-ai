@@ -287,22 +287,42 @@
 }
 
 @media (max-width: 680px) {
-  .page { padding: 0 0 var(--sp-5); }
+  .page { padding: 0 0 var(--sp-5); overflow-x: hidden; max-width: 100%; }
   .toolbar { justify-content: stretch; }
   .dateButton { min-width: 0; flex: 1; }
-  .kpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpiCard { padding: 12px; gap: 12px; }
-  .kpiIcon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 10px; }
-  .kpiContent strong { font-size: 20px; }
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .kpiCard {
+    padding: 12px;
+    gap: 10px;
+    min-width: 0;
+  }
+  .kpiIcon { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 10px; }
+  .kpiContent { min-width: 0; }
+  .kpiContent p,
+  .kpiContent strong,
+  .kpiContent small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .kpiContent strong { font-size: 18px; }
   .kpiContent small span { display: none; }
   .cardHeader { align-items: flex-start; flex-direction: column; padding: 14px; }
   .chartControls { width: 100%; flex-wrap: wrap; }
   .tabs { width: 100%; }
   .tabs button { flex: 1; padding-inline: 6px; }
-  .rankingTable { overflow-x: auto; }
+  .rankingTable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .rankingHead, .rankingRow { min-width: 550px; }
   .channelBody { align-items: flex-start; flex-direction: column; }
   .channelLegend { width: 100%; }
   .alertList { display: block; }
   .alertList li:nth-child(even) { border-left: 0; padding-left: 0; }
+  .opportunityWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .primaryGrid,
+  .secondaryGrid {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
 }

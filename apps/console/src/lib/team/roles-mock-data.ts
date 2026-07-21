@@ -105,7 +105,7 @@ export const PERMISSION_ACTIONS = ["view", "create", "edit", "delete", "export",
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
 
 export const ROLE_MEMBERS_PREVIEW = [
-  { name: "张伟", avatar: "张" },
   { name: "李娜", avatar: "李" },
   { name: "王磊", avatar: "王" },
+  { name: "陈晨", avatar: "陈" },
 ];

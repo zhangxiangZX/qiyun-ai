@@ -1,18 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  BarChart3,
-  CircleCheck,
-  Download,
-  FileSpreadsheet,
-  History,
-  Loader2,
-  TrendingUp,
-  Users,
-} from "lucide-react";
 import { Badge, Button, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
 
+import { EnterpriseExportIcon } from "@/components/brand/enterprise-export-icon";
 import { DataCenterToolbar } from "@/components/data-center/data-center-toolbar";
 import {
   defaultDateRange,
@@ -25,70 +15,59 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { ReportExportModal } from "@/components/reports/report-export-modal";
 import {
+  BarChart3,
+  CircleCheck,
+  FileSpreadsheet,
+  History,
+  Loader2,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
   buildAnalyticsQuery,
   defaultAnalyticsDateRange,
 } from "@/lib/analytics/filters";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import {
+  buildReportCsv,
   buildSalesExportFunnel,
   buildSalesExportKpis,
   buildSalesExportTopRows,
   buildSalesExportTrend,
+  reportFileName,
 } from "@/lib/reports/export-helpers";
 import {
   buildMockReportExports,
+  buildPreviewExportTask,
   downloadReportExport,
   formatBytes,
   listReportExports,
   REPORT_TYPE_LABELS,
   triggerDownload,
+  type ReportExportApiType,
   type ReportExportStatus,
   type ReportExportTask,
 } from "@/lib/reports/export-api";
 import {
+  fetchChannelAttribution,
   fetchConversionFunnel,
   fetchSalesOverview,
   listInquiries,
 } from "@/lib/sales/api";
-import type { ConversionFunnelStep, InquiryListItem, SalesOverviewMetrics } from "@/lib/sales/types";
+import { filterInquiriesByDateRange } from "@/lib/sales/inquiry-export";
+import type {
+  ChannelAttributionItem,
+  ConversionFunnelStep,
+  InquiryListItem,
+  SalesOverviewMetrics,
+} from "@/lib/sales/types";
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
 
 const KPI_ICONS = [TrendingUp, CircleCheck, Users, FileSpreadsheet] as const;
 const KPI_TONES = ["brand", "success", "warning", "info"] as const;
 
-const MOCK_KPIS = [
-  { label: "成交金额", value: "¥ 2,856,000", trend: "+23.4%" },
-  { label: "预估金额", value: "¥ 2,420,000", trend: "+18.2%" },
-  { label: "有效询盘", value: "312", trend: "+15.6%" },
-  { label: "成交数", value: "568", trend: "+18.2%" },
-];
-
-const MOCK_FUNNEL = [
-  { label: "线索", pct: 100 },
-  { label: "跟进", pct: 72 },
-  { label: "商机", pct: 48 },
-  { label: "成交", pct: 24 },
-  { label: "金额", pct: 18 },
-];
-
-const MOCK_TOP = [
-  { name: "李娜", customers: 86, rate: "92%", amount: "¥ 682,000" },
-  { name: "王磊", customers: 72, rate: "88%", amount: "¥ 548,000" },
-  { name: "孙锐", customers: 64, rate: "85%", amount: "¥ 426,000" },
-  { name: "郭涛", customers: 58, rate: "81%", amount: "¥ 382,000" },
-];
-
 type LoadState = "loading" | "ready" | "error";
-
-function formatDateRangeLabel(from?: string, to?: string): string {
-  if (from && to) return `${from} ~ ${to}`;
-  const end = new Date();
-  const start = new Date(end);
-  start.setDate(end.getDate() - 29);
-  const fmt = (date: Date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  return `${fmt(start)} ~ ${fmt(end)}`;
-}
 
 export function ReportExportWorkspace() {
   const [exportOpen, setExportOpen] = useState(false);
@@ -98,6 +77,7 @@ export function ReportExportWorkspace() {
   const [overview, setOverview] = useState<SalesOverviewMetrics | null>(null);
   const [funnel, setFunnel] = useState<ConversionFunnelStep[]>([]);
   const [inquiries, setInquiries] = useState<InquiryListItem[]>([]);
+  const [channels, setChannels] = useState<ChannelAttributionItem[]>([]);
   const [exports, setExports] = useState<ReportExportTask[]>([]);
   const [exportsLoading, setExportsLoading] = useState(false);
   const [exportNotice, setExportNotice] = useState(false);
@@ -141,10 +121,46 @@ export function ReportExportWorkspace() {
     void loadExports();
   }, [loadExports]);
 
+  const dateLabel = `${dateBounds.from} ~ ${dateBounds.to}`;
+
+  const scopedInquiries = useMemo(
+    () => filterInquiriesByDateRange(inquiries, dateBounds.from, dateBounds.to),
+    [inquiries, dateBounds.from, dateBounds.to],
+  );
+
+  const downloadCsvForType = useCallback(
+    (type: ReportExportApiType) => {
+      const csv = buildReportCsv({
+        type,
+        overview,
+        funnel,
+        inquiries: scopedInquiries,
+        channels,
+        rangeLabel: dateLabel,
+      });
+      const fileName = reportFileName(type);
+      triggerDownload(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }), fileName);
+      return fileName;
+    },
+    [overview, funnel, scopedInquiries, channels, dateLabel],
+  );
+
   const handleExportCreated = useCallback((task: ReportExportTask) => {
     setExports((prev) => [task, ...prev]);
     setExportNotice(true);
   }, []);
+
+  const handleClientExport = useCallback(
+    async (type: ReportExportApiType) => {
+      const fileName = downloadCsvForType(type);
+      const task = buildPreviewExportTask(type);
+      task.fileName = fileName;
+      task.sizeBytes = Math.max(256, fileName.length * 32);
+      handleExportCreated(task);
+      return task;
+    },
+    [downloadCsvForType, handleExportCreated],
+  );
 
   const handleDownload = useCallback(
     async (task: ReportExportTask) => {
@@ -152,48 +168,54 @@ export function ReportExportWorkspace() {
       setDownloadId(task.id);
       setDownloadError(null);
       try {
-        if (previewMode) {
-          const csv = `报表类型,${REPORT_TYPE_LABELS[task.reportType]}\n导出时间,${task.createdAt}\n模式,预览示例数据\n`;
-          triggerDownload(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }), task.fileName ?? "preview.csv");
-        } else {
-          await downloadReportExport(task.id, task.fileName ?? "report.csv");
+        // memory 驱动下服务端 download 会 404：优先用当前页真实数据重新生成 CSV
+        try {
+          if (!previewMode) {
+            await downloadReportExport(task.id, task.fileName ?? "report.csv");
+            return;
+          }
+        } catch {
+          // fall through to client rebuild
         }
+        downloadCsvForType(task.reportType);
       } catch (nextError) {
         setDownloadError(nextError instanceof Error ? nextError.message : "下载失败，请稍后重试。");
       } finally {
         setDownloadId(null);
       }
     },
-    [downloadId, previewMode],
+    [downloadCsvForType, downloadId, previewMode],
   );
 
   const loadPreview = useCallback(async () => {
     setLoadState("loading");
     setLoadError(null);
 
-    if (previewMode) {
-      setOverview(null);
-      setFunnel([]);
-      setInquiries([]);
-      setLoadState("ready");
-      return;
-    }
-
     try {
-      const [nextOverview, nextFunnel, nextInquiries] = await Promise.all([
+      const [nextOverview, nextFunnel, nextInquiries, nextChannels] = await Promise.all([
         fetchSalesOverview(reportQuery),
         fetchConversionFunnel(reportQuery),
-        listInquiries({ status: "all" }),
+        listInquiries({ status: "all", limit: 200 }),
+        fetchChannelAttribution({ from: dateBounds.from, to: dateBounds.to }),
       ]);
       setOverview(nextOverview);
       setFunnel(nextFunnel);
       setInquiries(nextInquiries);
+      setChannels(nextChannels);
       setLoadState("ready");
     } catch (error) {
+      if (previewMode) {
+        setOverview(null);
+        setFunnel([]);
+        setInquiries([]);
+        setChannels([]);
+        setLoadState("ready");
+        return;
+      }
       setLoadError(error);
       setLoadState("error");
     }
-  }, [previewMode, reportQuery]);
+  }, [previewMode, reportQuery, dateBounds.from, dateBounds.to]);
 
   useOnWorkspaceChanged(() => {
     void loadPreview();
@@ -204,18 +226,17 @@ export function ReportExportWorkspace() {
     void loadPreview();
   }, [loadPreview]);
 
-  const dateLabel = `${dateBounds.from} ~ ${dateBounds.to}`;
-  const kpis = previewMode ? MOCK_KPIS : buildSalesExportKpis(overview);
-  const funnelRows = previewMode ? MOCK_FUNNEL : buildSalesExportFunnel(funnel);
-  const topRows = previewMode ? MOCK_TOP : buildSalesExportTopRows(inquiries);
-  const trendHeights = previewMode ? [42, 58, 51, 72, 68, 85, 78, 92, 88, 96] : buildSalesExportTrend(funnel);
+  const kpis = buildSalesExportKpis(overview);
+  const funnelRows = buildSalesExportFunnel(funnel);
+  const topRows = buildSalesExportTopRows(scopedInquiries);
+  const trendHeights = buildSalesExportTrend(funnel);
 
   if (loadState === "loading") {
     return (
       <ConsolePage>
-        <DataCenterToolbar range={range} onRangeChange={setRange} />
+        <DataCenterToolbar range={range} onRangeChange={setRange} exportHref="" />
         <ConsolePageAlerts>
-          <ConsoleDataModeBanner feature="报表导出" />
+          <ConsoleDataModeBanner feature="经营报表导出" />
         </ConsolePageAlerts>
         <div className="space-y-4 pb-6">
           <Skeleton className="h-24 w-full rounded-2xl" />
@@ -232,9 +253,9 @@ export function ReportExportWorkspace() {
   if (loadState === "error") {
     return (
       <ConsolePage>
-        <DataCenterToolbar range={range} onRangeChange={setRange} />
+        <DataCenterToolbar range={range} onRangeChange={setRange} exportHref="" />
         <ConsolePageAlerts>
-          <ConsoleDataModeBanner feature="报表导出" />
+          <ConsoleDataModeBanner feature="经营报表导出" />
         </ConsolePageAlerts>
         <ConsoleRequestError
           message={loadError instanceof Error ? loadError.message : "报表数据加载失败，请稍后重试。"}
@@ -246,10 +267,10 @@ export function ReportExportWorkspace() {
 
   return (
     <ConsolePage>
-      <DataCenterToolbar range={range} onRangeChange={setRange} />
+      <DataCenterToolbar range={range} onRangeChange={setRange} exportHref="" />
 
       <ConsolePageAlerts>
-        <ConsoleDataModeBanner feature="报表导出" />
+        <ConsoleDataModeBanner feature="经营报表导出" />
         {exportNotice ? (
           <ConsoleFeedback
             variant="success"
@@ -269,11 +290,12 @@ export function ReportExportWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
-        title="报表导出"
-        description="按业务模块导出销售业绩、询盘与渠道数据，当前支持 CSV 格式。"
+        variant="compact"
+        title="经营报表导出"
+        description="按业务模块导出销售业绩、询盘与渠道经营数据，当前支持 CSV 格式。"
         actions={
           <Button type="button" onClick={() => setExportOpen(true)}>
-            <Download className="mr-1.5 h-4 w-4" />
+            <EnterpriseExportIcon className="mr-1.5 h-4 w-4" size={16} />
             导出报表
           </Button>
         }
@@ -289,10 +311,6 @@ export function ReportExportWorkspace() {
             <span>{dateLabel}</span>
             <Button variant="outline" size="sm" type="button" onClick={() => void loadPreview()}>
               刷新
-            </Button>
-            <Button size="sm" type="button" onClick={() => setExportOpen(true)}>
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              导出报表
             </Button>
           </div>
         </div>
@@ -456,7 +474,7 @@ export function ReportExportWorkspace() {
                       {downloadId === task.id ? (
                         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        <EnterpriseExportIcon className="mr-1.5 h-3.5 w-3.5" size={14} />
                       )}
                       下载
                     </Button>
@@ -472,7 +490,7 @@ export function ReportExportWorkspace() {
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         previewMode={previewMode}
-        onCreated={handleExportCreated}
+        onExport={handleClientExport}
       />
     </ConsolePage>
   );

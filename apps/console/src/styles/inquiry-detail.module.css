@@ -10,14 +10,14 @@
   gap: 8px;
   margin-bottom: 20px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .backLink {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-decoration: none;
 }
 
@@ -28,7 +28,7 @@
 .headerCard {
   padding: 20px;
   margin-bottom: 24px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -73,7 +73,7 @@
   gap: 8px;
   margin-bottom: 8px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .tagRow {
@@ -97,18 +97,18 @@
 
 .metaLabel {
   margin-bottom: 4px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .metaValue {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-weight: 500;
 }
 
 .metaSub {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .gridMain {
@@ -127,7 +127,7 @@
 
 .card {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
 }
@@ -183,7 +183,7 @@
 }
 
 .sectionLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .chatHeader {
@@ -195,7 +195,7 @@
 
 .chatHint {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .chatList {
@@ -278,7 +278,7 @@
 
 .chatRole {
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .chatRoleSales {
@@ -288,7 +288,7 @@
 .chatTime {
   margin-bottom: 8px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .chatContent {
@@ -302,7 +302,7 @@
   gap: 8px;
   margin-top: 8px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .attachmentLink {
@@ -327,7 +327,7 @@
 .replyInput {
   flex: 1;
   padding: 10px 16px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   font-size: 13px;
   outline: none;
@@ -346,7 +346,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
 }
 
@@ -376,7 +376,7 @@
 .nextStepDesc {
   margin: 0 0 12px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   line-height: 1.5;
 }
 
@@ -451,12 +451,12 @@
 }
 
 .detailLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 .detailValue {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   font-weight: 500;
   text-align: right;
 }
@@ -482,7 +482,7 @@
 }
 
 .completenessLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .completenessValue {
@@ -515,7 +515,7 @@
   justify-content: center;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: #fff;
   color: #334155;
@@ -559,7 +559,7 @@
 .followMeta {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .editLink {
@@ -605,7 +605,7 @@
 
 .tagGray {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .ownerAvatar {
@@ -645,7 +645,7 @@
   padding: 48px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .feedback {

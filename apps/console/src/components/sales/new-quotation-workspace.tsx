@@ -159,6 +159,7 @@ export function NewQuotationWorkspace() {
         inquiryId,
         title: `${customerName.trim()} 报价方案`,
         estimatedAmount: Math.round(total),
+        templateId: appliedTemplateId,
       });
       router.push(`/dashboard/quotes/${quote.id}`);
     } catch (error) {
@@ -217,7 +218,7 @@ export function NewQuotationWorkspace() {
       </div>
       {appliedTemplateId ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          已选择模板「{appliedTemplate}」（{appliedTemplateId}）。创建接口暂不接收 templateId，生成后仍使用默认版式；详见 BACKEND-GAPS。
+          已选择模板「{appliedTemplate}」，生成报价时将一并提交 templateId。
         </p>
       ) : null}
 

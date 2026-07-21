@@ -1,6 +1,7 @@
 import styles from "../styles/widget.module.css";
 import { RobotIcon } from "./icons";
 import { renderMarkdownToHtml } from "../lib/render-markdown";
+import type { CitationItem } from "../lib/types";
 
 interface MessageBubbleProps {
   role: "user" | "assistant" | "system";
@@ -8,6 +9,7 @@ interface MessageBubbleProps {
   accent: string;
   streaming?: boolean;
   loading?: boolean;
+  citations?: CitationItem[];
 }
 
 export function MessageBubble({
@@ -16,9 +18,11 @@ export function MessageBubble({
   accent,
   streaming,
   loading,
+  citations = [],
 }: MessageBubbleProps) {
   const isUser = role === "user";
   const html = !loading && content ? renderMarkdownToHtml(content) : "";
+  const showCitations = !isUser && !streaming && !loading && citations.length > 0;
 
   return (
     <div className={`${styles.bubbleRow} ${isUser ? styles.bubbleRowUser : ""}`}>
@@ -41,6 +45,22 @@ export function MessageBubble({
           )}
           {streaming && !loading && content ? <span className={styles.cursor} aria-hidden /> : null}
         </div>
+        {showCitations ? (
+          <details className={styles.citations} open>
+            <summary className={styles.citationsTitle}>资料来源（{citations.length}）</summary>
+            <ul className={styles.citationList}>
+              {citations.slice(0, 3).map((item, index) => {
+                const title = item.documentTitle || item.title || `资料 ${index + 1}`;
+                return (
+                  <li key={`${title}-${index}`} className={styles.citation}>
+                    <span className={styles.citationTitle}>{title}</span>
+                    {item.snippet ? <p className={styles.citationSnippet}>{item.snippet}</p> : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        ) : null}
       </div>
     </div>
   );

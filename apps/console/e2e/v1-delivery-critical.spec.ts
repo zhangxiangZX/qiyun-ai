@@ -312,7 +312,7 @@ test.describe("C-P0-07 V1 delivery critical journeys", () => {
 
   for (const viewport of [
     { name: "desktop", width: 1440, height: 900, routes: ["/dashboard/boss", "/dashboard/inquiries", "/dashboard/tasks", "/dashboard/knowledge-bases"] },
-    { name: "mobile", width: 390, height: 844, routes: ["/dashboard/inquiries", "/dashboard/tasks", "/dashboard/knowledge-bases"] },
+    { name: "mobile", width: 390, height: 844, routes: ["/dashboard/boss", "/dashboard/inquiries", "/dashboard/tasks", "/dashboard/knowledge-bases"] },
   ]) {
     test(`11) ${viewport.name} no horizontal overflow on key pages`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });

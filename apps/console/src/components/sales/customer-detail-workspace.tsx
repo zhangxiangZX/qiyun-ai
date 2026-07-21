@@ -134,7 +134,7 @@ interface QuoteRow {
   id: string;
   code: string;
   title: string;
-  quantity: number;
+  quantity: number | null;
   amount: number;
   validUntil: string;
   status: QuoteStage;
@@ -193,15 +193,6 @@ interface CustomerViewModel {
   tabCounts: Record<string, number>;
 }
 
-function hashString(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
 function formatDateTime(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
@@ -254,14 +245,13 @@ function buildFromApi(
   quotes: QuoteListItem[],
   customer: CustomerOpportunityItem | undefined,
 ): CustomerViewModel {
-  const hash = hashString(inquiry.id);
   const contact = parseContact(inquiry.customerContact);
   const activeStage = resolveActiveStage(customer?.lifecycleColumn ?? null, inquiry.quoteStatus);
   const quoteRows: QuoteRow[] = quotes.slice(0, 5).map((q) => ({
     id: q.id,
     code: `Q${q.id.slice(-8).toUpperCase()}`,
     title: q.title,
-    quantity: 5 + (hashString(q.id) % 20),
+    quantity: null,
     amount: q.quotedAmount ?? q.estimatedAmount ?? q.wonAmount ?? 0,
     validUntil: q.quoteDueAt ? formatDateTime(q.quoteDueAt).slice(0, 10) : "—",
     status: q.stage,
@@ -294,7 +284,7 @@ function buildFromApi(
     ...EMPTY,
     customerName: inquiry.customerName,
     shortName: inquiry.customerName.split(/\s+/)[0] ?? inquiry.customerName,
-    customerCode: `C${inquiry.createdAt.slice(0, 10).replace(/-/g, "")}${String(hash % 1000).padStart(3, "0")}`,
+    customerCode: `C${inquiry.id.slice(-8).toUpperCase()}`,
     sourceLabel: SOURCE_LABELS[inquiry.sourceType] ?? inquiry.sourceType,
     createdAt: formatDateTime(inquiry.createdAt),
     tagLabel: inquiry.intentLevel === "high" ? "重点客户" : "普通客户",
@@ -493,7 +483,7 @@ function OverviewContent({ data }: { data: CustomerViewModel }) {
                     <tr key={quote.id}>
                       <td>{quote.code}</td>
                       <td>{quote.title}</td>
-                      <td>{quote.quantity}台</td>
+                      <td>{quote.quantity == null ? "—" : `${quote.quantity}台`}</td>
                       <td>{formatCurrency(quote.amount)}</td>
                       <td>{quote.validUntil}</td>
                       <td>

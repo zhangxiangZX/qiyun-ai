@@ -172,6 +172,7 @@ export function NewTaskWorkspace() {
         inquiryId: inquiryId || undefined,
         customerName: selectedInquiry?.customerName,
         note: noteParts.join("\n"),
+        priority,
       });
       router.push(`/dashboard/tasks?created=${encodeURIComponent(created.id)}`);
     } catch (error) {

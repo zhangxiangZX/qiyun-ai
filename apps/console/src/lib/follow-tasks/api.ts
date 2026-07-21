@@ -55,11 +55,23 @@ export async function createFollowTask(input: {
   customerName?: string;
   ownerName?: string;
   note?: string;
+  priority?: "low" | "medium" | "high";
 }): Promise<FollowTaskEvent> {
-  return normalizeTask(await apiRequest<FollowTaskWire>("/follow-tasks", {
-    method: "POST",
-    body: input,
-  }));
+  const created = normalizeTask(
+    await apiRequest<FollowTaskWire>("/follow-tasks", {
+      method: "POST",
+      body: input,
+    }),
+  );
+  // Postgres POST currently hardcodes priority=medium; PATCH persists the chosen value.
+  if (input.priority && input.priority !== "medium") {
+    try {
+      await patchFollowTask(created.id, { priority: input.priority });
+    } catch {
+      // Keep created task; note still carries human-readable priority.
+    }
+  }
+  return created;
 }
 
 export async function followTaskAction(

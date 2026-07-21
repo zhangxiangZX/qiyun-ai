@@ -160,6 +160,7 @@ export function SitesWorkspace() {
           <ConsoleDataModeBanner feature="官网 Widget" />
         </ConsolePageAlerts>
         <PageHeader
+          variant="compact"
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
           actions={headerActions}
@@ -181,6 +182,7 @@ export function SitesWorkspace() {
           <ConsoleDataModeBanner feature="官网 Widget" />
         </ConsolePageAlerts>
         <PageHeader
+          variant="compact"
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
           actions={headerActions}
@@ -203,6 +205,7 @@ export function SitesWorkspace() {
           <ConsoleDataModeBanner feature="官网 Widget" />
         </ConsolePageAlerts>
         <PageHeader
+          variant="compact"
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
           actions={headerActions}
@@ -227,6 +230,7 @@ export function SitesWorkspace() {
     return (
       <ConsolePage>
         <PageHeader
+          variant="compact"
           title={t(defaultLocale, "sites.title")}
           description={t(defaultLocale, "sites.description")}
           actions={headerActions}
@@ -253,6 +257,7 @@ export function SitesWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         title={t(defaultLocale, "sites.title")}
         description="管理官网站点、域名白名单与 Widget 嵌入代码，将 AI 助手接入企业官网。"
         actions={headerActions}

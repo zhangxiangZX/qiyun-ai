@@ -44,6 +44,8 @@ export interface EnterpriseProfileForm {
   invoicePhone: string;
   branchName: string;
   branchCode: string;
+  /** 企业 Logo（data URL），用于报价 PDF / 导出图标 */
+  logoUrl: string;
 }
 
 export const DEFAULT_PROFILE: EnterpriseProfileForm = {
@@ -96,6 +98,7 @@ export const DEFAULT_PROFILE: EnterpriseProfileForm = {
   invoicePhone: "0571-8685 9999",
   branchName: "浙江企云科技有限公司",
   branchCode: "308331012345",
+  logoUrl: "",
 };
 
 export const INDUSTRY_OPTIONS = [

@@ -176,6 +176,7 @@ export function WidgetConfigWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         eyebrow="站点 / 官网 Widget"
         title="官网 Widget"
         description="配置和管理官网智能客服 Widget，实时预览并监控使用效果。"
