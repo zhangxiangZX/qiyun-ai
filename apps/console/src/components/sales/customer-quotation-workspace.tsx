@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -69,7 +69,7 @@ export function CustomerQuotationWorkspace({ quoteId }: { quoteId: string }) {
   const [isPreview, setIsPreview] = useState(false);
   const [confirmNotice, setConfirmNotice] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -88,11 +88,11 @@ export function CustomerQuotationWorkspace({ quoteId }: { quoteId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [quoteId]);
 
   useEffect(() => {
     void load();
-  }, [quoteId]);
+  }, [load]);
 
   const infoItems: InfoItem[] = useMemo(() => {
     if (!document) return [];
