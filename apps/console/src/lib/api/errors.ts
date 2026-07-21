@@ -55,10 +55,27 @@ export function isRateLimited(error: unknown): boolean {
   return false;
 }
 
+/** Prefer Chinese copy for common English upstream messages. */
+const ENGLISH_MESSAGE_ZH: Array<{ pattern: RegExp; zh: string }> = [
+  { pattern: /title and valid dueAt/i, zh: "请填写任务标题与有效的截止日期。" },
+  { pattern: /unsupported quote status/i, zh: "不支持的报价状态。" },
+  { pattern: /not found/i, zh: "资源不存在或已删除。" },
+  { pattern: /unauthorized|forbidden/i, zh: "没有操作权限，请重新登录或联系管理员。" },
+  { pattern: /validation/i, zh: "提交内容未通过校验，请检查后重试。" },
+  { pattern: /rate limit|too many/i, zh: "请求过于频繁，请稍后再试。" },
+  { pattern: /Request failed with status/i, zh: "服务暂时不可用，请稍后重试。" },
+];
+
 export function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (isApiError(error)) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
+  const raw =
+    isApiError(error) ? error.message : error instanceof Error && error.message ? error.message : "";
+  if (!raw) return fallback;
+  // Already Chinese (CJK) — keep as-is
+  if (/[\u4e00-\u9fff]/.test(raw)) return raw;
+  for (const rule of ENGLISH_MESSAGE_ZH) {
+    if (rule.pattern.test(raw)) return rule.zh;
+  }
+  return raw || fallback;
 }
 
 export function getRateLimitMessage(error: unknown, fallback = "请求过于频繁，请稍后再试。"): string {

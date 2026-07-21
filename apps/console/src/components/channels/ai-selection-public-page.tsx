@@ -168,10 +168,13 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [botThinking, setBotThinking] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<{ id: string; name: string; size: string }[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<
+    { id: string; name: string; size: string; attachmentId?: string; uploading?: boolean; error?: string }[]
+  >([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [leadHint, setLeadHint] = useState<string | null>(null);
 
@@ -334,15 +337,89 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     }, 300);
   }
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     if (!files.length) return;
-    const added = files.map((file, index) => ({
-      id: `f-${Date.now()}-${index}`,
-      name: file.name,
-      size: formatFileSize(file.size),
-    }));
-    setUploadedFiles((current) => [...current, ...added]);
+    const botId = config?.botId?.trim();
+    const siteKey = config?.siteKey?.trim();
+
+    for (const [index, file] of files.entries()) {
+      const localId = `f-${Date.now()}-${index}`;
+      setUploadedFiles((current) => [
+        ...current,
+        {
+          id: localId,
+          name: file.name,
+          size: formatFileSize(file.size),
+          uploading: true,
+        },
+      ]);
+
+      if (!botId || !siteKey) {
+        setUploadedFiles((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  uploading: false,
+                  error: "当前页面未绑定助手，仅记录文件名；请联系管理员完成绑定后再上传附件。",
+                }
+              : item,
+          ),
+        );
+        continue;
+      }
+
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("botId", botId);
+        form.append("siteKey", siteKey);
+        if (conversationId) form.append("conversationId", conversationId);
+        const response = await fetch("/api/public/leads/attachments", {
+          method: "POST",
+          body: form,
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          let message = `附件上传失败（${response.status}）`;
+          try {
+            const payload = (await response.json()) as { message?: string };
+            if (payload.message) message = payload.message;
+          } catch {
+            /* ignore */
+          }
+          throw new Error(message);
+        }
+        const payload = unwrapEnvelope<{ id?: string; fileName?: string }>(await response.json());
+        setUploadedFiles((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  uploading: false,
+                  attachmentId: payload?.id,
+                  name: payload?.fileName || file.name,
+                  error: undefined,
+                }
+              : item,
+          ),
+        );
+      } catch (error) {
+        setUploadedFiles((current) =>
+          current.map((item) =>
+            item.id === localId
+              ? {
+                  ...item,
+                  uploading: false,
+                  error: error instanceof Error ? error.message : "附件上传失败",
+                }
+              : item,
+          ),
+        );
+      }
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -351,6 +428,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
   }
 
   function handleSubmit() {
+    if (submitting || submitted) return;
     const name = formValues["name"]?.trim();
     const phone = formValues["phone"]?.trim();
     if (!name || !phone) {
@@ -376,6 +454,10 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     }
     if (uploadedFiles.length) {
       answers.files = uploadedFiles.map((f) => f.name).join(", ");
+      const attachmentIds = uploadedFiles.map((f) => f.attachmentId).filter(Boolean);
+      if (attachmentIds.length) {
+        answers.attachmentIds = attachmentIds.join(",");
+      }
     }
 
     const payload = {
@@ -393,6 +475,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     };
 
     void (async () => {
+      setSubmitting(true);
       try {
         const response = await fetch(`/api/selection-pages/public/${encodeURIComponent(slug)}/submit`, {
           method: "POST",
@@ -410,8 +493,9 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
         }
         let detail = "提交失败，请稍后重试";
         try {
-          const body = (await response.json()) as { message?: string };
+          const body = (await response.json()) as { message?: string; errorCode?: string; code?: string };
           if (body?.message) detail = body.message;
+          else if (body?.errorCode || body?.code) detail = `提交失败（${body.errorCode ?? body.code}）`;
         } catch {
           /* ignore parse errors */
         }
@@ -423,6 +507,8 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
           return;
         }
         setFormError("网络异常，提交失败，请稍后重试");
+      } finally {
+        setSubmitting(false);
       }
     })();
   }
@@ -622,9 +708,11 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className={styles.fileName}>{file.name}</div>
-                      <div className={styles.fileSize}>{file.size}</div>
+                      <div className={styles.fileSize}>
+                        {file.uploading ? "上传中…" : file.error ? file.error : file.size}
+                      </div>
                     </div>
-                    <CheckCircle2 size={16} color="#22c55e" />
+                    {file.uploading ? null : file.error ? null : <CheckCircle2 size={16} color="#22c55e" />}
                     <button type="button" className={styles.headerBtn} aria-label={`删除 ${file.name}`} onClick={() => removeFile(file.id)}>
                       <X size={16} />
                     </button>
@@ -700,10 +788,15 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
             </button>
           </form>
           <div className={styles.footerActions}>
-            <button type="button" className={styles.btnPrimary} onClick={handleSubmit}>
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              onClick={handleSubmit}
+              disabled={submitting || submitted}
+            >
               <Send size={16} />
               <div className={styles.btnPrimaryText}>
-                <div>{config.footer.submitLabel}</div>
+                <div>{submitting ? "提交中…" : config.footer.submitLabel}</div>
                 <div className={styles.btnPrimarySub}>{config.footer.submitSub}</div>
               </div>
             </button>

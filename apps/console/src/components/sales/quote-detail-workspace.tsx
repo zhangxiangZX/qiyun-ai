@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Check,
@@ -24,6 +24,7 @@ import {
   resolveRequestErrorPresentation,
 } from "@/components/console/console-request-error";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import {
   addQuoteFollowUp,
   downloadCurrentQuotePdf,
@@ -38,9 +39,9 @@ import {
   type QuoteDeliveryLog,
   type QuoteDocumentVersion,
 } from "@/lib/sales/api";
+import { resolveReturnTo } from "@/lib/sales/list-return";
 import type { InquiryDetail, QuoteDetail } from "@/lib/sales/types";
 import { QUOTE_STAGE_LABELS } from "@/lib/sales/types";
-import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import styles from "@/styles/quote-detail.module.css";
 
 interface ProgressStep {
@@ -232,7 +233,9 @@ function pickField(fields: Record<string, string>, keys: string[]): string | nul
 
 export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = {}) {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const resolvedId = quoteId ?? params.id;
+  const backHref = resolveReturnTo(searchParams.get("returnTo"), "/dashboard/quotes");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -249,6 +252,7 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
   const [sendChannel, setSendChannel] = useState<"email" | "link">("email");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [stageUpdating, setStageUpdating] = useState(false);
 
   const load = useCallback(async () => {
     if (!resolvedId) return;
@@ -418,13 +422,17 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
   }, [detail]);
 
   async function handleStageUpdate(stage: QuoteDetail["stage"]) {
-    if (!detail) return;
+    if (!detail || stageUpdating) return;
+    setStageUpdating(true);
+    setNotice(null);
     try {
       const updated = await updateQuoteOpportunity(detail.id, { stage });
       setDetail(updated);
-      setNotice("报价状态已更新。");
+      setNotice(stage === "won" ? "已标记成交。" : stage === "lost" ? "已标记丢单。" : "报价状态已更新。");
     } catch (nextError) {
-      setNotice(getApiErrorMessage(nextError, "更新报价状态失败。"));
+      setNotice(getApiErrorMessage(nextError, "更新报价状态失败，请稍后重试。"));
+    } finally {
+      setStageUpdating(false);
     }
   }
 
@@ -474,7 +482,12 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
       {notice ? <div className={styles.notice}>{notice}</div> : null}
 
       <div className={styles.pageHeader}>
-        <h1>报价详情</h1>
+        <div>
+          <Link href={backHref} className={styles.statsLink}>
+            ← 返回报价列表
+          </Link>
+          <h1>报价详情</h1>
+        </div>
         <div className={styles.headerActions}>
           <button
             type="button"
@@ -493,6 +506,7 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
           <button
             type="button"
             className={styles.btnPrimary}
+            disabled={stageUpdating}
             onClick={() => void handleStageUpdate("confirming")}
           >
             <RefreshCw size={14} /> 标记为客户确认中 <ChevronDown size={12} />
@@ -842,10 +856,10 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
               <button type="button" className={styles.quickBtn}>
                 <Phone size={14} color="#3b82f6" /> 联系客户
               </button>
-              <button type="button" className={styles.quickBtn} onClick={() => void handleStageUpdate("won")}>
+              <button type="button" className={styles.quickBtn} disabled={stageUpdating} onClick={() => void handleStageUpdate("won")}>
                 <CheckCircle size={14} color="#22c55e" /> 标记成交
               </button>
-              <button type="button" className={styles.quickBtn} onClick={() => void handleStageUpdate("lost")}>
+              <button type="button" className={styles.quickBtn} disabled={stageUpdating} onClick={() => void handleStageUpdate("lost")}>
                 <Flag size={14} color="#ef4444" /> 标记丢单
               </button>
               <button type="button" className={styles.quickBtn} onClick={() => void handleAddFollowUp()}>

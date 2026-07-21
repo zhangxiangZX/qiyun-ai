@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -26,6 +26,7 @@ import {
   ConsoleRequestError,
   resolveRequestErrorPresentation,
 } from "@/components/console/console-request-error";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { isPreviewModeError } from "@/lib/api/use-api-resource";
 import {
@@ -35,6 +36,7 @@ import {
   markInquiryLost,
   requestMissingFields,
 } from "@/lib/sales/api";
+import { resolveReturnTo } from "@/lib/sales/list-return";
 import type { InquiryDetail } from "@/lib/sales/types";
 import { INTENT_LABELS, SOURCE_TYPE_LABELS } from "@/lib/sales/types";
 import styles from "@/styles/inquiry-detail.module.css";
@@ -69,6 +71,8 @@ const FOLLOW_LOG = [
 
 export function InquiryDetailWorkspace({ inquiryId }: { inquiryId?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const backHref = resolveReturnTo(searchParams.get("returnTo"), "/dashboard/inquiries");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [inquiry, setInquiry] = useState<InquiryDetail | null>(null);
@@ -100,7 +104,11 @@ export function InquiryDetailWorkspace({ inquiryId }: { inquiryId?: string }) {
 
   const runAction = useCallback(
     async (label: string, action: () => Promise<void>) => {
-      if (!inquiryId || isPreview) return;
+      if (!inquiryId || actionBusy) return;
+      if (isPreview) {
+        setActionError(`预览模式下无法${label}，请配置 API_BASE_URL。`);
+        return;
+      }
       setActionBusy(true);
       setActionError(null);
       setActionMessage(null);
@@ -110,15 +118,15 @@ export function InquiryDetailWorkspace({ inquiryId }: { inquiryId?: string }) {
         await load();
       } catch (nextError) {
         if (isPreviewModeError(nextError)) {
-          setActionMessage(`${label}成功。（预览模式）`);
+          setActionError(`预览模式下无法${label}，请配置 API_BASE_URL。`);
         } else {
-          setActionError(nextError instanceof Error ? nextError.message : `${label}失败。`);
+          setActionError(getApiErrorMessage(nextError, `${label}失败，请稍后重试。`));
         }
       } finally {
         setActionBusy(false);
       }
     },
-    [inquiryId, isPreview, load],
+    [actionBusy, inquiryId, isPreview, load],
   );
 
   const handleConvertToQuote = useCallback(async () => {
@@ -200,6 +208,7 @@ export function InquiryDetailWorkspace({ inquiryId }: { inquiryId?: string }) {
         <InquiryModuleNav
           pageTitle={`${inquiry?.customerName ?? "询盘"} - 询盘详情`}
           showNewAction={false}
+          backHref={backHref}
         />
 
         {loading ? (
@@ -231,15 +240,15 @@ export function InquiryDetailWorkspace({ inquiryId }: { inquiryId?: string }) {
                     <div className={styles.metaGrid} style={{ marginTop: 12 }}>
                       <div>
                         <div className={styles.metaLabel}>询盘编号</div>
-                        <div className={styles.metaValue}>INQ-202406-000568</div>
+                        <div className={styles.metaValue}>{inquiry.id}</div>
                       </div>
                       <div>
                         <div className={styles.metaLabel}>来源渠道</div>
                         <div className={styles.metaValue}>{SOURCE_TYPE_LABELS[inquiry.sourceType]}</div>
                       </div>
                       <div>
-                        <div className={styles.metaLabel}>来源网站</div>
-                        <div className={styles.metaValue}>ai.kuzimash.com</div>
+                        <div className={styles.metaLabel}>负责人</div>
+                        <div className={styles.metaValue}>{inquiry.ownerId ?? "未分配"}</div>
                       </div>
                       <div>
                         <div className={styles.metaLabel}>接收时间</div>
@@ -423,39 +432,45 @@ export function InquiryDetailWorkspace({ inquiryId }: { inquiryId?: string }) {
 
                 <section className={styles.card}>
                   <h2 className={styles.cardTitle}>跟进记录</h2>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid #e2e8f0", color: "#64748b", textAlign: "left" }}>
-                        <th style={{ padding: "10px 8px" }}>时间</th>
-                        <th style={{ padding: "10px 8px" }}>跟进人</th>
-                        <th style={{ padding: "10px 8px" }}>方式</th>
-                        <th style={{ padding: "10px 8px" }}>摘要</th>
-                        <th style={{ padding: "10px 8px" }}>结果</th>
-                        <th style={{ padding: "10px 8px" }}>下一步</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {FOLLOW_LOG.map((row) => (
-                        <tr key={row.time} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "12px 8px" }}>{row.time}</td>
-                          <td style={{ padding: "12px 8px" }}>
-                            <span className={styles.ownerAvatar} style={{ display: "inline-flex", marginRight: 6, width: 22, height: 22, fontSize: 10 }}>
-                              {row.person.slice(0, 1)}
-                            </span>
-                            {row.person}
-                          </td>
-                          <td style={{ padding: "12px 8px" }}>{row.method}</td>
-                          <td style={{ padding: "12px 8px" }}>{row.summary}</td>
-                          <td style={{ padding: "12px 8px" }}>
-                            <span className={`${styles.tag} ${row.resultTone === "green" ? styles.tagGreen : row.resultTone === "blue" ? styles.tagBlue : styles.tagGray}`}>
-                              {row.result}
-                            </span>
-                          </td>
-                          <td style={{ padding: "12px 8px" }}>{row.next}</td>
+                  {isPreview ? (
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #e2e8f0", color: "#64748b", textAlign: "left" }}>
+                          <th style={{ padding: "10px 8px" }}>时间</th>
+                          <th style={{ padding: "10px 8px" }}>跟进人</th>
+                          <th style={{ padding: "10px 8px" }}>方式</th>
+                          <th style={{ padding: "10px 8px" }}>摘要</th>
+                          <th style={{ padding: "10px 8px" }}>结果</th>
+                          <th style={{ padding: "10px 8px" }}>下一步</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {FOLLOW_LOG.map((row) => (
+                          <tr key={row.time} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px 8px" }}>{row.time}</td>
+                            <td style={{ padding: "12px 8px" }}>
+                              <span className={styles.ownerAvatar} style={{ display: "inline-flex", marginRight: 6, width: 22, height: 22, fontSize: 10 }}>
+                                {row.person.slice(0, 1)}
+                              </span>
+                              {row.person}
+                            </td>
+                            <td style={{ padding: "12px 8px" }}>{row.method}</td>
+                            <td style={{ padding: "12px 8px" }}>{row.summary}</td>
+                            <td style={{ padding: "12px 8px" }}>
+                              <span className={`${styles.tag} ${row.resultTone === "green" ? styles.tagGreen : row.resultTone === "blue" ? styles.tagBlue : styles.tagGray}`}>
+                                {row.result}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 8px" }}>{row.next}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p style={{ padding: "16px 8px", fontSize: 13, color: "#64748b" }}>
+                      暂无跟进记录。请到「跟进任务」创建后在此汇总查看。
+                    </p>
+                  )}
                 </section>
               </div>
 

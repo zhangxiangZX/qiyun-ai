@@ -100,41 +100,52 @@ interface ProductRow {
 export function NewQuotationWorkspace() {
   const router = useRouter();
   const [rows, setRows] = useState<ProductRow[]>([
-    { id: "1", name: "工业级交换机", model: "ISW-8000-24T", unit: "台", qty: 10, price: 2800, discount: 5 },
-    { id: "2", name: "光纤终端模块", model: "SFP-TG-SR", unit: "个", qty: 20, price: 1200, discount: 0 },
-    { id: "3", name: "工业电源", model: "PWR-240-48", unit: "台", qty: 10, price: 680, discount: 0 },
-    { id: "4", name: "安装调试", model: "BPK-100", unit: "套", qty: 10, price: 120, discount: 0 },
+    { id: "1", name: "", model: "", unit: "台", qty: 1, price: 0, discount: 0 },
   ]);
 
-  const [freight, setFreight] = useState(1200);
-  const [install, setInstall] = useState(3000);
+  const [freight, setFreight] = useState(0);
+  const [install, setInstall] = useState(0);
   const [other, setOther] = useState(0);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<InquiryListItem[]>([]);
   const [selectedInquiryId, setSelectedInquiryId] = useState("");
-  const [customerName, setCustomerName] = useState("浙江环球科技有限公司");
-  const [contactName, setContactName] = useState("李娜");
+  const [customerName, setCustomerName] = useState("");
+  const [contactName, setContactName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isPreview, setIsPreview] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+  const [listLoading, setListLoading] = useState(true);
+  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
+    setListLoading(true);
     void listInquiries({ status: "open", limit: 100 })
       .then((items) => {
         setInquiries(items);
+        setListError(null);
         if (items[0]) {
           setSelectedInquiryId(items[0].id);
           setCustomerName(items[0].customerName);
-          setContactName(items[0].customerContact ?? "—");
+          setContactName(items[0].customerContact ?? "");
         }
-        setIsPreview(items.length === 0);
+        setIsPreview(false);
       })
-      .catch(() => setIsPreview(true));
+      .catch((error) => {
+        setInquiries([]);
+        setIsPreview(false);
+        setListError(getApiErrorMessage(error, "询盘列表加载失败，请稍后重试。"));
+      })
+      .finally(() => setListLoading(false));
   }, []);
 
   const handleCreateQuote = async () => {
+    if (submitting) return;
+    if (!customerName.trim()) {
+      setSubmitError("请填写客户名称。");
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -186,6 +197,7 @@ export function NewQuotationWorkspace() {
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="新建报价" />
+        {listError ? <ConsoleRequestError message={listError} /> : null}
         {submitError ? <ConsoleRequestError message={submitError} /> : null}
       </ConsolePageAlerts>
 
@@ -240,10 +252,10 @@ export function NewQuotationWorkspace() {
                 <Input value={contactName} onChange={(event) => setContactName(event.target.value)} />
               </Field>
               <Field label="联系电话">
-                <Input defaultValue="138 8888 8888" />
+                <Input placeholder="选填" />
               </Field>
               <Field label="邮箱">
-                <Input defaultValue="liming@huaqiu.com" />
+                <Input placeholder="选填" />
               </Field>
               <details className="group">
                 <summary className="cursor-pointer list-none text-xs text-primary hover:underline">
@@ -276,20 +288,17 @@ export function NewQuotationWorkspace() {
             <div className="grid grid-cols-2 gap-4">
               <Field label="报价单号" required>
                 <div className="relative">
-                  <Input defaultValue="QT-2024-0601-001" className="pr-9" />
-                  <button className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary">
-                    <RefreshCw size={14} />
-                  </button>
+                  <Input placeholder={listLoading ? "加载中…" : "保存后由系统生成"} disabled className="pr-9" />
                 </div>
               </Field>
               <Field label="报价日期" required>
-                <Input type="date" defaultValue="2024-06-01" />
+                <Input type="date" />
               </Field>
               <Field label="报价有效期" required>
-                <Input type="date" defaultValue="2024-06-30" />
+                <Input type="date" />
               </Field>
               <Field label="报价人">
-                <Input defaultValue="张伟" />
+                <Input placeholder="当前登录用户" />
               </Field>
               <Field label="币种" required>
                 <Select defaultValue="cny">

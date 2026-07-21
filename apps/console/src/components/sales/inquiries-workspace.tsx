@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bot,
@@ -23,11 +24,14 @@ import { Skeleton } from "@qiyun/ui";
 
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import {
   buildInquiryListQuery,
   computeInquiryKpis,
+  computeQuickFilters,
   computeTabCounts,
+  computeUnassignedAlerts,
   mapInquiryRowDisplay,
   matchesInquiryTab,
 } from "@/lib/sales/inquiry-center-helpers";
@@ -38,12 +42,10 @@ import {
 } from "@/lib/sales/inquiry-export";
 import { listInquiries } from "@/lib/sales/api";
 import {
-  INQUIRY_TABLE_ROWS,
   INQUIRY_TABS,
-  QUICK_FILTERS,
-  UNASSIGNED_ALERTS,
   type InquiryTabKey,
 } from "@/lib/sales/inquiries-center-mock";
+import { buildInquiryListHref, withReturnTo } from "@/lib/sales/list-return";
 import { MOCK_INQUIRIES } from "@/lib/sales/mock-data";
 import type { InquiryListItem, IntentLevel } from "@/lib/sales/types";
 import styles from "@/styles/inquiry-center.module.css";
@@ -76,46 +78,61 @@ function statusClass(tone: string) {
 }
 
 function mapApiToRows(items: InquiryListItem[]) {
-  if (!items.length) return [];
-  return items.map((item, i) => {
-    const mapped = mapInquiryRowDisplay(item, i);
-    const demo = INQUIRY_TABLE_ROWS[i];
-    if (!demo) return mapped;
-    return {
-      ...mapped,
-      displayId: demo.displayId ?? mapped.displayId,
-      channelLabel: demo.channelLabel ?? mapped.channelLabel,
-      channelTone: demo.channelTone ?? mapped.channelTone,
-      productNeed: demo.productNeed ?? mapped.productNeed,
-    };
-  });
+  return items.map((item, i) => mapInquiryRowDisplay(item, i));
 }
 
 export function InquiriesWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const defaultRange = defaultInquiryDateRange();
-  const [data, setData] = useState<InquiryListItem[]>(MOCK_INQUIRIES);
+  const [data, setData] = useState<InquiryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPreview, setIsPreview] = useState(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<InquiryTabKey>("all");
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [tab, setTab] = useState<InquiryTabKey>(
+    () => (searchParams.get("tab") as InquiryTabKey) || "all",
+  );
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [debouncedQuery, setDebouncedQuery] = useState(() => searchParams.get("q") ?? "");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const [dateFrom, setDateFrom] = useState(defaultRange.from);
-  const [dateTo, setDateTo] = useState(defaultRange.to);
-  const [intentFilter, setIntentFilter] = useState<IntentLevel | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">("all");
+  const [dateFrom, setDateFrom] = useState(() => searchParams.get("from") ?? defaultRange.from);
+  const [dateTo, setDateTo] = useState(() => searchParams.get("to") ?? defaultRange.to);
+  const [intentFilter, setIntentFilter] = useState<IntentLevel | "all">(
+    () => (searchParams.get("intent") as IntentLevel | "all") || "all",
+  );
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed">(
+    () => (searchParams.get("status") as "all" | "open" | "closed") || "all",
+  );
   const PAGE_SIZE = 10;
+
+  const listHref = useMemo(
+    () =>
+      buildInquiryListHref({
+        tab,
+        q: debouncedQuery,
+        intent: intentFilter,
+        status: statusFilter,
+        from: dateFrom,
+        to: dateTo,
+      }),
+    [tab, debouncedQuery, intentFilter, statusFilter, dateFrom, dateTo],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
     return () => window.clearTimeout(timer);
   }, [query]);
 
+  useEffect(() => {
+    router.replace(listHref, { scroll: false });
+  }, [listHref, router]);
+
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
       const preview = mode ? isPreviewMode(mode) : true;
@@ -126,9 +143,10 @@ export function InquiriesWorkspace() {
       }
       const items = await listInquiries(buildInquiryListQuery({ tab, q: debouncedQuery }));
       setData(items);
-    } catch {
-      setData(MOCK_INQUIRIES);
-      setIsPreview(true);
+    } catch (error) {
+      setData([]);
+      setIsPreview(false);
+      setLoadError(getApiErrorMessage(error, "询盘列表加载失败，请稍后重试。"));
     } finally {
       setLoading(false);
     }
@@ -145,6 +163,8 @@ export function InquiriesWorkspace() {
   );
   const kpis = useMemo(() => computeInquiryKpis(dateScoped), [dateScoped]);
   const tabs = useMemo(() => computeTabCounts(dateScoped), [dateScoped]);
+  const quickFilters = useMemo(() => computeQuickFilters(dateScoped), [dateScoped]);
+  const unassignedAlerts = useMemo(() => computeUnassignedAlerts(dateScoped), [dateScoped]);
 
   const filtered = useMemo(() => {
     const baseRows = isPreview ? mapApiToRows(MOCK_INQUIRIES) : mapApiToRows(data);
@@ -197,6 +217,9 @@ export function InquiriesWorkspace() {
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="询盘中心" />
+        {loadError ? (
+          <p style={{ margin: 0, fontSize: 13, color: "#b91c1c" }}>{loadError}</p>
+        ) : null}
         {exportNotice ? (
           <p style={{ margin: 0, fontSize: 13, color: "#166534" }}>{exportNotice}</p>
         ) : null}
@@ -224,7 +247,7 @@ export function InquiriesWorkspace() {
           </div>
           <button type="button" className={styles.btnExport} style={{ marginLeft: "auto" }} onClick={handleExport}>
             <Download size={14} />
-            导出
+            导出当前列表
           </button>
         </div>
 
@@ -428,7 +451,10 @@ export function InquiriesWorkspace() {
                             <input type="checkbox" aria-label={`选择 ${row.displayId}`} />
                           </td>
                           <td>
-                            <Link href={`/dashboard/inquiries/${row.id}`} className={styles.actionLink}>
+                            <Link
+                              href={withReturnTo(`/dashboard/inquiries/${row.id}`, listHref)}
+                              className={styles.actionLink}
+                            >
                               {row.displayId}
                             </Link>
                           </td>
@@ -496,7 +522,10 @@ export function InquiriesWorkspace() {
                             <div className={styles.timeMuted}>{row.lastFollowAgo}</div>
                           </td>
                           <td>
-                            <Link href={`/dashboard/inquiries/${row.id}`} className={styles.actionLink}>
+                            <Link
+                              href={withReturnTo(`/dashboard/inquiries/${row.id}`, listHref)}
+                              className={styles.actionLink}
+                            >
                               详情
                             </Link>
                             <button type="button" className={styles.actionLink} style={{ marginLeft: 8 }}>
@@ -562,8 +591,16 @@ export function InquiriesWorkspace() {
                     </button>
                   </div>
                   <div className={styles.quickFilterRow}>
-                    {QUICK_FILTERS.map((f) => (
-                      <button key={f.label} type="button" className={styles.quickFilterChip}>
+                    {quickFilters.map((f) => (
+                      <button
+                        key={f.label}
+                        type="button"
+                        className={styles.quickFilterChip}
+                        onClick={() => {
+                          setTab(f.tab);
+                          setPage(1);
+                        }}
+                      >
                         {f.label} ({f.count})
                       </button>
                     ))}
@@ -577,15 +614,19 @@ export function InquiriesWorkspace() {
                     </Link>
                   </div>
                   <div className={styles.assignList}>
-                    {UNASSIGNED_ALERTS.map((a) => (
-                      <div key={a.id} className={styles.assignCard}>
-                        <div className={styles.assignCardId}>{a.id}</div>
-                        <div className={styles.assignCardMeta}>{a.company}</div>
-                        <div className={styles.assignCardMeta}>
-                          {a.channel} · {a.time}
+                    {unassignedAlerts.length ? (
+                      unassignedAlerts.map((a) => (
+                        <div key={a.id} className={styles.assignCard}>
+                          <div className={styles.assignCardId}>{a.id}</div>
+                          <div className={styles.assignCardMeta}>{a.company}</div>
+                          <div className={styles.assignCardMeta}>
+                            {a.channel} · {a.time}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className={styles.assignCardMeta}>暂无待分配询盘</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -629,13 +670,13 @@ export function InquiriesWorkspace() {
                     <span className={styles.quickIcon} style={{ background: "#3b82f6" }}>
                       <Plus size={14} />
                     </span>
-                    <span className={styles.quickText}>快速录入</span>
+                    <span className={styles.quickText}>AI 快速录入</span>
                   </Link>
                   <Link href="/dashboard/inquiries/new" className={styles.quickAction}>
                     <span className={styles.quickIcon} style={{ background: "#22c55e" }}>
                       <UserPlus size={14} />
                     </span>
-                    <span className={styles.quickText}>新建询盘</span>
+                    <span className={styles.quickText}>表单新建询盘</span>
                   </Link>
                   <Link href="/dashboard/tasks" className={styles.quickAction}>
                     <span className={styles.quickIcon} style={{ background: "#f59e0b" }}>

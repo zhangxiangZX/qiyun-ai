@@ -26,6 +26,7 @@ import {
   ConsoleModeBadge,
 } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { isPreviewModeError } from "@/lib/api/use-api-resource";
 import {
   aiExtractQuickEntry,
@@ -197,7 +198,7 @@ export function QuickEntryWorkspace() {
       if (isPreviewModeError(err)) {
         setActionError("预览模式下无法调用 AI 提取，请配置 API_BASE_URL。");
       } else {
-        setActionError(err instanceof Error ? err.message : "AI 提取失败，请稍后重试。");
+        setActionError(getApiErrorMessage(err, "AI 提取失败，请稍后重试。"));
       }
     } finally {
       setExtracting(false);
@@ -239,7 +240,7 @@ export function QuickEntryWorkspace() {
   };
 
   const saveInquiry = async (createAnother: boolean) => {
-    if (!canSave) return;
+    if (!canSave || saving) return;
     setSaving(true);
     setActionError(null);
     setActionMessage(null);
@@ -278,7 +279,7 @@ export function QuickEntryWorkspace() {
       if (isPreviewModeError(err)) {
         setActionError("预览模式下无法保存询盘，请配置 API_BASE_URL。");
       } else {
-        setActionError(err instanceof Error ? err.message : "保存失败，请稍后重试。");
+        setActionError(getApiErrorMessage(err, "保存失败，请稍后重试。"));
       }
     } finally {
       setSaving(false);
@@ -301,7 +302,7 @@ export function QuickEntryWorkspace() {
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleModeBadge />
-        <ConsoleDataModeBanner feature="快速录入" />
+        <ConsoleDataModeBanner feature="AI 快速录入" />
       </ConsolePageAlerts>
 
       {actionError ? (
@@ -319,7 +320,7 @@ export function QuickEntryWorkspace() {
         <section className="rounded-card border border-border bg-card p-5 shadow-card">
           <div className="mb-4 flex items-center gap-2">
             <Sparkles size={16} className="text-primary" />
-            <h2 className="text-base font-semibold text-foreground">智能快速录入</h2>
+            <h2 className="text-base font-semibold text-foreground">AI 快速录入</h2>
             <Badge variant="info" className="ml-auto">
               AI 增强
             </Badge>

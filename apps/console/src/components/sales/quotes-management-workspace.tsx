@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -23,8 +24,10 @@ import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-ba
 import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { listQuoteOpportunities } from "@/lib/sales/api";
+import { buildQuoteListHref, withReturnTo } from "@/lib/sales/list-return";
 import {
   formatQuoteNumber,
   formatQuoteValidityNote,
@@ -94,24 +97,37 @@ function mapApiToDashboardRow(item: QuoteListItem, index: number): QuoteDashboar
 }
 
 export function QuotesManagementWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<QuoteListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
 
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [statusTab, setStatusTab] = useState<QuoteDisplayStatus | "all">("all");
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [debouncedQuery, setDebouncedQuery] = useState(() => searchParams.get("q") ?? "");
+  const [statusTab, setStatusTab] = useState<QuoteDisplayStatus | "all">(
+    () => (searchParams.get("status") as QuoteDisplayStatus | "all") || "all",
+  );
   const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("2024-06-01");
   const [dateTo, setDateTo] = useState("2024-06-30");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  const listHref = useMemo(
+    () => buildQuoteListHref({ status: statusTab, q: debouncedQuery }),
+    [statusTab, debouncedQuery],
+  );
+
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  useEffect(() => {
+    router.replace(listHref, { scroll: false });
+  }, [listHref, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -124,8 +140,9 @@ export function QuotesManagementWorkspace() {
       const items = await listQuoteOpportunities({ q: debouncedQuery });
       setData(items);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "请求失败");
-      setIsPreview(true);
+      setError(getApiErrorMessage(nextError, "报价列表加载失败，请稍后重试。"));
+      setIsPreview(false);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -201,7 +218,7 @@ export function QuotesManagementWorkspace() {
   };
 
   const detailHref = (row: QuoteDashboardRow) =>
-    isPreview ? "/dashboard/quotes/detail" : `/dashboard/quotes/${row.id}`;
+    withReturnTo(`/dashboard/quotes/${row.id}`, listHref);
 
   function handleExport() {
     const source = filtered;
@@ -231,6 +248,7 @@ export function QuotesManagementWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="报价管理"
         description="创建、发送并追踪客户报价，统一管理成交进度。"
         actions={
@@ -325,7 +343,7 @@ export function QuotesManagementWorkspace() {
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  className="w-full rounded-md border border-border py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-md border border-input py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                   placeholder="搜索报价单号、客户公司、产品/项目..."
                   value={query}
                   onChange={(event) => {
@@ -334,7 +352,7 @@ export function QuotesManagementWorkspace() {
                   }}
                 />
               </div>
-              <select className="rounded-md border border-border bg-background px-3 py-2 text-sm">
+              <select className="rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option>报价状态：全部</option>
               </select>
               <div className="flex items-center gap-2">
@@ -524,7 +542,7 @@ export function QuotesManagementWorkspace() {
                 <Link href="/dashboard/quotes/templates">报价模板管理</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/quotes/detail">报价详情示例</Link>
+                <Link href="/dashboard/quotes">返回报价列表</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/dashboard/quotes/new">新建报价</Link>

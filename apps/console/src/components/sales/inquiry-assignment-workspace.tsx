@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -26,13 +27,11 @@ import {
   ConsoleModeBadge,
 } from "@/components/console/console-data-mode-banner";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
+import { ConsoleRequestError } from "@/components/console/console-request-error";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { isPreviewModeError, useApiResource } from "@/lib/api/use-api-resource";
-import {
-  assignInquiry,
-  batchAssignInquiries,
-} from "@/lib/sales/api";
+import { assignInquiry } from "@/lib/sales/api";
 import { formatInquiryDate } from "@/lib/sales/quick-entry-helpers";
-import { MOCK_INQUIRIES } from "@/lib/sales/mock-data";
 import {
   INTENT_LABELS,
   SOURCE_TYPE_LABELS,
@@ -41,58 +40,17 @@ import {
   type InquiryListItem,
 } from "@/lib/sales/types";
 
-const FALLBACK_INQUIRIES: InquiryListItem[] = MOCK_INQUIRIES.filter((item) => !item.ownerId);
-
-const MOCK_ASSIGN_STATS: InquiryAssignStats = {
-  unassignedCount: 42,
-  todayNewCount: 18,
-  highPriorityUnassignedCount: 7,
-  avgAssignHours: 2.6,
-  assignedOpenCount: 56,
-  monthAssignedCount: 98,
+/** Preview-only empty shells — never use rich fake stats that mask API failures. */
+const EMPTY_INQUIRIES: InquiryListItem[] = [];
+const EMPTY_ASSIGN_STATS: InquiryAssignStats = {
+  unassignedCount: 0,
+  todayNewCount: 0,
+  highPriorityUnassignedCount: 0,
+  avgAssignHours: null,
+  assignedOpenCount: 0,
+  monthAssignedCount: 0,
 };
-
-const MOCK_CANDIDATES: InquiryAssignCandidate[] = [
-  {
-    userId: "u-002",
-    name: "李娜",
-    email: "lina@qiyun.com",
-    role: "admin",
-    currentLoad: 6,
-    maxCapacity: 25,
-    loadRate: 24,
-    matchScore: 95,
-    status: "idle",
-    reason: "高意向负载较轻，适合优先接手",
-    recommended: true,
-  },
-  {
-    userId: "u-003",
-    name: "王磊",
-    email: "wanglei@qiyun.com",
-    role: "member",
-    currentLoad: 18,
-    maxCapacity: 25,
-    loadRate: 72,
-    matchScore: 78,
-    status: "busy",
-    reason: "负载偏高，建议作为备选",
-    recommended: false,
-  },
-  {
-    userId: "u-004",
-    name: "陈晨",
-    email: "chenchen@qiyun.com",
-    role: "member",
-    currentLoad: 12,
-    maxCapacity: 25,
-    loadRate: 48,
-    matchScore: 82,
-    status: "normal",
-    reason: "综合负载与角色匹配",
-    recommended: false,
-  },
-];
+const EMPTY_CANDIDATES: InquiryAssignCandidate[] = [];
 
 function candidateStatusLabel(status: InquiryAssignCandidate["status"]) {
   if (status === "busy") return "忙碌";
@@ -143,9 +101,11 @@ function priorityVariant(level: InquiryListItem["intentLevel"]) {
 }
 
 export function InquiryAssignmentWorkspace() {
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(focusId);
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [assignRemark, setAssignRemark] = useState("");
   const [assigning, setAssigning] = useState(false);
@@ -155,14 +115,15 @@ export function InquiryAssignmentWorkspace() {
   const {
     data: allInquiries,
     loading: inquiriesLoading,
-    isPreview,
+    error: inquiriesError,
     refetch: refetchInquiries,
-  } = useApiResource<InquiryListItem[]>("/inquiries?limit=200&status=open", MOCK_INQUIRIES);
+  } = useApiResource<InquiryListItem[]>("/inquiries?limit=200&status=open", EMPTY_INQUIRIES);
 
   const {
     data: assignStats,
+    error: statsError,
     refetch: refetchAssignStats,
-  } = useApiResource<InquiryAssignStats>("/inquiries/assign-stats", MOCK_ASSIGN_STATS);
+  } = useApiResource<InquiryAssignStats>("/inquiries/assign-stats", EMPTY_ASSIGN_STATS);
 
   const unassigned = useMemo(() => {
     const items = allInquiries.filter((item) => !item.ownerId);
@@ -189,7 +150,7 @@ export function InquiryAssignmentWorkspace() {
     activeInquiry
       ? `/inquiries/${encodeURIComponent(activeInquiry.id)}/assign-candidates`
       : "/inquiries/assign-stats",
-    MOCK_CANDIDATES,
+    EMPTY_CANDIDATES,
     { enabled: !!activeInquiry, deps: [activeInquiry?.id] },
   );
 
@@ -209,6 +170,10 @@ export function InquiryAssignmentWorkspace() {
   );
 
   useEffect(() => {
+    if (focusId) setActiveId(focusId);
+  }, [focusId]);
+
+  useEffect(() => {
     const top = candidates.find((item) => item.recommended) ?? candidates[0];
     setOwnerId(top?.userId ?? null);
   }, [activeInquiry?.id, candidates]);
@@ -220,6 +185,7 @@ export function InquiryAssignmentWorkspace() {
   }, []);
 
   const handleAssign = async (batch: boolean) => {
+    if (assigning) return;
     const targetOwnerId = selectedOwner?.userId;
     if (!targetOwnerId) {
       setAssignError("请选择负责人。");
@@ -247,10 +213,9 @@ export function InquiryAssignmentWorkspace() {
     setAssignError(null);
     setAssignMessage(null);
     try {
-      if (inquiryIds.length === 1) {
-        await assignInquiry(inquiryIds[0], targetOwnerId, assignRemark.trim());
-      } else {
-        await batchAssignInquiries(inquiryIds, targetOwnerId);
+      // batch-assign API 不支持 remark，逐条调用 /assign 保证备注落库
+      for (const id of inquiryIds) {
+        await assignInquiry(id, targetOwnerId, assignRemark.trim());
       }
       setAssignMessage(`已成功分配 ${inquiryIds.length} 个询盘。`);
       setSelectedIds([]);
@@ -262,7 +227,7 @@ export function InquiryAssignmentWorkspace() {
       if (isPreviewModeError(err)) {
         setAssignError("预览模式下无法分配询盘，请配置 API_BASE_URL。");
       } else {
-        setAssignError(err instanceof Error ? err.message : "分配失败，请稍后重试。");
+        setAssignError(getApiErrorMessage(err, "分配失败，请稍后重试。"));
       }
     } finally {
       setAssigning(false);
@@ -277,13 +242,17 @@ export function InquiryAssignmentWorkspace() {
     }
   };
 
-  const displayInquiries = isPreview && unassigned.length === 0 ? FALLBACK_INQUIRIES : unassigned;
+  const displayInquiries = unassigned;
+  const loadError = inquiriesError || statsError;
 
   return (
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleModeBadge />
         <ConsoleDataModeBanner feature="询盘分配" />
+        {loadError ? (
+          <ConsoleRequestError message={loadError} onRetry={refreshAll} />
+        ) : null}
       </ConsolePageAlerts>
 
       <div className="pb-6">

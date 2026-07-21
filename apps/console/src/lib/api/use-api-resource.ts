@@ -12,7 +12,7 @@ import { ApiError } from "@/lib/api/errors";
 /*   - 调用 BFF 路由 /api{path}                                               */
 /*   - 成功(200) → 真实数据，isPreview=false                                  */
 /*   - 503 / PREVIEW_MODE（未配置 API_BASE_URL）→ 回退 mockData，isPreview=true */
-/*   - 其他错误 → error 置位，仍回退 mockData 保证页面可用                     */
+/*   - 其他错误 → error 置位，isPreview=false（不把失败伪装成预览 mock）        */
 /*                                                                            */
 /*  设计来源：apps/console/src/lib/api/{client,errors,mode}.ts 已实现的        */
 /*  双数据模式（upstream / preview）。本 hook 是其 React 封装。               */
@@ -70,9 +70,9 @@ export function useApiResource<T>(
           setData(fallback);
           setIsPreview(true);
         } else {
+          // 真实上游错误：展示错误，不把失败伪装成预览 mock
           setError(err instanceof Error ? err.message : "请求失败");
-          setData(fallback);
-          setIsPreview(true);
+          setIsPreview(false);
         }
       })
       .finally(() => {
