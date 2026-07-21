@@ -17,6 +17,7 @@ import {
 } from "@qiyun/ui";
 
 import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
+import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/components/console/console-request-error";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import {
@@ -296,28 +297,33 @@ export function QuotesWorkspace() {
 
   if (loading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.main}>
-          <p className={styles.loadingText}>正在加载报价数据…</p>
-          <Skeleton className="h-64 w-full" />
+      <ConsolePage>
+        <div className={styles.page}>
+          <div className={styles.main}>
+            <p className={styles.loadingText}>正在加载报价数据…</p>
+            <Skeleton className="h-64 w-full" />
+          </div>
         </div>
-      </div>
+      </ConsolePage>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.main}>
-        <ConsoleRequestError
-          {...resolveRequestErrorPresentation(error, "无法加载报价列表。")}
-          onRetry={() => void load()}
-        />
-      </div>
+      <ConsolePage>
+        <ConsolePageAlerts>
+          <ConsoleRequestError
+            {...resolveRequestErrorPresentation(error, "无法加载报价列表。")}
+            onRetry={() => void load()}
+          />
+        </ConsolePageAlerts>
+      </ConsolePage>
     );
   }
 
   return (
-    <div className={styles.page}>
+    <ConsolePage>
+      <div className={styles.page}>
       <div className={styles.main}>
         <div className={styles.pageHeaderRow}>
           <div className={styles.pageTitle}>
@@ -654,6 +660,7 @@ export function QuotesWorkspace() {
           ))}
         </section>
       </aside>
-    </div>
+      </div>
+    </ConsolePage>
   );
 }

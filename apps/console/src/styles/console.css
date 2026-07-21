@@ -40,6 +40,25 @@
     @apply rounded-card border border-border/80 bg-muted/40;
   }
 
+  /*
+   * Canonical form controls — single source for input/select/textarea chrome.
+   * Prefer @qiyun/ui Input/Select/Textarea; use these classes on raw controls.
+   */
+  .ui-control {
+    @apply h-10 w-full rounded-control border border-solid border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors;
+    @apply placeholder:text-muted-foreground;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  textarea.ui-control {
+    @apply h-auto min-h-[5rem] py-2;
+  }
+
+  select.ui-control {
+    @apply pr-8;
+  }
+
   .page-stack {
     @apply space-y-5;
   }
@@ -94,13 +113,17 @@
      console visually consistent.
      ========================================================= */
 
-  /* Outer page wrapper: centered, capped width, consistent padding */
+  /* Outer page wrapper: centered, capped width, consistent padding.
+     Horizontal padding lives on `.content` (see v2-prototype) so pages
+     do not double-gutter. Vertical rhythm stays on the shell. */
   .page-shell {
     width: 100%;
-    max-width: none;
-    margin-inline: 0;
+    max-width: var(--page-max-width);
+    margin-inline: auto;
+    min-width: 0;
     padding: var(--page-padding-block) 0
       calc(var(--page-padding-block) * 1.5);
+    box-sizing: border-box;
   }
 
   /* Page header block (title + optional subtitle/actions) */
@@ -175,7 +198,7 @@
 
   .kpi-tile:hover {
     transform: translateY(-2px);
-    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    border-color: color-mix(in srgb, hsl(var(--primary)) 35%, hsl(var(--border)));
     box-shadow:
       0 8px 24px hsl(var(--primary) / 0.1),
       0 2px 8px hsl(var(--primary) / 0.06);
@@ -200,13 +223,13 @@
 
   .kpi-tile__label {
     margin: 0 0 4px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: hsl(var(--muted-foreground));
   }
 
   .kpi-tile__value {
     margin: 0;
-    font-size: 24px;
+    font-size: var(--kpi-value-size);
     font-weight: 700;
     line-height: 1.1;
     color: hsl(var(--foreground));
@@ -214,8 +237,73 @@
 
   .kpi-tile__trend {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: #22c55e;
+  }
+
+  /* Shared filter strip — role-home / inquiry density */
+  .console-filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    padding: var(--filter-bar-pad-y) var(--filter-bar-pad-x);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-card);
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-card);
+    min-width: 0;
+  }
+
+  .console-filter-control {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: var(--control-height);
+    padding: 0 var(--sp-3);
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--control-radius);
+    background: hsl(var(--card));
+    font-size: var(--fs-sm);
+    color: hsl(var(--foreground));
+    box-sizing: border-box;
+  }
+
+  /* Shared table density */
+  .console-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--table-font-size);
+  }
+
+  .console-data-table th,
+  .console-data-table td {
+    padding: var(--table-cell-pad-y) var(--table-cell-pad-x);
+    text-align: left;
+    border-bottom: 1px solid hsl(var(--border));
+    vertical-align: middle;
+  }
+
+  .console-data-table th {
+    height: var(--table-th-height);
+    font-size: var(--table-head-font-size);
+    font-weight: 600;
+    color: hsl(var(--muted-foreground));
+    background: hsl(var(--muted) / 0.45);
+    white-space: nowrap;
+  }
+
+  .console-data-table td {
+    height: var(--table-td-height);
+    color: hsl(var(--foreground));
+  }
+
+  .console-table-wrap {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Main content canvas — light grey field + white cards (design mockup) */

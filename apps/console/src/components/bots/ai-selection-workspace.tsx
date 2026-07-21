@@ -169,6 +169,7 @@ export function AiSelectionWorkspace() {
       </ConsolePageAlerts>
 
       <PageHeader
+        variant="compact"
         title="AI 选型页"
         description="管理面向客户的需求采集页，统一配置问题结构、发布状态和页面入口。"
         actions={
@@ -185,10 +186,10 @@ export function AiSelectionWorkspace() {
           <>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton key={index} className="h-28 rounded-3xl" />
+                <Skeleton key={index} className="h-28 rounded-card" />
               ))}
             </div>
-            <Skeleton className="h-96 w-full rounded-3xl" />
+            <Skeleton className="h-96 w-full rounded-card" />
           </>
         ) : error ? (
           <ConsoleRequestError message={error} onRetry={() => void load()} />
@@ -212,7 +213,7 @@ export function AiSelectionWorkspace() {
               <StatCard emphasis="metric" label="问题总数" value={`${metrics.totalQuestions}`} icon={<ClipboardList size={22} />} iconTone="purple" />
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-card border border-border bg-card p-4 shadow-card">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div className="relative min-w-0 flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -220,7 +221,7 @@ export function AiSelectionWorkspace() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="搜索页面名称、slug 或页面说明"
-                    className="h-10 w-full rounded-control border border-border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="ui-control h-[var(--control-height-lg)] pl-9 pr-3"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -255,8 +256,8 @@ export function AiSelectionWorkspace() {
               />
             ) : (
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                  <table className="w-full min-w-[860px] text-sm">
+                <div className="console-table-wrap overflow-x-auto rounded-card border border-border bg-card shadow-card">
+                  <table className="console-data-table w-full min-w-[860px] text-sm">
                     <thead className="border-b border-border bg-muted/40 text-left text-xs text-muted-foreground">
                       <tr>
                         <th className="px-4 py-3 font-medium">页面名称</th>
@@ -308,13 +309,13 @@ export function AiSelectionWorkspace() {
                 </div>
 
                 {selected ? (
-                  <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                  <aside className="rounded-card border border-border bg-card p-5 shadow-card">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-base font-semibold text-foreground">页面预览摘要</h3>
                         {renderStatusBadge(selected.status)}
                       </div>
-                      <div className="rounded-2xl border border-border bg-muted/20 p-4">
+                      <div className="rounded-card border border-border bg-muted/20 p-4">
                         <div
                           className="h-2 w-20 rounded-full"
                           style={{ backgroundColor: selected.primaryColor || "#2563eb" }}

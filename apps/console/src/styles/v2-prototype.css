@@ -425,7 +425,7 @@ button { cursor: pointer; }
   left: 14px;
   width: 16px;
   height: 16px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   pointer-events: none;
 }
 
@@ -455,7 +455,7 @@ button { cursor: pointer; }
   border-radius: 50%;
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: hsl(var(--muted));
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -511,14 +511,17 @@ button { cursor: pointer; }
 
 .user-info small {
   font-size: 11px;
-  color: var(--muted);
+  color: hsl(var(--muted));
 }
 
 .content {
-  padding: 16px 24px 28px;
-  max-width: none;
+  padding: var(--page-padding-block) var(--page-padding-inline)
+    calc(var(--page-padding-block) * 1.5);
+  max-width: var(--page-max-width);
   width: 100%;
+  margin-inline: auto;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 /* Page header */
@@ -541,7 +544,7 @@ button { cursor: pointer; }
 
 .pageHeader p {
   margin: 6px 0 0;
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-size: 13px;
 }
 
@@ -600,7 +603,7 @@ button { cursor: pointer; }
 
 .kpi p {
   margin: 0;
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-size: 13px;
   font-weight: 500;
 }
@@ -697,7 +700,7 @@ button { cursor: pointer; }
 .sectionTitle .tabs-sm button {
   padding: 4px 10px;
   border-radius: 6px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-weight: 500;
 }
 
@@ -796,7 +799,7 @@ button { cursor: pointer; }
 
 .donut::after small {
   font-size: 11px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-weight: 500;
 }
 
@@ -1013,7 +1016,7 @@ button { cursor: pointer; }
 .funnel-metric label {
   display: block;
   font-size: 11px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   margin-bottom: 4px;
 }
 
@@ -1032,7 +1035,7 @@ button { cursor: pointer; }
 }
 
 .stat span.muted {
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-size: 13px;
 }
 
@@ -1103,10 +1106,10 @@ button { cursor: pointer; }
 .timeline .item p {
   margin: 5px 0 10px;
   font-size: 12px;
-  color: var(--muted);
+  color: hsl(var(--muted));
 }
 
-.muted { color: var(--muted); }
+.muted { color: hsl(var(--muted)); }
 
 /* Tabs */
 .tabs {
@@ -1219,7 +1222,7 @@ button { cursor: pointer; }
 .chat-item p {
   margin: 0;
   font-size: 12px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1321,7 +1324,7 @@ button { cursor: pointer; }
 .panel-list .row p {
   margin: 0;
   font-size: 12px;
-  color: var(--muted);
+  color: hsl(var(--muted));
 }
 
 /* Detail pages */
@@ -1337,7 +1340,7 @@ button { cursor: pointer; }
 .detail-meta {
   display: flex;
   gap: 16px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-size: 13px;
 }
 
@@ -1362,7 +1365,7 @@ button { cursor: pointer; }
 .info-item label {
   display: block;
   font-size: 12px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   margin-bottom: 4px;
 }
 
@@ -1389,7 +1392,7 @@ button { cursor: pointer; }
 .channel-card p {
   margin: 0 0 16px;
   font-size: 13px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   line-height: 1.6;
 }
 
@@ -1432,8 +1435,8 @@ button { cursor: pointer; }
   color: #fff;
 }
 .team-card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
-.team-card p { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
-.team-card small { font-size: 12px; color: var(--muted); }
+.team-card p { margin: 0 0 4px; font-size: 13px; color: hsl(var(--muted)); }
+.team-card small { font-size: 12px; color: hsl(var(--muted)); }
 .team-tags { display: flex; justify-content: center; gap: 6px; margin: 12px 0; }
 .team-actions { display: flex; justify-content: center; gap: 8px; }
 
@@ -1465,7 +1468,7 @@ button { cursor: pointer; }
 
 .bar-item span {
   font-size: 11px;
-  color: var(--muted);
+  color: hsl(var(--muted));
 }
 
 /* Status timeline */
@@ -1580,7 +1583,7 @@ button { cursor: pointer; }
   border: 0;
   background: transparent;
   font-size: 22px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
@@ -1704,7 +1707,7 @@ button { cursor: pointer; }
 .table-empty {
   text-align: center;
   padding: 32px 20px;
-  color: var(--muted);
+  color: hsl(var(--muted));
   font-size: 13px;
 }
 .table-empty::before {
@@ -1786,7 +1789,7 @@ html.dark .card:hover { box-shadow: var(--shadow-md); }
 [data-theme-toggle] {
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: hsl(var(--muted));
   cursor: pointer;
   width: 36px;
   height: 36px;
@@ -1817,7 +1820,7 @@ html.dark .card:hover { box-shadow: var(--shadow-md); }
 @media (max-width: 920px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .cards4 { grid-template-columns: 1fr 1fr; }
-  .content { padding: 18px; }
+  .content { padding-inline: max(12px, var(--page-padding-inline)); }
   .topbar { padding: 0 18px; }
 }
 
@@ -1830,7 +1833,7 @@ html.dark .card:hover { box-shadow: var(--shadow-md); }
   .topbar { padding: 0 15px; }
   .search { display: none; }
   .user-info { display: none; }
-  .content { padding: 14px; }
+  .content { padding-inline: max(12px, var(--page-padding-inline)); }
 }
 
 @media (max-width: 640px) {
@@ -1838,7 +1841,7 @@ html.dark .card:hover { box-shadow: var(--shadow-md); }
   .sidebar { display: none; }
   .kpis, .grid2, .grid3, .cards4, .info-grid { grid-template-columns: 1fr; }
   .grid3 > :last-child { grid-column: auto; }
-  .content { padding: 12px; }
+  .content { padding-inline: max(12px, var(--page-padding-inline)); }
   .topbar h1 { font-size: 17px; }
   .table { font-size: 11px; }
   .table th, .table td { padding: 9px 6px; }
@@ -1908,20 +1911,23 @@ html.dark .card:hover { box-shadow: var(--shadow-md); }
 .console-app .content,
 .console-app .console-content {
   /* 控制台主栏铺满可用宽度，只保留统一边距，避免大屏两侧空档 */
-  padding: 16px 24px 28px;
-  max-width: none;
-  margin-inline: 0;
+  padding: var(--page-padding-block) var(--page-padding-inline)
+    calc(var(--page-padding-block) * 1.5);
+  max-width: var(--page-max-width);
+  margin-inline: auto;
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
 }
 
-/* page-shell 不再二次限宽 / 二次左右 padding */
+/* page-shell 不再二次限宽 / 二次左右 padding（由 .content 统一） */
 .console-app .page-shell {
-  max-width: none;
+  max-width: var(--page-max-width);
   width: 100%;
-  margin-inline: 0;
+  margin-inline: auto;
   padding-left: 0;
   padding-right: 0;
+  min-width: 0;
 }
 
 .console-app .topbar,
@@ -2160,7 +2166,7 @@ html.dark .card:hover { box-shadow: var(--shadow-md); }
   width: 36px; height: 36px;
   border-radius: 50%; border: 0;
   background: transparent;
-  color: var(--muted);
+  color: hsl(var(--muted));
   place-items: center;
   cursor: pointer;
   margin-right: 8px;

@@ -6,7 +6,6 @@ import {
   FileText,
   FolderPlus,
   MoreHorizontal,
-  Plus,
   RefreshCw,
   Search,
   Upload,
@@ -240,6 +239,7 @@ export function KnowledgeManagementWorkspace() {
   return (
     <ConsolePage>
       <PageHeader
+        variant="compact"
         title="知识库"
         description="管理企业 AI 训练资料，支持分类、向量化与助手绑定。"
         actions={
@@ -276,10 +276,10 @@ export function KnowledgeManagementWorkspace() {
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 rounded-2xl" />
+                <Skeleton key={i} className="h-28 rounded-card" />
               ))}
             </div>
-            <Skeleton className="h-96 w-full rounded-2xl" />
+            <Skeleton className="h-96 w-full rounded-card" />
           </div>
         ) : error ? (
           <ConsoleRequestError message={error} onRetry={() => void load()} />
@@ -328,11 +328,11 @@ export function KnowledgeManagementWorkspace() {
               />
             </div>
 
-            <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center">
+            <div className="console-filter-bar flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  className="w-full rounded-md border border-border py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  className="ui-control h-[var(--control-height)] py-0 pl-8 pr-3"
                   placeholder="搜索文档名称、内容或标签"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -340,7 +340,7 @@ export function KnowledgeManagementWorkspace() {
               </div>
               <select
                 aria-label="按文档状态筛选"
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="console-filter-control"
                 value={statusFilter}
                 onChange={(event) =>
                   setStatusFilter(event.target.value as typeof statusFilter)
@@ -354,7 +354,7 @@ export function KnowledgeManagementWorkspace() {
               </select>
               <select
                 aria-label="按文档来源筛选"
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={sourceFilter}
                 onChange={(event) => setSourceFilter(event.target.value)}
               >
@@ -362,16 +362,10 @@ export function KnowledgeManagementWorkspace() {
                 <option value="手动上传">手动上传</option>
                 <option value="批量导入">批量导入</option>
               </select>
-              <Button asChild size="sm">
-                <Link href="/dashboard/knowledge-bases/upload">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  上传资料
-                </Link>
-              </Button>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
-              <aside className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <aside className="rounded-card border border-border bg-card p-4 shadow-card">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-foreground">分类目录</h2>
                   <Button variant="ghost" size="sm" type="button">
@@ -385,7 +379,7 @@ export function KnowledgeManagementWorkspace() {
                 />
               </aside>
 
-              <div className="min-w-0 rounded-2xl border border-border bg-card shadow-sm">
+              <div className="min-w-0 rounded-card border border-border bg-card shadow-card">
                 {paged.length === 0 ? (
                   <div className="p-6">
                     <ConsoleEmptyState
@@ -399,8 +393,8 @@ export function KnowledgeManagementWorkspace() {
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[980px] text-sm">
+                    <div className="console-table-wrap overflow-x-auto">
+                      <table className="console-data-table w-full min-w-[980px] text-sm">
                         <thead>
                           <tr className="border-b border-border bg-muted/30 text-left text-xs text-muted-foreground">
                             <th className="px-4 py-3 font-medium">文件名称</th>
@@ -488,7 +482,7 @@ export function KnowledgeManagementWorkspace() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <section className="rounded-card border border-border bg-card p-4 shadow-card">
                 <h2 className="mb-3 text-sm font-semibold text-foreground">最近更新记录</h2>
                 <ul className="space-y-3">
                   {recentHistory.map((item) => (
@@ -503,7 +497,7 @@ export function KnowledgeManagementWorkspace() {
                 </ul>
               </section>
 
-              <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <section className="rounded-card border border-border bg-card p-4 shadow-card">
                 <h2 className="mb-3 text-sm font-semibold text-foreground">命中 TOP5 文档</h2>
                 <div className="space-y-3">
                   {topHits.map((item) => (

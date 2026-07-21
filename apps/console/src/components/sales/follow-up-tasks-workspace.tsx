@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@qiyun/ui";
 
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
+import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleReadOnlyNotice } from "@/components/console/console-read-only-notice";
 import {
   ConsoleRequestError,
@@ -520,41 +521,29 @@ export function FollowUpTasksWorkspace() {
   };
 
   const createTask = () => {
+    if (saving) return;
     if (!form.title.trim() || !form.customerName.trim() || !form.dueDate) return;
     if (isPreview) {
-      const dueAt = formatDateTime(new Date(`${form.dueDate}T00:00:00`).toISOString());
-      const status = resolveStatus(dueAt);
-      const newTask: FollowUpTask = {
-        id: crypto.randomUUID(),
-        title: form.title.trim(),
-        customerName: form.customerName.trim(),
-        taskType: "客户跟进",
-        priority: form.priority,
-        ownerName: "未分配",
-        ownerColor: "#9ca3af",
-        dueAt,
-        status,
-        kanbanStatus: status,
-      };
-      setCreatedTasks((prev) => [newTask, ...prev]);
-      setForm({ title: "", customerName: "", dueDate: "", priority: "medium" });
-      setCreating(false);
+      setError(new Error("预览模式下无法创建跟进任务，请配置 API_BASE_URL。"));
       return;
     }
 
     setSaving(true);
+    setError(null);
     void createFollowTask({
       title: form.title.trim(),
       dueAt: new Date(`${form.dueDate}T09:00:00`).toISOString(),
       customerName: form.customerName.trim(),
       note: `优先级：${form.priority === "high" ? "高" : form.priority === "medium" ? "中" : "低"}`,
     })
-      .then(() => load())
+      .then(async () => {
+        setForm({ title: "", customerName: "", dueDate: "", priority: "medium" });
+        setCreating(false);
+        await load();
+      })
       .catch((reason) => setError(reason))
       .finally(() => {
         setSaving(false);
-        setCreating(false);
-        setForm({ title: "", customerName: "", dueDate: "", priority: "medium" });
       });
   };
 
@@ -663,30 +652,37 @@ export function FollowUpTasksWorkspace() {
 
   if (loading) {
     return (
-      <div className={styles.page}>
-        <p className={styles.loadingText}>正在加载跟进任务…</p>
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ConsolePage>
+        <div className={styles.page}>
+          <p className={styles.loadingText}>正在加载跟进任务…</p>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </ConsolePage>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <ConsoleDataModeBanner feature="跟进任务" />
-      {actionNotice ? (
-        <p style={{ margin: "0 0 12px", fontSize: 13, color: "#166534" }} role="status">{actionNotice}</p>
-      ) : null}
-      {isPreview ? (
-        <div className="mb-4">
+    <ConsolePage>
+      <ConsolePageAlerts>
+        <ConsoleDataModeBanner feature="跟进任务" />
+        {actionNotice ? (
+          <p className="text-sm text-success" role="status">
+            {actionNotice}
+          </p>
+        ) : null}
+        {isPreview ? (
           <ConsoleReadOnlyNotice
             title="预览数据"
             description="任务列表由询盘与客户机会聚合生成；本地新建任务仅保存在当前会话，不会写入后端。"
           />
-        </div>
-      ) : null}
-      {error ? (
-        <ConsoleRequestError {...resolveRequestErrorPresentation(error, "部分任务数据加载失败，请稍后重试。")} />
-      ) : null}
+        ) : null}
+        {error ? (
+          <ConsoleRequestError
+            {...resolveRequestErrorPresentation(error, "部分任务数据加载失败，请稍后重试。")}
+          />
+        ) : null}
+      </ConsolePageAlerts>
+      <div className={styles.page}>
 
       <div className={styles.pageHeaderRow}>
         <div className={styles.headerActions}>
@@ -1104,7 +1100,7 @@ export function FollowUpTasksWorkspace() {
               </div>
               <div style={{ fontSize: 12, color: "#94a3b8", margin: "12px 0 0" }}>
                 {isPreview
-                  ? "预览模式：创建的任务仅在本次会话内可见。"
+                  ? "预览模式：无法写入跟进任务，请配置 API_BASE_URL 后重试。"
                   : "任务将保存到跟进日历，可在询盘详情中查看记录。"}
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
@@ -1145,6 +1141,7 @@ export function FollowUpTasksWorkspace() {
           />
         ) : null}
       </div>
-    </div>
+      </div>
+    </ConsolePage>
   );
 }

@@ -28,8 +28,9 @@
   --success: 142 72% 29%;
   --warning: 38 92% 50%;
   --info: 221 83% 53%;
-  --border: 220 24% 92%;
-  --input: 220 15% 80%;
+  /* Borders: cards use --border; form controls use --input (darker, always visible). */
+  --border: 220 18% 88%;
+  --input: 215 16% 72%;
   --ring: 219 100% 54%;
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
@@ -37,8 +38,50 @@
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
   --page-max-width: none;
   --page-padding: 1.5rem;
-  --page-padding-inline: 24px;
+  /* Keep in sync with globals.css — single horizontal rhythm for all pages */
+  --page-padding-inline: clamp(16px, 2.2vw, 28px);
   --page-padding-block: clamp(16px, 2vw, 24px);
+
+  /* Typography / spacing / density — mirrored from globals so theme-only
+     consumers (console.css) share the same rhythm as role homes */
+  --fs-display: 30px;
+  --fs-h1: 22px;
+  --fs-h2: 18px;
+  --fs-h3: 16px;
+  --fs-body: 14px;
+  --fs-sm: 13px;
+  --fs-xs: 12px;
+  --fs-caption: 11px;
+  --lh-tight: 1.25;
+  --lh-snug: 1.4;
+  --lh-base: 1.6;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+  --card-pad: 20px;
+  --card-pad-sm: 16px;
+  --card-radius: var(--radius-card);
+  --card-border: hsl(var(--border));
+  --card-shadow: var(--shadow-card);
+  --card-bg: hsl(var(--card));
+  --control-height: 34px;
+  --control-height-lg: 40px;
+  --control-radius: var(--radius-control);
+  --filter-bar-pad-y: 14px;
+  --filter-bar-pad-x: 18px;
+  --table-font-size: var(--fs-sm);
+  --table-head-font-size: var(--fs-xs);
+  --table-th-height: 40px;
+  --table-td-height: 48px;
+  --table-cell-pad-x: 12px;
+  --table-cell-pad-y: 0;
+  --kpi-value-size: 24px;
+
   /* Dark sidebar (mockup: 240px navy nav) */
   --sidebar: 222 47% 9%;
   --sidebar-foreground: 210 40% 98%;
@@ -69,8 +112,8 @@
   --success: 142 76% 36%;
   --warning: 38 92% 50%;
   --info: 221 83% 65%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  --border: 217.2 28% 22%;
+  --input: 215 20% 38%;
   --ring: 219 100% 54%;
   --shadow-card: 0 1px 2px rgba(2, 6, 23, 0.2), 0 20px 48px rgba(2, 6, 23, 0.28);
   --sidebar: 224 52% 10%;

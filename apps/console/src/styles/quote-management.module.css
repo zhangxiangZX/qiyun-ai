@@ -1,10 +1,12 @@
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
-  gap: 20px;
+  gap: var(--sp-5);
   align-items: start;
   width: 100%;
   min-width: 0;
+  max-width: var(--page-max-width);
+  box-sizing: border-box;
 }
 
 .main {
@@ -16,29 +18,27 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--sp-4);
 }
 
 .pageHeaderRow {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 16px;
+  margin-bottom: var(--sp-5);
+  gap: var(--sp-4);
   flex-wrap: wrap;
 }
 
+/* 顶栏已有页面名，隐藏正文大标题，避免双头 */
 .pageTitle h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--foreground);
+  display: none;
 }
 
 .pageSubtitle {
   margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--muted-foreground);
+  font-size: var(--fs-sm);
+  color: hsl(var(--muted-foreground));
 }
 
 .headerActions {
@@ -50,7 +50,7 @@
 
 .listMeta {
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .rowActions {
@@ -63,11 +63,11 @@
 .breadcrumb {
   margin-top: 4px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .breadcrumb a {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   text-decoration: none;
 }
 
@@ -76,24 +76,24 @@
 }
 
 .breadcrumb span {
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .dateRange {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
-  font-size: 13px;
-  color: var(--foreground);
+  gap: var(--sp-2);
+  height: var(--control-height);
+  padding: 0 var(--sp-3);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--control-radius);
+  background: hsl(var(--card));
+  font-size: var(--fs-sm);
+  color: hsl(var(--foreground));
 }
 
 .dateMuted {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .dateTag {
@@ -107,18 +107,18 @@
 .kpiGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
 }
 
 .kpiCard {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
+  gap: var(--sp-4);
+  padding: var(--card-pad);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-card);
+  background: hsl(var(--card));
   box-shadow: var(--shadow-card);
 }
 
@@ -142,15 +142,15 @@
   align-items: center;
   gap: 4px;
   margin-bottom: 4px;
-  font-size: 13px;
-  color: var(--muted-foreground);
+  font-size: var(--fs-sm);
+  color: hsl(var(--muted-foreground));
 }
 
 .kpiValue {
   margin-bottom: 6px;
-  font-size: 24px;
+  font-size: var(--kpi-value-size);
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   line-height: 1.1;
 }
 
@@ -182,26 +182,26 @@
 
 .dataCard {
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-card);
+  background: hsl(var(--card));
+  box-shadow: var(--shadow-card);
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--border);
+  gap: var(--sp-3);
+  padding: var(--card-pad-sm) var(--card-pad-sm);
+  border-bottom: 1px solid hsl(var(--border));
   flex-wrap: wrap;
 }
 
 .cardTitle {
-  font-size: 15px;
+  font-size: var(--fs-h3);
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardActions {
@@ -216,12 +216,12 @@
   gap: 6px;
   height: 32px;
   padding: 0 14px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
   font-size: 13px;
   font-weight: 500;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
   cursor: pointer;
 }
 
@@ -241,34 +241,36 @@
 
 .tableWrap {
   width: 100%;
+  min-width: 0;
   overflow-x: auto;
 }
 
 .dataTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--table-font-size);
 }
 
 .dataTable th {
-  padding: 12px 14px;
+  height: var(--table-th-height);
+  padding: 12px var(--table-cell-pad-x);
   text-align: left;
-  font-size: 12px;
+  font-size: var(--table-head-font-size);
   font-weight: 600;
-  color: var(--muted-foreground);
-  background: #fafbfc;
-  border-bottom: 1px solid var(--border);
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.45);
+  border-bottom: 1px solid hsl(var(--border));
   white-space: nowrap;
 }
 
 .dataTable td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px var(--table-cell-pad-x);
+  border-bottom: 1px solid hsl(var(--border));
   vertical-align: middle;
 }
 
 .dataTable tbody tr:hover td {
-  background: #fafbfc;
+  background: hsl(var(--muted) / 0.35);
 }
 
 .customerCell {
@@ -287,7 +289,7 @@
 
 .amount {
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .statusBadge {
@@ -300,7 +302,7 @@
 
 .statusDraft {
   background: #f1f5f9;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .statusSent {
@@ -356,7 +358,7 @@
 }
 
 .muted {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .pagination {
@@ -364,9 +366,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid hsl(var(--border));
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .paginationRight {
@@ -379,10 +381,10 @@
 .pageBtn {
   min-width: 28px;
   height: 28px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 6px;
   background: #fff;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-size: 12px;
   cursor: pointer;
   display: grid;
@@ -406,7 +408,7 @@
 
 .cardSection {
   padding: 18px;
-  border: 1px solid var(--border);
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -419,7 +421,7 @@
   margin-bottom: 16px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .cardSectionMore {
@@ -451,17 +453,17 @@
 }
 
 .funnelLabel {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .funnelValue {
   font-weight: 600;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .funnelPct {
   margin-left: 4px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .conversionGrid {
@@ -480,13 +482,13 @@
 .conversionValue {
   font-size: 18px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .conversionLabel {
   margin-top: 4px;
   font-size: 11px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 .reminderItem {
@@ -494,7 +496,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .reminderItem:last-child {
@@ -518,20 +520,20 @@
 
 .reminderText {
   font-size: 13px;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .reminderCount {
   font-size: 14px;
   font-weight: 700;
-  color: var(--foreground);
+  color: hsl(var(--foreground));
 }
 
 .loadingText {
   padding: 48px 0;
   text-align: center;
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 1200px) {

@@ -1,10 +1,15 @@
-/* 角色首页共享布局（管理员 / 销售）— 与老板首页、询盘中心同节奏 */
+/* 角色首页共享布局（管理员 / 销售）— 与老板首页、询盘中心同节奏
+   水平 gutter 由 `.content` / `--page-padding-inline` 统一，避免双层 padding */
 
 .page {
   min-height: calc(100dvh - 64px);
-  padding: 0 var(--page-padding-inline) 24px;
-  color: var(--foreground);
+  padding: 0 0 var(--sp-6);
+  color: hsl(var(--foreground));
   background: transparent;
+  min-width: 0;
+  width: 100%;
+  max-width: var(--page-max-width);
+  box-sizing: border-box;
 }
 
 .toolbar {
@@ -17,15 +22,15 @@
 .dateButton,
 .refreshButton {
   display: inline-flex;
-  height: 34px;
+  height: var(--control-height);
   align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: #263a5e;
-  background: #fff;
-  font-size: 13px;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--control-radius);
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  font-size: var(--fs-sm);
   cursor: pointer;
 }
 
@@ -37,7 +42,7 @@
 .refreshButton:hover,
 .dateButton:hover {
   border-color: #9bbcf7;
-  color: var(--primary);
+  color: hsl(var(--primary));
 }
 
 .spinning {
@@ -58,9 +63,9 @@
 
 .kpiCard,
 .card {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-card);
+  background: hsl(var(--card));
   box-shadow: var(--shadow-card);
 }
 
@@ -68,8 +73,8 @@
   display: flex;
   min-width: 0;
   align-items: flex-start;
-  gap: 16px;
-  padding: 16px;
+  gap: var(--sp-4);
+  padding: var(--card-pad-sm);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -120,16 +125,16 @@
 
 .kpiContent p {
   margin: 0 0 4px;
-  color: var(--muted-foreground);
-  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
 
 .kpiContent strong {
   display: block;
   margin: 0 0 6px;
-  color: var(--foreground);
-  font-size: 24px;
+  color: hsl(var(--foreground));
+  font-size: var(--kpi-value-size);
   font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
@@ -139,8 +144,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #697994;
-  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  font-size: var(--fs-xs);
   white-space: nowrap;
 }
 
@@ -164,59 +169,60 @@
   min-height: 48px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 16px;
-  border-bottom: 1px solid #edf1f6;
+  gap: var(--sp-3);
+  padding: 0 var(--card-pad-sm);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .cardHeader h2 {
   margin: 0;
-  color: #152442;
-  font-size: 15px;
+  color: hsl(var(--foreground));
+  font-size: var(--fs-h3);
   font-weight: 700;
 }
 
 .cardHeader a {
-  color: var(--primary);
-  font-size: 12px;
+  color: hsl(var(--primary));
+  font-size: var(--fs-xs);
   text-decoration: none;
 }
 
 .cardBody {
-  padding: 12px 16px;
+  padding: var(--sp-3) var(--card-pad-sm);
 }
 
 .tableWrap {
   overflow-x: auto;
+  min-width: 0;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--table-font-size);
 }
 
 .table th {
-  height: 40px;
-  padding: 0 12px;
-  color: #72819a;
-  background: #fafbfe;
-  font-size: 12px;
+  height: var(--table-th-height);
+  padding: var(--table-cell-pad-y) var(--table-cell-pad-x);
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.45);
+  font-size: var(--table-head-font-size);
   font-weight: 600;
   text-align: left;
   white-space: nowrap;
 }
 
 .table td {
-  height: 48px;
-  padding: 0 12px;
-  border-top: 1px solid #edf1f6;
-  color: #2c3c59;
+  height: var(--table-td-height);
+  padding: var(--table-cell-pad-y) var(--table-cell-pad-x);
+  border-top: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .table a {
-  color: var(--primary);
+  color: hsl(var(--primary));
   text-decoration: none;
 }
 
@@ -323,7 +329,7 @@
 }
 
 .legend b {
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
@@ -384,7 +390,7 @@
 
 @media (max-width: 680px) {
   .page {
-    padding: 0 12px 20px;
+    padding: 0 0 var(--sp-5);
   }
 
   .toolbar {

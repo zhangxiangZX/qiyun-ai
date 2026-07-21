@@ -1,13 +1,14 @@
 .page {
   width: 100%;
-  max-width: none;
+  max-width: var(--page-max-width);
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 20px;
+  gap: var(--sp-5);
   align-items: start;
 }
 
@@ -15,7 +16,7 @@
 .sidebarCol {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
@@ -24,15 +25,15 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
 }
 
 .pageHeaderRow h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-h1);
   font-weight: 700;
-  color: #111827;
+  color: hsl(var(--foreground));
 }
 
 .headerActions {
@@ -45,33 +46,34 @@
 .headerSearch {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  color: #9ca3af;
-  min-width: 240px;
+  gap: var(--sp-2);
+  height: var(--control-height);
+  padding: 0 var(--sp-3);
+  border: 1px solid hsl(var(--input));
+  border-radius: var(--control-radius);
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  min-width: min(240px, 100%);
 }
 
 .headerSearch input {
   flex: 1;
   border: none;
   outline: none;
-  font-size: 13px;
-  color: #1f2937;
+  font-size: var(--fs-sm);
+  color: hsl(var(--foreground));
   background: transparent;
+  min-width: 0;
 }
 
 .filterSelect {
-  height: 36px;
-  padding: 0 28px 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 13px;
-  color: #374151;
+  height: var(--control-height);
+  padding: 0 28px 0 var(--sp-3);
+  border: 1px solid hsl(var(--input));
+  border-radius: var(--control-radius);
+  background: hsl(var(--card));
+  font-size: var(--fs-sm);
+  color: hsl(var(--foreground));
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -87,11 +89,11 @@
 .kpiCard {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
+  gap: var(--sp-4);
+  padding: var(--card-pad);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-card);
+  background: hsl(var(--card));
   box-shadow: var(--shadow-card);
 }
 
@@ -115,30 +117,32 @@
 .kpiIconPurple { background: #8b5cf6; }
 
 .kpiLabel {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: var(--fs-sm);
+  color: hsl(var(--muted-foreground));
   margin-bottom: 4px;
 }
 
 .kpiValue {
-  font-size: 24px;
+  font-size: var(--kpi-value-size);
   font-weight: 700;
-  color: #111827;
+  color: hsl(var(--foreground));
 }
 
 .card {
   padding: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-card);
+  background: hsl(var(--card));
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 
 .cardPadded {
-  padding: 18px 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
+  padding: var(--card-pad-sm) var(--card-pad);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-card);
+  background: hsl(var(--card));
+  box-shadow: var(--shadow-card);
 }
 
 .tabRow {
@@ -168,27 +172,29 @@
 
 .tableWrap {
   overflow-x: auto;
+  min-width: 0;
 }
 
 .dataTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--table-font-size);
 }
 
 .dataTable th,
 .dataTable td {
-  padding: 14px 20px;
+  padding: 14px var(--table-cell-pad-x);
   text-align: left;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid hsl(var(--border));
   vertical-align: middle;
 }
 
 .dataTable th {
-  font-size: 13px;
+  height: var(--table-th-height);
+  font-size: var(--table-head-font-size);
   font-weight: 500;
-  color: #4b5563;
-  background: #f9fafb;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.45);
   white-space: nowrap;
 }
 
@@ -355,7 +361,7 @@
 
 .kanbanCol {
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid hsl(var(--input));
   border-radius: 12px;
   background: #fff;
 }
@@ -603,7 +609,7 @@
 
 .loadingText {
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: hsl(var(--muted-foreground));
   margin-bottom: 12px;
 }
 

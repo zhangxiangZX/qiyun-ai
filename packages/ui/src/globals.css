@@ -29,8 +29,9 @@
   --success: 142 72% 29%;
   --warning: 38 92% 50%;
   --info: 221 83% 53%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
+  /* Borders: cards use --border; form controls use --input (darker, always visible). */
+  --border: 220 18% 88%;
+  --input: 215 16% 72%;
   --ring: 221.2 83.2% 53.3%;
   --radius-control: 0.5rem;
   --radius-card: 0.75rem;
@@ -81,6 +82,20 @@
   --card-shadow: var(--shadow-card);
   --card-bg: hsl(var(--card));
 
+  /* ---- Control / filter / table density (role-home baseline) ---- */
+  --control-height: 34px;       /* filter chips, toolbar selects */
+  --control-height-lg: 40px;    /* primary inputs / ui-control */
+  --control-radius: var(--radius-control);
+  --filter-bar-pad-y: 14px;
+  --filter-bar-pad-x: 18px;
+  --table-font-size: var(--fs-sm);
+  --table-head-font-size: var(--fs-xs);
+  --table-th-height: 40px;
+  --table-td-height: 48px;
+  --table-cell-pad-x: 12px;
+  --table-cell-pad-y: 0;
+  --kpi-value-size: 24px;
+
   /* Neutral text shortcuts (semantic, theme-aware) */
   --text-strong: var(--foreground);
   --text-muted: var(--muted-foreground);
@@ -107,8 +122,8 @@
   --success: 142 76% 36%;
   --warning: 38 92% 50%;
   --info: 221 83% 65%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  --border: 217.2 28% 22%;
+  --input: 215 20% 38%;
   --ring: 217.2 91.2% 59.8%;
   --shadow-card: 0 1px 2px rgba(2, 6, 23, 0.2), 0 20px 48px rgba(2, 6, 23, 0.28);
 }
