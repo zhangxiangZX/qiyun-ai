@@ -401,7 +401,7 @@ export function AfterSalesWorkspace() {
       ) : (
         <div className={styles.ticketHeader}>
           <div className={styles.ticketTitleRow}>
-            <h1 className={styles.ticketTitle}>工单详情</h1>
+            <span className={styles.ticketTitle}>工单详情</span>
             {status ? (
               <span className={`${styles.tag} ${status.tagClass}`}>{status.label}</span>
             ) : null}
@@ -608,12 +608,8 @@ export function AfterSalesWorkspace() {
                     <button
                       type="button"
                       className={styles.btnPrimary}
-                      onClick={() => {
-                        if (replyDraft.trim()) {
-                          setActionMessage("回复功能即将上线，当前为演示界面。");
-                          setReplyDraft("");
-                        }
-                      }}
+                      disabled
+                      title="回复功能即将上线"
                     >
                       发送
                     </button>

@@ -135,7 +135,7 @@ const zhCN = {
     },
     banner: {
       previewBody:
-        "未配置 API_BASE_URL（或 NEXT_PUBLIC_API_BASE_URL），当前使用 Console 内置演示数据，未连接 apps/api。",
+        "当前为演示环境（非生产）：未配置 API_BASE_URL（或 NEXT_PUBLIC_API_BASE_URL），使用 Console 内置演示数据，未连接 apps/api，不会写入正式后端。",
     },
     notice: {
       previewTitle: "演示模式说明",
@@ -463,13 +463,13 @@ const zhCN = {
     },
   },
   documents: {
-    title: "文档中心",
-    description: "统一管理对外资料与销售物料，支持上传、下载与加水印，保护企业知识产权。",
+    title: "销售资料库",
+    description: "管理对外销售物料与资料附件（与 AI 知识库不同），支持上传、下载与加水印。",
     previewBadge: "V2 预览",
-    uploadButton: "上传文档",
-    listTitle: "全部文档",
+    uploadButton: "上传资料",
+    listTitle: "全部资料",
     kpi: {
-      total: "文档总数",
+      total: "资料总数",
       images: "图片数量",
       watermarkable: "可水印",
       watermarked: "已水印",
@@ -488,12 +488,12 @@ const zhCN = {
     download: "下载",
     watermark: "加水印",
     delete: "删除",
-    empty: "暂无文档，点击「上传文档」添加第一份资料。",
-    loading: "加载文档中心…",
-    uploadTitle: "上传文档",
+    empty: "暂无资料，点击「上传资料」添加第一份文件。",
+    loading: "加载销售资料库…",
+    uploadTitle: "上传资料",
     uploadHint: "支持 PDF、图片、Word、Excel 等常见格式，单文件不超过 20 MB。",
     chooseFile: "选择文件",
-    category: "文档分类",
+    category: "资料分类",
     cancel: "取消",
     startUpload: "开始上传",
     close: "关闭",
@@ -667,7 +667,7 @@ const enUS = {
     },
     banner: {
       previewBody:
-        "API_BASE_URL (or NEXT_PUBLIC_API_BASE_URL) is not configured. Console is using built-in demo data and is not connected to apps/api.",
+        "Demo environment (not production): API_BASE_URL (or NEXT_PUBLIC_API_BASE_URL) is not configured. Console is using built-in demo data, is not connected to apps/api, and does not write to the live backend.",
     },
     notice: {
       previewTitle: "Demo mode",

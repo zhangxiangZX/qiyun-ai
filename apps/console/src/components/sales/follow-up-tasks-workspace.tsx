@@ -979,24 +979,25 @@ export function FollowUpTasksWorkspace() {
             <div className={styles.quickGrid}>
               {[
                 { icon: Plus, label: "新建任务", color: "#2563eb" },
-                { icon: Upload, label: "批量导入", color: "#16a34a" },
-                { icon: FileText, label: "任务模板", color: "#ea580c" },
+                { icon: Upload, label: "批量导入", color: "#16a34a", comingSoon: true },
+                { icon: FileText, label: "任务模板", color: "#ea580c", comingSoon: true },
                 { icon: Download, label: "导出任务", color: "#9333ea" },
-              ].map(({ icon: Icon, label, color }) => (
+              ].map(({ icon: Icon, label, color, comingSoon }) => (
                 <button
                   key={label}
                   type="button"
                   className={styles.quickBtn}
+                  disabled={comingSoon}
+                  title={comingSoon ? `${label}即将上线` : undefined}
                   onClick={() => {
+                    if (comingSoon) return;
                     if (label === "新建任务") {
                       setCreating(true);
                       return;
                     }
                     if (label === "导出任务") {
                       setActionNotice(`已导出 ${displayTasks.length} 条任务记录（本地）。`);
-                      return;
                     }
-                    setActionNotice(`${label}功能即将上线`);
                   }}
                 >
                   <Icon size={18} color={color} aria-hidden />

@@ -6,8 +6,8 @@ export const DATA_MODE_TITLES: Record<ConsoleDataMode, string> = {
 };
 
 export const DATA_MODE_SHORT: Record<ConsoleDataMode, string> = {
-  preview: "当前为演示数据，刷新或服务重启后可能丢失。",
-  upstream: "数据已同步，展示当前工作区真实业务数据。",
+  preview: "当前为演示环境数据，刷新或服务重启后可能丢失，未写入正式后端。",
+  upstream: "已连接正式 API，展示当前工作区真实业务数据。",
 };
 
 export const PREVIEW_LIMITATION_HINTS: Record<string, string> = {

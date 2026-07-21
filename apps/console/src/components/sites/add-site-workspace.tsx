@@ -219,7 +219,7 @@ export function AddSiteWorkspace() {
     } catch (error: unknown) {
       if (isPreviewModeError(error)) {
         setSubmitError("当前为演示模式，站点创建操作未同步到后端。预览数据不会持久化。");
-        setSubmitMessage("站点已在预览模式中创建（演示数据）。");
+        setSubmitMessage("演示环境已模拟创建，未写入正式后端。");
       } else {
         const message =
           error instanceof Error ? error.message : "站点创建失败，请稍后重试。";
@@ -268,6 +268,7 @@ export function AddSiteWorkspace() {
 
       {/* Page Header */}
       <PageHeader
+        variant="compact"
         title="添加站点"
         description="配置新站点并绑定域名，将 AI 助手嵌入您的官网，开启智能获客。"
       />
@@ -606,7 +607,7 @@ export function AddSiteWorkspace() {
         title="站点创建成功"
         message={
           submitError
-            ? "站点已在预览模式中创建。即将跳转到站点管理页面。"
+            ? "演示环境已模拟创建，未写入正式后端。即将跳转到站点管理页面。"
             : "新站点已成功创建，即将跳转到站点管理页面。"
         }
         confirmLabel="我知道了"

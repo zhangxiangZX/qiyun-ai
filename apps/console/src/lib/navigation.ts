@@ -212,13 +212,6 @@ const hiddenNavigationLinksForMatching: HiddenNavigationLink[] = [
     matchPrefixesOnly: true,
   },
   {
-    groupId: "acquisition",
-    id: "qrcode-management",
-    title: "二维码",
-    href: "/dashboard/channels/qrcodes",
-    matchPrefixes: ["/dashboard/channels/qrcodes"],
-  },
-  {
     groupId: "quote-management",
     id: "quote-new",
     title: "新建报价",
@@ -392,7 +385,7 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
     children: [
       {
         id: "quick-entry",
-        title: "AI 快速录入",
+        title: "快速录入",
         href: "/dashboard/quick-entry",
         matchPrefixes: ["/dashboard/quick-entry"],
       },
@@ -426,7 +419,13 @@ export const workspaceNavigationGroups: NavigationGroup[] = [
         id: "sales-links",
         title: "销售链接",
         href: "/dashboard/channels/links",
-        matchPrefixes: ["/dashboard/channels/links", "/dashboard/channels/qrcodes"],
+        matchPrefixes: ["/dashboard/channels/links"],
+      },
+      {
+        id: "qrcode-mgmt",
+        title: "二维码管理",
+        href: "/dashboard/channels/qrcodes",
+        matchPrefixes: ["/dashboard/channels/qrcodes"],
       },
     ],
   },
