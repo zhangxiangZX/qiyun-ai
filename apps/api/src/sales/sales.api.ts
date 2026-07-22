@@ -145,16 +145,18 @@ export class SalesApi {
 
   async batchAssignInquiries(
     context: RequestContext,
-    body: { inquiryIds: string[]; ownerId: string },
+    body: { inquiryIds: string[]; ownerId: string; remark?: string },
   ) {
     const results = await this.service.batchAssignInquiries(
       context.workspaceId,
       body.inquiryIds,
       body.ownerId,
+      body.remark,
     );
     this.audit(context, "inquiry", "batch_assign", null, {
       inquiryIds: body.inquiryIds,
       ownerId: body.ownerId,
+      remark: body.remark ?? null,
     });
     return results;
   }
@@ -303,6 +305,12 @@ export class SalesApi {
       title?: string;
       estimatedAmount?: number | null;
       templateId?: string | null;
+      lineItems?: import("./sales.types").QuoteLineItem[];
+      taxRate?: number;
+      freightAmount?: number;
+      installationAmount?: number;
+      otherAmount?: number;
+      currency?: string;
     },
   ) {
     const result = await this.service.createQuoteOpportunity(context.workspaceId, body);
@@ -328,6 +336,12 @@ export class SalesApi {
       nextFollowUpAt: string | null;
       title: string | null;
       templateId: string | null;
+      lineItems: import("./sales.types").QuoteLineItem[];
+      taxRate: number;
+      freightAmount: number;
+      installationAmount: number;
+      otherAmount: number;
+      currency: string;
     }>,
   ) {
     const result = await this.service.updateQuoteOpportunity(

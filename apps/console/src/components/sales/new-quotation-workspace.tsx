@@ -24,6 +24,7 @@ import {
   createInquiryOnApi,
   createQuoteOpportunity,
   listInquiries,
+  uploadQuoteAttachments,
 } from "@/lib/sales/api";
 import type { InquiryListItem } from "@/lib/sales/types";
 
@@ -118,6 +119,7 @@ export function NewQuotationWorkspace() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [listLoading, setListLoading] = useState(true);
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
 
   useEffect(() => {
     setListLoading(true);
@@ -159,7 +161,24 @@ export function NewQuotationWorkspace() {
         inquiryId,
         title: `${customerName.trim()} 报价方案`,
         estimatedAmount: Math.round(total),
+        templateId: appliedTemplateId,
+        lineItems: rows.map((item) => ({
+          name: item.name,
+          model: item.model,
+          unit: item.unit,
+          qty: item.qty,
+          price: item.price,
+          discount: item.discount,
+        })),
+        taxRate,
+        freightAmount: freight,
+        installationAmount: install,
+        otherAmount: other,
+        currency: "CNY",
       });
+      if (attachmentFiles.length > 0) {
+        await uploadQuoteAttachments(quote.id, attachmentFiles);
+      }
       router.push(`/dashboard/quotes/${quote.id}`);
     } catch (error) {
       setSubmitError(getApiErrorMessage(error, "生成报价失败，请稍后重试。"));
@@ -178,6 +197,17 @@ export function NewQuotationWorkspace() {
       ...prev,
       { id: `new-${prev.length + 1}`, name: "", model: "", unit: "台", qty: 1, price: 0, discount: 0 },
     ]);
+
+  const selectAttachments = (files: FileList | null) => {
+    if (!files) return;
+    const next = Array.from(files);
+    const oversized = next.find((file) => file.size > 20 * 1024 * 1024);
+    if (oversized) {
+      setSubmitError(`附件 ${oversized.name} 超过 20MB。`);
+      return;
+    }
+    setAttachmentFiles((current) => [...current, ...next].slice(0, 10));
+  };
 
   const subtotal = rows.reduce((s, r) => s + r.qty * r.price * (1 - r.discount / 100), 0);
   const taxRate = 0.13;
@@ -217,7 +247,7 @@ export function NewQuotationWorkspace() {
       </div>
       {appliedTemplateId ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          已选择模板「{appliedTemplate}」（{appliedTemplateId}）。创建接口暂不接收 templateId，生成后仍使用默认版式；详见 BACKEND-GAPS。
+          已选择模板「{appliedTemplate}」，生成报价时将同时保存模板和产品明细。
         </p>
       ) : null}
 
@@ -548,15 +578,33 @@ export function NewQuotationWorkspace() {
 
           <Card>
             <CardTitle>附件</CardTitle>
-            <Button
-              variant="outline"
-              leftIcon={<Upload size={14} />}
-              type="button"
-              disabled
-              title="附件上传暂未开放"
-            >
-              上传附件
+            <input
+              id="quote-attachments"
+              className="sr-only"
+              type="file"
+              multiple
+              onChange={(event) => selectAttachments(event.target.files)}
+            />
+            <Button variant="outline" leftIcon={<Upload size={14} />} asChild>
+              <label htmlFor="quote-attachments">选择附件</label>
             </Button>
+            {attachmentFiles.length > 0 ? (
+              <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
+                {attachmentFiles.map((file, index) => (
+                  <li key={`${file.name}-${file.lastModified}`} className="flex items-center justify-between gap-2">
+                    <span className="truncate">{file.name}</span>
+                    <button
+                      type="button"
+                      className="text-destructive hover:underline"
+                      onClick={() => setAttachmentFiles((items) => items.filter((_, itemIndex) => itemIndex !== index))}
+                    >
+                      移除
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="mt-2 text-xs text-muted-foreground">最多 10 个附件，单文件不超过 20MB；生成报价后自动上传。</p>
           </Card>
 
           <div className="flex flex-col gap-2">

@@ -87,7 +87,7 @@ interface DetailRow {
   lead: string;
 }
 
-const detailRows: DetailRow[] = [
+const defaultDetailRows: DetailRow[] = [
   { id: "1", name: "工业物联网网关", model: "IGW-2000", qty: 10, unit: "台", price: 1250, discount: 5, subtotal: 11875, lead: "15 天" },
   { id: "2", name: "温湿度传感器", model: "THS-100", qty: 20, unit: "个", price: 85, discount: 5, subtotal: 1700, lead: "7 天" },
   { id: "3", name: "数据库模块模组", model: "DAQ-500", qty: 10, unit: "台", price: 320, discount: 5, subtotal: 3040, lead: "10 天" },
@@ -115,6 +115,11 @@ export function QuotationEditWorkspace() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quotedAmount, setQuotedAmount] = useState<number | null>(null);
+  const [detailRows, setDetailRows] = useState<DetailRow[]>([]);
+  const [taxRate, setTaxRate] = useState(0);
+  const [freightAmount, setFreightAmount] = useState(0);
+  const [installationAmount, setInstallationAmount] = useState(0);
+  const [otherAmount, setOtherAmount] = useState(0);
 
   const load = useCallback(async () => {
     if (!quoteId) return;
@@ -124,6 +129,25 @@ export function QuotationEditWorkspace() {
       const detail = await getQuoteOpportunity(quoteId);
       setQuote(detail);
       setQuotedAmount(detail.quotedAmount ?? detail.estimatedAmount ?? null);
+      setDetailRows(
+        detail.lineItems?.length
+          ? detail.lineItems.map((item, index) => ({
+              id: `${index + 1}`,
+              name: item.name,
+              model: item.model,
+              qty: item.qty,
+              unit: item.unit,
+              price: item.price,
+              discount: item.discount,
+              subtotal: item.qty * item.price * (1 - item.discount / 100),
+              lead: item.deliveryCycle ?? "—",
+            }))
+          : defaultDetailRows,
+      );
+      setTaxRate(detail.taxRate ?? 0);
+      setFreightAmount(detail.freightAmount ?? 0);
+      setInstallationAmount(detail.installationAmount ?? 0);
+      setOtherAmount(detail.otherAmount ?? 0);
     } catch (loadError) {
       setError(getApiErrorMessage(loadError, "加载报价失败。"));
     } finally {
@@ -143,6 +167,20 @@ export function QuotationEditWorkspace() {
       const updated = await updateQuoteOpportunity(quoteId, {
         quotedAmount,
         title: quote?.title,
+        lineItems: detailRows.map(({ name, model, unit, qty, price, discount, lead }) => ({
+          name,
+          model,
+          unit,
+          qty,
+          price,
+          discount,
+          deliveryCycle: lead === "—" ? undefined : lead,
+        })),
+        taxRate,
+        freightAmount,
+        installationAmount,
+        otherAmount,
+        currency: quote?.currency ?? "CNY",
       });
       setQuote(updated);
     } catch (saveError) {
@@ -152,15 +190,42 @@ export function QuotationEditWorkspace() {
     }
   };
 
-  const displayAmount = quotedAmount ?? detailRows.reduce((sum, row) => sum + row.subtotal, 0);
+  const rowsSubtotal = detailRows.reduce(
+    (sum, row) => sum + row.qty * row.price * (1 - row.discount / 100),
+    0,
+  );
+  const calculatedAmount =
+    (rowsSubtotal + freightAmount + installationAmount + otherAmount) * (1 + taxRate);
+  const displayAmount = quotedAmount ?? calculatedAmount;
+
+  const updateRow = (id: string, patch: Partial<DetailRow>) => {
+    setDetailRows((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
+  const addRow = () => {
+    setDetailRows((rows) => [
+      ...rows,
+      {
+        id: `new-${Date.now()}`,
+        name: "",
+        model: "",
+        qty: 1,
+        unit: "台",
+        price: 0,
+        discount: 0,
+        subtotal: 0,
+        lead: "—",
+      },
+    ]);
+  };
 
   return (
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="报价编辑" />
         {error ? <ConsoleRequestError message={error} onRetry={() => void load()} /> : null}
-        <div className="rounded-control border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          产品明细与条款目前为界面示意，保存仅同步标题与报价金额到 API；完整行项目契约见 BACKEND-GAPS。发送请前往详情页，避免未接通操作显示成功。
+        <div className="rounded-control border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+          产品明细、税率与附加费用会保存到正式报价；发送和附件管理请前往报价详情页。
         </div>
       </ConsolePageAlerts>
 
@@ -235,7 +300,7 @@ export function QuotationEditWorkspace() {
             <CardTitle
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Button size="sm" leftIcon={<Plus size={14} />}>
+                  <Button size="sm" leftIcon={<Plus size={14} />} onClick={addRow}>
                     添加产品
                   </Button>
                   <Button size="sm" variant="outline">
@@ -250,7 +315,7 @@ export function QuotationEditWorkspace() {
                 </div>
               }
             >
-              报价明细（4 项）
+              报价明细（{detailRows.length} 项）
               <Badge variant="success" className="ml-2">V2</Badge>
             </CardTitle>
 
@@ -274,20 +339,20 @@ export function QuotationEditWorkspace() {
                   {detailRows.map((r, idx) => (
                     <tr key={r.id} className="border-b border-border/60 last:border-0">
                       <td className="px-2 py-2 text-muted-foreground">{idx + 1}</td>
-                      <td className="px-2 py-2 font-medium text-foreground">{r.name}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{r.model}</td>
-                      <td className="px-2 py-2 text-right">{r.qty}</td>
-                      <td className="px-2 py-2">{r.unit}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{r.price.toLocaleString("en-US")}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{r.discount.toFixed(2)}</td>
-                      <td className="px-2 py-2 text-right font-medium tabular-nums">{r.subtotal.toLocaleString("en-US")}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{r.lead}</td>
+                      <td className="px-2 py-2"><Input className="h-8 min-w-28" value={r.name} onChange={(event) => updateRow(r.id, { name: event.target.value })} /></td>
+                      <td className="px-2 py-2"><Input className="h-8 min-w-24" value={r.model} onChange={(event) => updateRow(r.id, { model: event.target.value })} /></td>
+                      <td className="px-2 py-2"><Input className="h-8 w-16 text-right" type="number" value={r.qty} onChange={(event) => updateRow(r.id, { qty: Number(event.target.value) })} /></td>
+                      <td className="px-2 py-2"><Input className="h-8 w-14" value={r.unit} onChange={(event) => updateRow(r.id, { unit: event.target.value })} /></td>
+                      <td className="px-2 py-2"><Input className="h-8 w-24 text-right" type="number" value={r.price} onChange={(event) => updateRow(r.id, { price: Number(event.target.value) })} /></td>
+                      <td className="px-2 py-2"><Input className="h-8 w-20 text-right" type="number" value={r.discount} onChange={(event) => updateRow(r.id, { discount: Number(event.target.value) })} /></td>
+                      <td className="px-2 py-2 text-right font-medium tabular-nums">{(r.qty * r.price * (1 - r.discount / 100)).toLocaleString("en-US")}</td>
+                      <td className="px-2 py-2"><Input className="h-8 w-20" value={r.lead} onChange={(event) => updateRow(r.id, { lead: event.target.value })} /></td>
                       <td className="px-2 py-2">
                         <div className="flex items-center gap-1">
                           <button className="text-muted-foreground hover:text-primary" aria-label="编辑">
                             <Pencil size={14} />
                           </button>
-                          <button className="text-muted-foreground hover:text-destructive" aria-label="删除">
+                          <button type="button" onClick={() => setDetailRows((rows) => rows.filter((row) => row.id !== r.id))} className="text-muted-foreground hover:text-destructive" aria-label="删除">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -424,6 +489,24 @@ export function QuotationEditWorkspace() {
                     }
                   />
                 </dd>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-muted-foreground">
+                  税率（小数）
+                  <Input className="mt-1 h-8" type="number" step="0.01" value={taxRate} onChange={(event) => setTaxRate(Number(event.target.value))} />
+                </label>
+                <label className="text-xs text-muted-foreground">
+                  运费
+                  <Input className="mt-1 h-8" type="number" value={freightAmount} onChange={(event) => setFreightAmount(Number(event.target.value))} />
+                </label>
+                <label className="text-xs text-muted-foreground">
+                  安装费
+                  <Input className="mt-1 h-8" type="number" value={installationAmount} onChange={(event) => setInstallationAmount(Number(event.target.value))} />
+                </label>
+                <label className="text-xs text-muted-foreground">
+                  其他费用
+                  <Input className="mt-1 h-8" type="number" value={otherAmount} onChange={(event) => setOtherAmount(Number(event.target.value))} />
+                </label>
               </div>
               <div className="my-2 border-t border-border" />
               <div className="flex items-center justify-between">

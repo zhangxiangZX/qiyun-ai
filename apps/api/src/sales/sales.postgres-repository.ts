@@ -7,6 +7,7 @@ import type {
   QuotePublicLinkRecord,
   QuoteFollowUpRecord,
   QuoteOpportunityRecord,
+  QuoteLineItem,
   QuoteTemplateRecord,
   QuoteTemplateTerms,
   SourceCodeRecord,
@@ -45,6 +46,23 @@ function asNumber(value: unknown): number | null {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function asQuoteLineItems(value: unknown): QuoteLineItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    return [{
+      name: asString(row.name),
+      model: asString(row.model),
+      unit: asString(row.unit),
+      qty: Number(row.qty ?? 0),
+      price: Number(row.price ?? 0),
+      discount: Number(row.discount ?? 0),
+      ...(asNullableString(row.deliveryCycle) ? { deliveryCycle: asNullableString(row.deliveryCycle)! } : {}),
+    }];
+  });
 }
 
 function normalizeDate(value: unknown): string {
@@ -116,6 +134,12 @@ function mapQuote(row: Record<string, unknown>): QuoteOpportunityRecord {
     workspaceId: asString(row.workspace_id),
     inquiryId: asString(row.inquiry_id),
     templateId: asNullableString(row.template_id),
+    lineItems: asQuoteLineItems(row.line_items),
+    taxRate: asNumber(row.tax_rate) ?? 0.13,
+    freightAmount: asNumber(row.freight_amount) ?? 0,
+    installationAmount: asNumber(row.installation_amount) ?? 0,
+    otherAmount: asNumber(row.other_amount) ?? 0,
+    currency: asString(row.currency) || "CNY",
     stage: asString(row.stage) as QuoteOpportunityRecord["stage"],
     estimatedAmount: asNumber(row.estimated_amount),
     quotedAmount: asNumber(row.quoted_amount),
@@ -311,14 +335,21 @@ export class PostgresSalesRepository implements SalesRepository {
   async createQuoteOpportunity(record: QuoteOpportunityRecord): Promise<QuoteOpportunityRecord> {
     await query(
       `insert into quote_opportunities (
-         id, workspace_id, inquiry_id, template_id, stage, estimated_amount, quoted_amount, won_amount,
+         id, workspace_id, inquiry_id, template_id, line_items, tax_rate, freight_amount,
+         installation_amount, other_amount, currency, stage, estimated_amount, quoted_amount, won_amount,
          lost_reason, quote_due_at, owner_id, next_follow_up_at, title, created_at, updated_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+       ) values ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
       [
         record.id,
         record.workspaceId,
         record.inquiryId,
         record.templateId,
+        toJson(record.lineItems),
+        record.taxRate,
+        record.freightAmount,
+        record.installationAmount,
+        record.otherAmount,
+        record.currency,
         record.stage,
         record.estimatedAmount,
         record.quotedAmount,
@@ -348,20 +379,32 @@ export class PostgresSalesRepository implements SalesRepository {
     await query(
       `update quote_opportunities set
          template_id = $2,
-         stage = $3,
-         estimated_amount = $4,
-         quoted_amount = $5,
-         won_amount = $6,
-         lost_reason = $7,
-         quote_due_at = $8,
-         owner_id = $9,
-         next_follow_up_at = $10,
-         title = $11,
-         updated_at = $12
-       where id = $1 and workspace_id = $13`,
+         line_items = $3::jsonb,
+         tax_rate = $4,
+         freight_amount = $5,
+         installation_amount = $6,
+         other_amount = $7,
+         currency = $8,
+         stage = $9,
+         estimated_amount = $10,
+         quoted_amount = $11,
+         won_amount = $12,
+         lost_reason = $13,
+         quote_due_at = $14,
+         owner_id = $15,
+         next_follow_up_at = $16,
+         title = $17,
+         updated_at = $18
+       where id = $1 and workspace_id = $19`,
       [
         next.id,
         next.templateId,
+        toJson(next.lineItems),
+        next.taxRate,
+        next.freightAmount,
+        next.installationAmount,
+        next.otherAmount,
+        next.currency,
         next.stage,
         next.estimatedAmount,
         next.quotedAmount,

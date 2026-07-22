@@ -240,8 +240,10 @@ export class SalesRouteService {
       if (batchAssignMatch && method === "POST") {
         const context = await this.authContext.resolve(request.headers);
         assertWriteRole(context.role);
-        const body = await readJsonBody<{ inquiryIds?: string[]; ownerId?: string }>(request);
-        const results = await this.runtime.salesApi.batchAssignInquiries(context, { inquiryIds: body.inquiryIds ?? [], ownerId: body.ownerId ?? "" });
+        const body = await readJsonBody<{ inquiryIds?: string[]; ownerId?: string; remark?: string }>(request);
+        const results = await this.runtime.salesApi.batchAssignInquiries(context, {
+          inquiryIds: body.inquiryIds ?? [], ownerId: body.ownerId ?? "", remark: body.remark,
+        });
         await this.runtime.persist();
         return ok(results);
       }
@@ -311,12 +313,24 @@ export class SalesRouteService {
           title?: string;
           estimatedAmount?: number | null;
           templateId?: string | null;
+          lineItems?: import("../../sales/sales.types").QuoteLineItem[];
+          taxRate?: number;
+          freightAmount?: number;
+          installationAmount?: number;
+          otherAmount?: number;
+          currency?: string;
         }>(request);
         const created = await this.runtime.salesApi.createQuoteOpportunity(context, {
           inquiryId: body.inquiryId ?? "",
           title: body.title,
           estimatedAmount: body.estimatedAmount ?? null,
           templateId: body.templateId ?? null,
+          lineItems: body.lineItems,
+          taxRate: body.taxRate,
+          freightAmount: body.freightAmount,
+          installationAmount: body.installationAmount,
+          otherAmount: body.otherAmount,
+          currency: body.currency,
         });
         await this.runtime.persist();
         return ok(created);
@@ -359,28 +373,46 @@ export class SalesRouteService {
       if (quoteSendMatch && method === "POST") {
         const context = await this.authContext.resolve(request.headers);
         assertWriteRole(context.role);
-        const body = await readJsonBody<{ quotedAmount?: number | null; recipient?: string; channel?: "email" | "link" }>(request);
+        const body = await readJsonBody<{ quotedAmount?: number | null; recipient?: string; channel?: "email" | "link"; subject?: string; message?: string; body?: string; attachmentIds?: string[] }>(request);
         const document = await this.runtime.salesApi.getQuoteDocument(context, quoteSendMatch.params.id);
         const pdf = await renderQuotePdf(document);
         const stored = await this.runtime.documentStorage.save({ workspaceId: context.workspaceId, knowledgeBaseId: "quote-documents", fileName: `${quoteSendMatch.params.id}.pdf`, contentBytes: pdf });
         let documentId: string | null = null;
         let finalDeliveryStatus: "sent" | "queued" | "not_requested" = body.recipient ? "queued" : "not_requested";
+        const attachmentIds = [...new Set(body.attachmentIds ?? [])];
+        const emailAttachments: Array<{ fileName: string; contentBytes: Uint8Array }> = [];
         if (this.runtime.driver === "postgres") {
+          if (attachmentIds.length > 0) {
+            const attachmentRows = await pgQuery(`select id, storage_key, file_name from quote_attachments
+              where workspace_id = $1 and quote_opportunity_id = $2 and id = any($3::text[])`,
+            [context.workspaceId, quoteSendMatch.params.id, attachmentIds]);
+            if (attachmentRows.length !== attachmentIds.length) {
+              return fail(ApiCode.VALIDATION, "部分报价附件不存在或不属于当前报价。", 400);
+            }
+            for (const attachment of attachmentRows) {
+              emailAttachments.push({
+                fileName: String(attachment.file_name),
+                contentBytes: await this.runtime.documentStorage.read(String(attachment.storage_key), context.workspaceId),
+              });
+            }
+          }
           documentId = `qd_${randomUUID()}`;
           const versions = await pgQuery(`select coalesce(max(version), 0) + 1 as version from quote_documents where workspace_id = $1 and quote_opportunity_id = $2`, [context.workspaceId, quoteSendMatch.params.id]);
           await pgQuery(`insert into quote_documents (id, workspace_id, quote_opportunity_id, version, storage_key, file_name, size_bytes, content_hash, created_by)
             values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [documentId, context.workspaceId, quoteSendMatch.params.id, Number(versions[0]?.version ?? 1), stored.storageKey, `quote-${quoteSendMatch.params.id}.pdf`, pdf.byteLength, createHash("sha256").update(pdf).digest("hex"), context.userId]);
           if (body.recipient) {
             const deliveryId = `qdl_${randomUUID()}`;
-            await pgQuery(`insert into quote_delivery_logs (id, workspace_id, quote_opportunity_id, quote_document_id, channel, recipient, status)
-              values ($1,$2,$3,$4,$5,$6,'queued')`, [deliveryId, context.workspaceId, quoteSendMatch.params.id, documentId, body.channel ?? "email", body.recipient]);
+            const messageBody = body.message?.trim() || body.body?.trim() || null;
+            await pgQuery(`insert into quote_delivery_logs (id, workspace_id, quote_opportunity_id, quote_document_id, channel, recipient, status, subject, message_body, attachment_ids)
+              values ($1,$2,$3,$4,$5,$6,'queued',$7,$8,$9::jsonb)`, [deliveryId, context.workspaceId, quoteSendMatch.params.id, documentId, body.channel ?? "email", body.recipient, body.subject?.trim() || null, messageBody, JSON.stringify(attachmentIds)]);
             try {
               const deliveryStatus = body.channel === "link" ? "queued" : await sendQuoteEmail({
                 recipient: body.recipient,
-                subject: `报价单 ${document.sample.quoteNo}`,
-                text: `您好，附件是报价单 ${document.sample.quoteNo}，请查收。`,
+                subject: body.subject?.trim() || `报价单 ${document.sample.quoteNo}`,
+                text: body.message?.trim() || body.body?.trim() || `您好，附件是报价单 ${document.sample.quoteNo}，请查收。`,
                 fileName: `quote-${quoteSendMatch.params.id}.pdf`,
                 pdfBytes: pdf,
+                attachments: emailAttachments,
               });
               finalDeliveryStatus = deliveryStatus;
               await pgQuery(`update quote_delivery_logs set status = $1, delivered_at = case when $1 = 'sent' then now() else null end where id = $2`, [deliveryStatus, deliveryId]);
@@ -408,6 +440,10 @@ export class SalesRouteService {
         const context = await this.authContext.resolve(request.headers);
         assertWriteRole(context.role);
         const body = await readJsonBody<{ lostReason?: string }>(request);
+        const lostReasons: LostReason[] = ["price", "delivery", "spec_mismatch", "project_paused", "competitor", "no_follow_up", "other"];
+        if (!body.lostReason || !lostReasons.includes(body.lostReason as LostReason)) {
+          return fail(ApiCode.VALIDATION, "标记丢单时必须填写有效的丢单原因。", 400);
+        }
         const result = await this.runtime.salesApi.markQuoteLost(context, quoteLostMatch.params.id, { lostReason: (body.lostReason as LostReason) ?? undefined });
         await this.runtime.persist();
         return ok(result);
@@ -469,6 +505,65 @@ export class SalesRouteService {
         return ok(await pgQuery(`select id, version, file_name, size_bytes, content_hash, created_by, created_at
           from quote_documents where workspace_id = $1 and quote_opportunity_id = $2 order by version desc`, [context.workspaceId, quoteDocumentsMatch.params.id]));
       }
+      const quoteAttachmentsMatch = matchPath("/quote-opportunities/:id/attachments", pathname);
+      if (quoteAttachmentsMatch && method === "GET") {
+        const context = await this.authContext.resolve(request.headers);
+        await this.runtime.salesApi.getQuoteOpportunity(context, quoteAttachmentsMatch.params.id);
+        if (this.runtime.driver !== "postgres") return ok([]);
+        return ok(await pgQuery(`select id, file_name, mime_type, size_bytes, created_by, created_at
+          from quote_attachments where workspace_id = $1 and quote_opportunity_id = $2 order by created_at desc`,
+        [context.workspaceId, quoteAttachmentsMatch.params.id]));
+      }
+      if (quoteAttachmentsMatch && method === "POST") {
+        const context = await this.authContext.resolve(request.headers);
+        assertWriteRole(context.role);
+        await this.runtime.salesApi.getQuoteOpportunity(context, quoteAttachmentsMatch.params.id);
+        if (this.runtime.driver !== "postgres") {
+          return fail(ApiCode.INTERNAL, "报价附件需要持久化数据库。", 503);
+        }
+        let form: FormData;
+        try {
+          form = await request.formData();
+        } catch {
+          return fail(ApiCode.VALIDATION, "请求体应为 multipart/form-data。", 400);
+        }
+        const files = form.getAll("files").filter((item) => typeof item !== "string");
+        const single = form.get("file");
+        if (single && typeof single !== "string" && !files.includes(single)) files.push(single);
+        if (files.length === 0 || files.length > 10) {
+          return fail(ApiCode.VALIDATION, "请上传 1 到 10 个附件。", 400);
+        }
+        const created = [];
+        for (const file of files) {
+          if (file.size > 20 * 1024 * 1024) return fail(ApiCode.VALIDATION, "单个附件不能超过 20MB。", 400);
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const id = `qa_${randomUUID()}`;
+          const storedAttachment = await this.runtime.documentStorage.save({
+            workspaceId: context.workspaceId,
+            knowledgeBaseId: "quote-attachments",
+            fileName: file.name,
+            contentBytes: bytes,
+          });
+          const rows = await pgQuery(`insert into quote_attachments
+            (id, workspace_id, quote_opportunity_id, storage_key, file_name, mime_type, size_bytes, created_by)
+            values ($1,$2,$3,$4,$5,$6,$7,$8)
+            returning id, file_name, mime_type, size_bytes, created_by, created_at`,
+          [id, context.workspaceId, quoteAttachmentsMatch.params.id, storedAttachment.storageKey, file.name, file.type || "application/octet-stream", file.size, context.userId]);
+          created.push(rows[0]);
+        }
+        return ok(created);
+      }
+      const quoteAttachmentMatch = matchPath("/quote-opportunities/:id/attachments/:attachmentId", pathname);
+      if (quoteAttachmentMatch && method === "DELETE") {
+        const context = await this.authContext.resolve(request.headers);
+        assertWriteRole(context.role);
+        if (this.runtime.driver !== "postgres") return fail(ApiCode.NOT_FOUND, "报价附件不存在。", 404);
+        const rows = await pgQuery(`delete from quote_attachments where id = $1 and quote_opportunity_id = $2 and workspace_id = $3 returning storage_key`,
+        [quoteAttachmentMatch.params.attachmentId, quoteAttachmentMatch.params.id, context.workspaceId]);
+        if (!rows[0]) return fail(ApiCode.NOT_FOUND, "报价附件不存在。", 404);
+        await this.runtime.documentStorage.remove(String(rows[0].storage_key));
+        return ok({ deleted: true });
+      }
       const quoteDocumentDownloadMatch = matchPath("/quote-opportunities/:id/documents/:documentId/download", pathname);
       if (quoteDocumentDownloadMatch && method === "GET") {
         const context = await this.authContext.resolve(request.headers);
@@ -496,9 +591,26 @@ export class SalesRouteService {
         if (!delivery?.storage_key) return fail(ApiCode.NOT_FOUND, "Delivery log or quote document not found.", 404);
         try {
           const pdfBytes = await this.runtime.documentStorage.read(String(delivery.storage_key), context.workspaceId);
+          const attachmentIds = Array.isArray(delivery.attachment_ids)
+            ? delivery.attachment_ids.map(String)
+            : [];
+          const attachmentRows = attachmentIds.length > 0
+            ? await pgQuery(`select storage_key, file_name from quote_attachments
+                where workspace_id = $1 and quote_opportunity_id = $2 and id = any($3::text[])`,
+              [context.workspaceId, quoteDeliveryRetryMatch.params.id, attachmentIds])
+            : [];
+          const attachments = [];
+          for (const attachment of attachmentRows) {
+            attachments.push({
+              fileName: String(attachment.file_name),
+              contentBytes: await this.runtime.documentStorage.read(String(attachment.storage_key), context.workspaceId),
+            });
+          }
           const status = String(delivery.channel) === "link" ? "queued" : await sendQuoteEmail({
-            recipient: String(delivery.recipient), subject: "报价单", text: "您好，附件是重新发送的报价单，请查收。",
-            fileName: String(delivery.file_name), pdfBytes,
+            recipient: String(delivery.recipient),
+            subject: String(delivery.subject || "报价单"),
+            text: String(delivery.message_body || "您好，附件是重新发送的报价单，请查收。"),
+            fileName: String(delivery.file_name), pdfBytes, attachments,
           });
           const updated = await pgQuery(`update quote_delivery_logs set status = $1, error_message = null,
             delivered_at = case when $1 = 'sent' then now() else null end where id = $2 returning *`, [status, delivery.id]);

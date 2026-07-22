@@ -27,17 +27,23 @@ import { getApiErrorMessage } from "@/lib/api/errors";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import {
   addQuoteFollowUp,
+  deleteQuoteAttachment,
   downloadCurrentQuotePdf,
   downloadQuoteDocument,
   getInquiry,
   getQuoteOpportunity,
   listQuoteDeliveryLogs,
   listQuoteDocuments,
+  listQuoteAttachments,
+  markQuoteLost,
   retryQuoteDelivery,
   sendQuote,
+  uploadQuoteAttachments,
+  type QuoteAttachment,
   updateQuoteOpportunity,
   type QuoteDeliveryLog,
   type QuoteDocumentVersion,
+  type QuoteLostReason,
 } from "@/lib/sales/api";
 import { resolveReturnTo } from "@/lib/sales/list-return";
 import type { InquiryDetail, QuoteDetail } from "@/lib/sales/types";
@@ -206,9 +212,16 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
   const [sendOpen, setSendOpen] = useState(false);
   const [sendRecipient, setSendRecipient] = useState("");
   const [sendChannel, setSendChannel] = useState<"email" | "link">("email");
+  const [sendSubject, setSendSubject] = useState("");
+  const [sendBody, setSendBody] = useState("");
+  const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
+  const [selectedAttachmentIds, setSelectedAttachmentIds] = useState<string[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [stageUpdating, setStageUpdating] = useState(false);
+  const [lostOpen, setLostOpen] = useState(false);
+  const [lostReason, setLostReason] = useState<QuoteLostReason | "">("");
 
   const load = useCallback(async () => {
     if (!resolvedId) return;
@@ -245,17 +258,21 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
       if (preview) {
         setDocuments([]);
         setDeliveries([]);
+        setAttachments([]);
         return;
       }
-      const [docs, logs] = await Promise.all([
+      const [docs, logs, quoteAttachments] = await Promise.all([
         listQuoteDocuments(resolvedId),
         listQuoteDeliveryLogs(resolvedId),
+        listQuoteAttachments(resolvedId),
       ]);
       setDocuments(docs);
       setDeliveries(logs);
+      setAttachments(quoteAttachments);
     } catch {
       setDocuments([]);
       setDeliveries([]);
+      setAttachments([]);
     }
   }, [resolvedId]);
 
@@ -298,9 +315,15 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
       await sendQuote(detail.id, {
         recipient: sendRecipient.trim() || undefined,
         channel: sendChannel,
+        subject: sendSubject.trim() || undefined,
+        body: sendBody.trim() || undefined,
+        attachmentIds: selectedAttachmentIds,
       });
       setSendOpen(false);
       setSendRecipient("");
+      setSendSubject("");
+      setSendBody("");
+      setSelectedAttachmentIds([]);
       setNotice("报价已发送，可在「发送记录」中查看状态。");
       await Promise.all([load(), loadArtifacts()]);
     } catch (nextError) {
@@ -308,7 +331,41 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
     } finally {
       setSending(false);
     }
-  }, [detail, sendChannel, sendRecipient, loadArtifacts, load]);
+  }, [detail, sendBody, sendChannel, sendRecipient, sendSubject, selectedAttachmentIds, loadArtifacts, load]);
+
+  const handleAttachmentUpload = useCallback(
+    async (files: FileList | null) => {
+      if (!detail || !files?.length) return;
+      setUploadingAttachments(true);
+      setSendError(null);
+      try {
+        const uploaded = await uploadQuoteAttachments(detail.id, Array.from(files));
+        setAttachments((current) => [...uploaded, ...current]);
+        setSelectedAttachmentIds((current) => [
+          ...new Set([...current, ...uploaded.map((attachment) => attachment.id)]),
+        ]);
+      } catch (nextError) {
+        setSendError(getApiErrorMessage(nextError, "附件上传失败。"));
+      } finally {
+        setUploadingAttachments(false);
+      }
+    },
+    [detail],
+  );
+
+  const handleAttachmentDelete = useCallback(
+    async (attachmentId: string) => {
+      if (!detail) return;
+      try {
+        await deleteQuoteAttachment(detail.id, attachmentId);
+        setAttachments((current) => current.filter((item) => item.id !== attachmentId));
+        setSelectedAttachmentIds((current) => current.filter((id) => id !== attachmentId));
+      } catch (nextError) {
+        setSendError(getApiErrorMessage(nextError, "附件删除失败。"));
+      }
+    },
+    [detail],
+  );
 
   const handleRetryDelivery = useCallback(
     async (log: QuoteDeliveryLog) => {
@@ -387,6 +444,23 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
       setNotice(stage === "won" ? "已标记成交。" : stage === "lost" ? "已标记丢单。" : "报价状态已更新。");
     } catch (nextError) {
       setNotice(getApiErrorMessage(nextError, "更新报价状态失败，请稍后重试。"));
+    } finally {
+      setStageUpdating(false);
+    }
+  }
+
+  async function handleMarkLost() {
+    if (!detail || !lostReason || stageUpdating) return;
+    setStageUpdating(true);
+    setNotice(null);
+    try {
+      const updated = await markQuoteLost(detail.id, lostReason);
+      setDetail(updated);
+      setLostOpen(false);
+      setLostReason("");
+      setNotice("已标记丢单并记录原因。");
+    } catch (nextError) {
+      setNotice(getApiErrorMessage(nextError, "标记丢单失败。"));
     } finally {
       setStageUpdating(false);
     }
@@ -509,6 +583,58 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
                 <option value="link">客户链接</option>
               </select>
             </div>
+            <div className={styles.field}>
+              <label htmlFor="send-subject">邮件主题</label>
+              <input
+                id="send-subject"
+                value={sendSubject}
+                onChange={(event) => setSendSubject(event.target.value)}
+                placeholder={`报价单 ${quoteNumber(detail)}`}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="send-body">邮件正文</label>
+              <textarea
+                id="send-body"
+                value={sendBody}
+                onChange={(event) => setSendBody(event.target.value)}
+                placeholder="您好，附件是本次报价单，请查收。"
+                rows={4}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="quote-attachment-upload">附件（最多 10 个，单个不超过 20MB）</label>
+              <input
+                id="quote-attachment-upload"
+                type="file"
+                multiple
+                disabled={uploadingAttachments}
+                onChange={(event) => void handleAttachmentUpload(event.target.files)}
+              />
+              {attachments.length > 0 ? (
+                <div className="mt-2 space-y-2">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center justify-between gap-3 text-sm">
+                      <label className="flex min-w-0 items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedAttachmentIds.includes(attachment.id)}
+                          onChange={(event) => setSelectedAttachmentIds((current) =>
+                            event.target.checked
+                              ? [...new Set([...current, attachment.id])]
+                              : current.filter((id) => id !== attachment.id),
+                          )}
+                        />
+                        <span className="truncate">{attachment.fileName}（{formatBytes(attachment.sizeBytes)}）</span>
+                      </label>
+                      <button type="button" className="text-destructive hover:underline" onClick={() => void handleAttachmentDelete(attachment.id)}>
+                        删除
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             {sendError ? <div className={styles.notice}>{sendError}</div> : null}
             <button
               type="button"
@@ -517,6 +643,33 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
               onClick={() => void handleSend()}
             >
               {sending ? "发送中…" : "确认发送"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {lostOpen ? (
+        <div className={styles.card} style={{ borderColor: "var(--destructive, #dc2626)" }}>
+          <div className={styles.noteHead}>
+            <h2 className={styles.cardTitle} style={{ margin: 0 }}>标记丢单</h2>
+            <button type="button" className={styles.copyIcon} onClick={() => setLostOpen(false)} aria-label="关闭">✕</button>
+          </div>
+          <div className={styles.fieldStack}>
+            <div className={styles.field}>
+              <label htmlFor="lost-reason">丢单原因（必填）</label>
+              <select id="lost-reason" value={lostReason} onChange={(event) => setLostReason(event.target.value as QuoteLostReason | "")}>
+                <option value="">请选择原因</option>
+                <option value="price">价格原因</option>
+                <option value="delivery">交期原因</option>
+                <option value="spec_mismatch">规格不匹配</option>
+                <option value="project_paused">项目暂停</option>
+                <option value="competitor">选择竞争对手</option>
+                <option value="no_follow_up">跟进中断</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+            <button type="button" className={styles.btnPrimary} disabled={!lostReason || stageUpdating} onClick={() => void handleMarkLost()}>
+              {stageUpdating ? "提交中…" : "确认标记丢单"}
             </button>
           </div>
         </div>
@@ -818,7 +971,7 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
               <button type="button" className={styles.quickBtn} disabled={stageUpdating} onClick={() => void handleStageUpdate("won")}>
                 <CheckCircle size={14} color="#22c55e" /> 标记成交
               </button>
-              <button type="button" className={styles.quickBtn} disabled={stageUpdating} onClick={() => void handleStageUpdate("lost")}>
+              <button type="button" className={styles.quickBtn} disabled={stageUpdating} onClick={() => setLostOpen(true)}>
                 <Flag size={14} color="#ef4444" /> 标记丢单
               </button>
               <button type="button" className={styles.quickBtn} onClick={() => void handleAddFollowUp()}>

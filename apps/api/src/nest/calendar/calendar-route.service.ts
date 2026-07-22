@@ -53,17 +53,17 @@ export class CalendarRouteService {
     if (pathname === "/follow-tasks" && method === "POST") {
       const context = await this.authContext.resolve(request.headers);
       assertWriteRole(context.role);
-      const body = await readJsonBody<{ title?: string; dueAt?: string; inquiryId?: string; customerName?: string; ownerName?: string; note?: string }>(request);
+      const body = await readJsonBody<{ title?: string; dueAt?: string; inquiryId?: string; customerName?: string; ownerName?: string; note?: string; priority?: "low" | "medium" | "high" }>(request);
       if (!body.title?.trim() || !body.dueAt || Number.isNaN(Date.parse(body.dueAt))) {
         return json(400, { code: "VALIDATION_ERROR", message: "title and valid dueAt are required." }, requestId);
       }
       const start = new Date(body.dueAt);
       if (this.runtime.driver === "postgres") {
         const id = `ft_${randomUUID()}`;
-        await pgQuery(`insert into follow_tasks (id, workspace_id, inquiry_id, assignee_user_id, title, priority, status, due_at, created_by)
-          values ($1,$2,$3,$4,$5,$6,'pending',$7,$8)`,
-        [id, context.workspaceId, body.inquiryId ?? null, null, body.title.trim(), "medium", start.toISOString(), context.userId]);
-        return json(201, { id, workspaceId: context.workspaceId, inquiryId: body.inquiryId ?? null, title: body.title.trim(), status: "pending", dueAt: start.toISOString() }, requestId);
+        await pgQuery(`insert into follow_tasks (id, workspace_id, inquiry_id, assignee_user_id, title, priority, status, due_at, created_by, note)
+          values ($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9)`,
+        [id, context.workspaceId, body.inquiryId ?? null, null, body.title.trim(), body.priority ?? "medium", start.toISOString(), context.userId, body.note?.trim() || null]);
+        return json(201, { id, workspaceId: context.workspaceId, inquiryId: body.inquiryId ?? null, title: body.title.trim(), priority: body.priority ?? "medium", note: body.note?.trim() || null, status: "pending", dueAt: start.toISOString() }, requestId);
       }
       const created = await this.runtime.calendarApi.createEvent(context.workspaceId, {
         title: body.title.trim(), start: start.toISOString(),
@@ -121,7 +121,7 @@ export class CalendarRouteService {
     if (followTaskMatch && method === "PATCH") {
       const context = await this.authContext.resolve(request.headers);
       assertWriteRole(context.role);
-      const body = await readJsonBody<{ title?: string; dueAt?: string; priority?: "low" | "medium" | "high"; assigneeUserId?: string | null }>(request);
+      const body = await readJsonBody<{ title?: string; dueAt?: string; priority?: "low" | "medium" | "high"; assigneeUserId?: string | null; note?: string | null }>(request);
       if (body.dueAt && Number.isNaN(Date.parse(body.dueAt))) return json(400, { code: "VALIDATION_ERROR", message: "Invalid dueAt." }, requestId);
       if (body.assigneeUserId) {
         const members = await this.runtime.authApi.listWorkspaceMembers(context);
@@ -131,11 +131,12 @@ export class CalendarRouteService {
       }
       if (this.runtime.driver === "postgres") {
         const rows = await pgQuery(`update follow_tasks set title = coalesce($1,title), due_at = coalesce($2::timestamptz,due_at),
-          priority = coalesce($3,priority), assignee_user_id = case when $4::boolean then $5 else assignee_user_id end, updated_at = now()
-          where id = $6 and workspace_id = $7 returning *`, [body.title ?? null, body.dueAt ?? null, body.priority ?? null, Object.hasOwn(body, "assigneeUserId"), body.assigneeUserId ?? null, followTaskMatch.params.id, context.workspaceId]);
+          priority = coalesce($3,priority), assignee_user_id = case when $4::boolean then $5 else assignee_user_id end,
+          note = case when $6::boolean then $7 else note end, updated_at = now()
+          where id = $8 and workspace_id = $9 returning *`, [body.title ?? null, body.dueAt ?? null, body.priority ?? null, Object.hasOwn(body, "assigneeUserId"), body.assigneeUserId ?? null, Object.hasOwn(body, "note"), body.note ?? null, followTaskMatch.params.id, context.workspaceId]);
         return rows[0] ? json(200, rows[0], requestId) : json(404, { code: "NOT_FOUND", message: "Follow task not found." }, requestId);
       }
-      const updated = await this.runtime.calendarApi.updateEvent(context.workspaceId, followTaskMatch.params.id, { title: body.title, start: body.dueAt });
+      const updated = await this.runtime.calendarApi.updateEvent(context.workspaceId, followTaskMatch.params.id, { title: body.title, start: body.dueAt, note: body.note ?? undefined });
       return updated ? json(200, updated, requestId) : json(404, { code: "NOT_FOUND" }, requestId);
     }
 

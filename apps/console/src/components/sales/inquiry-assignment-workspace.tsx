@@ -30,7 +30,7 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { isPreviewModeError, useApiResource } from "@/lib/api/use-api-resource";
-import { assignInquiry } from "@/lib/sales/api";
+import { assignInquiry, batchAssignInquiries } from "@/lib/sales/api";
 import { formatInquiryDate } from "@/lib/sales/quick-entry-helpers";
 import {
   INTENT_LABELS,
@@ -213,9 +213,10 @@ export function InquiryAssignmentWorkspace() {
     setAssignError(null);
     setAssignMessage(null);
     try {
-      // batch-assign API 不支持 remark，逐条调用 /assign 保证备注落库
-      for (const id of inquiryIds) {
-        await assignInquiry(id, targetOwnerId, assignRemark.trim());
+      if (inquiryIds.length === 1) {
+        await assignInquiry(inquiryIds[0], targetOwnerId, assignRemark.trim());
+      } else {
+        await batchAssignInquiries(inquiryIds, targetOwnerId, assignRemark.trim());
       }
       setAssignMessage(`已成功分配 ${inquiryIds.length} 个询盘。`);
       setSelectedIds([]);

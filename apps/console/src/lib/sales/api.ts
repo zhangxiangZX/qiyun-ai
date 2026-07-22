@@ -1,4 +1,4 @@
-import { apiRequest, getApiPrefix } from "@/lib/api/client";
+import { apiFormDataRequest, apiRequest, getApiPrefix } from "@/lib/api/client";
 import { ApiError, normalizeApiErrorCode } from "@/lib/api/errors";
 import { WORKSPACE_ID } from "@/lib/api/workspace";
 import type {
@@ -167,10 +167,11 @@ export async function createQuickEntryInquiry(input: CreateInquiryInput): Promis
 export async function batchAssignInquiries(
   inquiryIds: string[],
   ownerId: string,
+  remark?: string,
 ): Promise<InquiryDetail[]> {
   return apiRequest<InquiryDetail[]>("/inquiries/batch-assign", {
     method: "POST",
-    body: { inquiryIds, ownerId },
+    body: { inquiryIds, ownerId, remark },
   });
 }
 
@@ -217,6 +218,13 @@ export async function createQuoteOpportunity(input: {
   inquiryId: string;
   title?: string;
   estimatedAmount?: number | null;
+  templateId?: string | null;
+  lineItems?: Array<{ name: string; model: string; unit: string; qty: number; price: number; discount: number; deliveryCycle?: string }>;
+  taxRate?: number;
+  freightAmount?: number;
+  installationAmount?: number;
+  otherAmount?: number;
+  currency?: string;
 }): Promise<QuoteDetail> {
   return apiRequest<QuoteDetail>("/quote-opportunities", { method: "POST", body: input });
 }
@@ -230,6 +238,25 @@ export async function updateQuoteOpportunity(
   patch: Record<string, unknown>,
 ): Promise<QuoteDetail> {
   return apiRequest<QuoteDetail>(`/quote-opportunities/${id}`, { method: "PATCH", body: patch });
+}
+
+export type QuoteLostReason =
+  | "price"
+  | "delivery"
+  | "spec_mismatch"
+  | "project_paused"
+  | "competitor"
+  | "no_follow_up"
+  | "other";
+
+export async function markQuoteLost(
+  quoteId: string,
+  lostReason: QuoteLostReason,
+): Promise<QuoteDetail> {
+  return apiRequest<QuoteDetail>(`/quote-opportunities/${quoteId}/lost`, {
+    method: "POST",
+    body: { lostReason },
+  });
 }
 
 export async function addQuoteFollowUp(
@@ -332,6 +359,57 @@ export interface QuoteDeliveryLog {
   errorMessage: string | null;
   createdAt: string;
   deliveredAt: string | null;
+}
+
+export interface QuoteAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+function normalizeQuoteAttachment(row: Record<string, unknown>): QuoteAttachment {
+  return {
+    id: String(row.id ?? ""),
+    fileName: String(row.fileName ?? row.file_name ?? "attachment"),
+    mimeType: String(row.mimeType ?? row.mime_type ?? "application/octet-stream"),
+    sizeBytes: Number(row.sizeBytes ?? row.size_bytes ?? 0),
+    createdBy: row.createdBy == null && row.created_by == null
+      ? null
+      : String(row.createdBy ?? row.created_by),
+    createdAt: String(row.createdAt ?? row.created_at ?? ""),
+  };
+}
+
+export async function listQuoteAttachments(quoteId: string): Promise<QuoteAttachment[]> {
+  const rows = await apiRequest<Record<string, unknown>[]>(
+    `/quote-opportunities/${quoteId}/attachments`,
+  );
+  return (Array.isArray(rows) ? rows : []).map(normalizeQuoteAttachment);
+}
+
+export async function uploadQuoteAttachments(
+  quoteId: string,
+  files: File[],
+): Promise<QuoteAttachment[]> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+  const rows = await apiFormDataRequest<Record<string, unknown>[]>(
+    `/quote-opportunities/${quoteId}/attachments`,
+    formData,
+  );
+  return (Array.isArray(rows) ? rows : []).map(normalizeQuoteAttachment);
+}
+
+export async function deleteQuoteAttachment(
+  quoteId: string,
+  attachmentId: string,
+): Promise<void> {
+  await apiRequest(`/quote-opportunities/${quoteId}/attachments/${attachmentId}`, {
+    method: "DELETE",
+  });
 }
 
 interface RawQuoteDocumentRow {
@@ -446,7 +524,14 @@ export async function retryQuoteDelivery(quoteId: string, logId: string): Promis
 
 export async function sendQuote(
   quoteId: string,
-  input: { recipient?: string; channel?: "email" | "link"; quotedAmount?: number | null },
+  input: {
+    recipient?: string;
+    channel?: "email" | "link";
+    quotedAmount?: number | null;
+    subject?: string;
+    body?: string;
+    attachmentIds?: string[];
+  },
 ): Promise<{ id: string; status: string }> {
   const result = await apiRequest<{ id: string; status?: string }>(
     `/quote-opportunities/${quoteId}/send`,

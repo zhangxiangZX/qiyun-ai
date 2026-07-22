@@ -101,6 +101,39 @@ export function computeTabCounts(items: InquiryListItem[]) {
   }));
 }
 
+export function computeQuickFilters(items: InquiryListItem[]): Array<{
+  label: string;
+  count: number;
+  tab: InquiryTabKey;
+}> {
+  return [
+    { label: "高意向新询盘", count: items.filter((item) => item.status === "open" && item.intentLevel === "high" && !item.ownerId).length, tab: "new" },
+    { label: "待补充资料", count: items.filter((item) => matchesInquiryTab(item, "supplement")).length, tab: "supplement" },
+    { label: "待报价", count: items.filter((item) => matchesInquiryTab(item, "to_quote")).length, tab: "to_quote" },
+  ];
+}
+
+export function computeUnassignedAlerts(items: InquiryListItem[]): Array<{
+  id: string;
+  company: string;
+  channel: string;
+  time: string;
+}> {
+  const channelLabels: Record<string, string> = {
+    website: "官网", douyin: "抖音", wechat: "微信", expo: "展会", sales_link: "销售链接", other: "其他",
+  };
+  return items
+    .filter((item) => item.status === "open" && !item.ownerId)
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, 3)
+    .map((item) => ({
+      id: item.id,
+      company: item.customerName || "未命名客户",
+      channel: channelLabels[item.sourceType] ?? "其他",
+      time: new Date(item.createdAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    }));
+}
+
 export function mapInquiryRowDisplay(item: InquiryListItem, index: number) {
   const statusTone =
     item.quoteStatus === "won"

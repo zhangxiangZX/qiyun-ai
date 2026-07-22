@@ -36,6 +36,7 @@ import type {
   LostReason,
   QuoteDocumentPayload,
   QuoteFollowUpRecord,
+  QuoteLineItem,
   QuoteOpportunityRecord,
   QuoteStage,
   QuoteTemplateRecord,
@@ -68,6 +69,33 @@ const QUOTE_STAGE_LABELS: Record<QuoteStage, string> = {
   won: "已成交",
   lost: "已丢单",
 };
+
+const LOST_REASONS = new Set<LostReason>([
+  "price", "delivery", "spec_mismatch", "project_paused", "competitor", "no_follow_up", "other",
+]);
+
+function normalizeQuoteLineItems(items: QuoteLineItem[] | undefined): QuoteLineItem[] {
+  return (items ?? []).map((item, index) => {
+    const qty = Number(item.qty);
+    const price = Number(item.price);
+    const discount = Number(item.discount ?? 0);
+    if (!item.name?.trim()) throw new SalesValidationError(`第 ${index + 1} 行产品名称不能为空。`);
+    if (!Number.isFinite(qty) || qty <= 0) throw new SalesValidationError(`第 ${index + 1} 行数量必须大于 0。`);
+    if (!Number.isFinite(price) || price < 0) throw new SalesValidationError(`第 ${index + 1} 行单价不能小于 0。`);
+    if (!Number.isFinite(discount) || discount < 0 || discount > 100) throw new SalesValidationError(`第 ${index + 1} 行折扣必须在 0 到 100 之间。`);
+    return {
+      name: item.name.trim(), model: item.model?.trim() ?? "", unit: item.unit?.trim() || "件",
+      qty, price, discount,
+      ...(item.deliveryCycle?.trim() ? { deliveryCycle: item.deliveryCycle.trim() } : {}),
+    };
+  });
+}
+
+function normalizeNonNegativeAmount(value: number | undefined, label: string): number {
+  const number = Number(value ?? 0);
+  if (!Number.isFinite(number) || number < 0) throw new SalesValidationError(`${label}不能小于 0。`);
+  return number;
+}
 
 /**
  * 数据范围解析（对应文档 data_scope）：
@@ -679,12 +707,11 @@ export class SalesService {
     workspaceId: string,
     inquiryIds: string[],
     ownerId: string,
+    remark?: string,
   ) {
     const results: Awaited<ReturnType<typeof this.getInquiry>>[] = [];
     for (const id of inquiryIds) {
-      await this.requireInquiry(workspaceId, id);
-      await this.salesRepository.updateInquiry(workspaceId, id, { ownerId });
-      results.push(await this.getInquiry(workspaceId, id));
+      results.push(await this.assignInquiry(workspaceId, id, ownerId, remark));
     }
     return results;
   }
@@ -832,6 +859,12 @@ export class SalesService {
       id: quote.id,
       inquiryId: quote.inquiryId,
       templateId: quote.templateId,
+      lineItems: quote.lineItems,
+      taxRate: quote.taxRate,
+      freightAmount: quote.freightAmount,
+      installationAmount: quote.installationAmount,
+      otherAmount: quote.otherAmount,
+      currency: quote.currency,
       stage: quote.stage,
       stageLabel: QUOTE_STAGE_LABELS[quote.stage],
       title:
@@ -870,6 +903,12 @@ export class SalesService {
       title?: string;
       estimatedAmount?: number | null;
       templateId?: string | null;
+      lineItems?: QuoteLineItem[];
+      taxRate?: number;
+      freightAmount?: number;
+      installationAmount?: number;
+      otherAmount?: number;
+      currency?: string;
     },
   ) {
     const inquiry = await this.requireInquiry(workspaceId, input.inquiryId);
@@ -883,14 +922,30 @@ export class SalesService {
       const defaultTemplate = await this.resolveDefaultQuoteTemplate(workspaceId);
       templateId = defaultTemplate?.id ?? null;
     }
+    const lineItems = normalizeQuoteLineItems(input.lineItems);
+    const taxRate = Number(input.taxRate ?? 0.13);
+    if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 1) {
+      throw new SalesValidationError("税率必须在 0 到 1 之间。请使用 0.13 表示 13%。");
+    }
+    const freightAmount = normalizeNonNegativeAmount(input.freightAmount, "运费");
+    const installationAmount = normalizeNonNegativeAmount(input.installationAmount, "安装费");
+    const otherAmount = normalizeNonNegativeAmount(input.otherAmount, "其他费用");
+    const subtotal = lineItems.reduce((sum, item) => sum + item.qty * item.price * (1 - item.discount / 100), 0);
+    const calculatedAmount = subtotal * (1 + taxRate) + freightAmount + installationAmount + otherAmount;
     const now = new Date().toISOString();
     const record: QuoteOpportunityRecord = {
       id: `qopp_${randomUUID()}`,
       workspaceId,
       inquiryId: inquiry.id,
       templateId,
+      lineItems,
+      taxRate,
+      freightAmount,
+      installationAmount,
+      otherAmount,
+      currency: input.currency?.trim().toUpperCase().slice(0, 8) || "CNY",
       stage: inquiry.requirementCompleteness >= 80 ? "to_quote" : "collecting",
-      estimatedAmount: input.estimatedAmount ?? null,
+      estimatedAmount: input.estimatedAmount ?? (lineItems.length > 0 ? Math.round(calculatedAmount * 100) / 100 : null),
       quotedAmount: null,
       wonAmount: null,
       lostReason: null,
@@ -932,9 +987,22 @@ export class SalesService {
       nextFollowUpAt: string | null;
       title: string | null;
       templateId: string | null;
+      lineItems: QuoteLineItem[];
+      taxRate: number;
+      freightAmount: number;
+      installationAmount: number;
+      otherAmount: number;
+      currency: string;
     }>,
   ) {
     const quote = await this.requireQuote(workspaceId, quoteId);
+    if (patch.stage === "lost") {
+      const reason = patch.lostReason ?? quote.lostReason;
+      if (!reason || !LOST_REASONS.has(reason)) {
+        throw new SalesValidationError("标记丢单时必须填写有效的丢单原因。");
+      }
+    }
+    if (patch.lineItems) patch.lineItems = normalizeQuoteLineItems(patch.lineItems);
     const updated = await this.salesRepository.updateQuoteOpportunity(
       workspaceId,
       quote.id,
@@ -983,6 +1051,13 @@ export class SalesService {
       inquiryId: quote.inquiryId,
       title: `${quote.title ?? "报价"} (副本)`,
       estimatedAmount: quote.estimatedAmount,
+      templateId: quote.templateId,
+      lineItems: quote.lineItems,
+      taxRate: quote.taxRate,
+      freightAmount: quote.freightAmount,
+      installationAmount: quote.installationAmount,
+      otherAmount: quote.otherAmount,
+      currency: quote.currency,
     });
   }
 
@@ -1026,16 +1101,19 @@ export class SalesService {
   }
 
   async markQuoteLost(workspaceId: string, quoteId: string, body: { lostReason?: LostReason }) {
+    if (!body.lostReason || !LOST_REASONS.has(body.lostReason)) {
+      throw new SalesValidationError("标记丢单时必须填写有效的丢单原因。");
+    }
     const quote = await this.requireQuote(workspaceId, quoteId);
     await this.salesRepository.updateQuoteOpportunity(workspaceId, quoteId, {
       stage: "lost" as QuoteStage,
-      lostReason: body.lostReason ?? null,
+      lostReason: body.lostReason,
     });
     await this.salesRepository.createQuoteFollowUp({
       id: `qf_${randomUUID()}`,
       quoteOpportunityId: quoteId,
       kind: "status",
-      title: body.lostReason ? `已丢单，原因：${body.lostReason}` : "已丢单",
+      title: `已丢单，原因：${body.lostReason}`,
       createdAt: new Date().toISOString(),
     });
     await this.salesRepository.updateInquiry(workspaceId, quote.inquiryId, { status: "closed" });
@@ -1266,6 +1344,12 @@ export class SalesService {
         workspaceId,
         inquiryId: "inq_preview",
         templateId: record.id,
+        lineItems: [],
+        taxRate: 0.13,
+        freightAmount: 0,
+        installationAmount: 0,
+        otherAmount: 0,
+        currency: "CNY",
         stage: "quoted",
         estimatedAmount: 137760,
         quotedAmount: 137760,

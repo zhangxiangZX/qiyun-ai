@@ -22,6 +22,12 @@ export function mapWorkspaceMemberToDisplay(member: WorkspaceMemberSummary): Moc
   };
 }
 
+export function filterEnterpriseTeamMembers(
+  members: WorkspaceMemberSummary[],
+): WorkspaceMemberSummary[] {
+  return members.filter((member) => !member.isCurrentUser);
+}
+
 export function mapWorkspaceMemberToTableRow(member: WorkspaceMemberSummary) {
   const roleLabel =
     member.role === "owner"

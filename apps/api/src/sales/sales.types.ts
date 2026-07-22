@@ -30,6 +30,16 @@ export type LostReason =
   | "no_follow_up"
   | "other";
 
+export interface QuoteLineItem {
+  name: string;
+  model: string;
+  unit: string;
+  qty: number;
+  price: number;
+  discount: number;
+  deliveryCycle?: string;
+}
+
 export interface InquiryRecord {
   id: string;
   workspaceId: string;
@@ -105,6 +115,12 @@ export interface QuoteOpportunityRecord {
   workspaceId: string;
   inquiryId: string;
   templateId: string | null;
+  lineItems: QuoteLineItem[];
+  taxRate: number;
+  freightAmount: number;
+  installationAmount: number;
+  otherAmount: number;
+  currency: string;
   stage: QuoteStage;
   estimatedAmount: number | null;
   quotedAmount: number | null;

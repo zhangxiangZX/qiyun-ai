@@ -4,6 +4,7 @@ export interface QuoteEmailInput {
   text: string;
   fileName: string;
   pdfBytes: Uint8Array;
+  attachments?: Array<{ fileName: string; contentBytes: Uint8Array }>;
 }
 
 export async function sendQuoteEmail(input: QuoteEmailInput): Promise<"sent" | "queued"> {
@@ -20,7 +21,13 @@ export async function sendQuoteEmail(input: QuoteEmailInput): Promise<"sent" | "
       reply_to: process.env.EMAIL_REPLY_TO?.trim() || undefined,
       subject: input.subject,
       text: input.text,
-      attachments: [{ filename: input.fileName, content: Buffer.from(input.pdfBytes).toString("base64") }],
+      attachments: [
+        { filename: input.fileName, content: Buffer.from(input.pdfBytes).toString("base64") },
+        ...(input.attachments ?? []).map((item) => ({
+          filename: item.fileName,
+          content: Buffer.from(item.contentBytes).toString("base64"),
+        })),
+      ],
     }),
   });
   if (!response.ok) throw new Error(`Resend quote email failed: ${response.status} ${await response.text()}`);

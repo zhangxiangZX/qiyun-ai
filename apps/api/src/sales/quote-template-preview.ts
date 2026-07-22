@@ -109,8 +109,12 @@ export function buildQuotePreviewSampleFromOpportunity(
   const amount = quote.quotedAmount ?? quote.estimatedAmount ?? 0;
   const customerName = inquiry?.customerName?.trim() || "客户";
   const contact = inquiry?.customerContact?.trim() || customerName;
-  const products: QuotePreviewProduct[] =
-    amount > 0
+  const products: QuotePreviewProduct[] = quote.lineItems.length > 0
+    ? quote.lineItems.map((item) => ({
+        ...item,
+        amount: item.qty * item.price * (1 - item.discount / 100),
+      }))
+    : amount > 0
       ? [
           {
             name: quote.title ?? inquiry?.summary?.slice(0, 48) ?? "报价项目",
@@ -130,7 +134,7 @@ export function buildQuotePreviewSampleFromOpportunity(
     quoteNo: quote.id.replace(/^qopp_/, "QT-").slice(0, 20).toUpperCase(),
     date,
     validUntil,
-    currency: "人民币（CNY）",
+    currency: quote.currency === "CNY" ? "人民币（CNY）" : quote.currency,
     company: {
       name: template.companyName || DEFAULT_QUOTE_PREVIEW_SAMPLE.company.name,
       enName: DEFAULT_QUOTE_PREVIEW_SAMPLE.company.enName,

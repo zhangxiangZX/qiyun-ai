@@ -37,7 +37,7 @@ function runNode(scriptPath, args = []) {
 function ensureE2eDeps() {
   if (!existsSync(path.join(e2eRoot, "node_modules", "playwright"))) {
     console.log("==> Console E2E: npm install in apps/console/e2e");
-    run("npm", ["install", "--no-package-lock", "--no-fund", "--no-audit"], e2eRoot);
+    run(process.platform === "win32" ? "npm.cmd" : "npm", ["install", "--no-package-lock", "--no-fund", "--no-audit"], e2eRoot);
   }
 }
 
@@ -65,7 +65,7 @@ console.log("==> Console Playwright: C-P0-07 v1 delivery critical journeys");
       "test",
       "--config",
       path.join(e2eRoot, "playwright.config.mjs"),
-      path.join(e2eRoot, "v1-delivery-critical.spec.ts"),
+      "v1-delivery-critical.spec.ts",
     ],
     { stdio: "inherit", cwd: consoleRoot, env: process.env },
   );

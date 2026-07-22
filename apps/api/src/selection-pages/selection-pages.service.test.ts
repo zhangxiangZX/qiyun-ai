@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { InMemorySelectionPagesRepository } from "./selection-pages.repository";
-import { SelectionPagesService } from "./selection-pages.service";
+import { resolveSelectionAcquisitionSource, SelectionPagesService } from "./selection-pages.service";
 
 function buildService() {
   return new SelectionPagesService(new InMemorySelectionPagesRepository());
@@ -88,8 +88,19 @@ describe("SelectionPagesService", () => {
     const sub = await svc.submit("sub-page", { answers: { q1: "a1" }, contactName: "Alice" });
     assert.ok(sub.id.startsWith("ss_"));
     assert.strictEqual(sub.selectionPageId, created.id);
-    assert.deepStrictEqual(sub.answers, { q1: "a1" });
+    assert.deepStrictEqual(sub.answers, { q1: "a1", source: "selection:sub-page" });
     assert.strictEqual(sub.contactName, "Alice");
+  });
+
+  it("normalizes WeChat and sales-link acquisition sources", () => {
+    assert.deepStrictEqual(resolveSelectionAcquisitionSource("wechat_official_account", "cabinet"), {
+      sourceType: "wechat",
+      sourceCode: "wechat_official_account",
+    });
+    assert.deepStrictEqual(resolveSelectionAcquisitionSource("sales_link:expo-2026", "cabinet"), {
+      sourceType: "sales_link",
+      sourceCode: "sales_link:expo-2026",
+    });
   });
 
   it("submit rejects for draft page", async () => {

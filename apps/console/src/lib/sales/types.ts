@@ -84,6 +84,13 @@ export interface InquiryDetail extends InquiryListItem {
 export interface QuoteListItem {
   id: string;
   inquiryId: string;
+  templateId?: string | null;
+  lineItems?: Array<{ name: string; model: string; unit: string; qty: number; price: number; discount: number; deliveryCycle?: string }>;
+  taxRate?: number;
+  freightAmount?: number;
+  installationAmount?: number;
+  otherAmount?: number;
+  currency?: string;
   stage: QuoteStage;
   stageLabel: string;
   title: string;

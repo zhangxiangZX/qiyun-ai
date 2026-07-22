@@ -4,8 +4,26 @@ import type { SelectionPageConfig } from "./selection-pages.types";
 import type { SalesService } from "../sales/sales.service";
 import type { CalendarApi } from "../calendar/calendar.api";
 import type { FileVaultRepository } from "../file-vault/file-vault.repository";
+import type { SourceType } from "../sales/sales.types";
 
 export { SelectionPagesAccessError };
+
+export function resolveSelectionAcquisitionSource(
+  source: string | undefined,
+  slug: string,
+): { sourceType: SourceType; sourceCode: string } {
+  const normalized = source?.trim().toLowerCase().replace(/[^a-z0-9:_-]/g, "").slice(0, 64);
+  if (!normalized) return { sourceType: "website", sourceCode: `selection:${slug}` };
+  if (normalized === "wechat" || normalized === "wechat_official_account") {
+    return { sourceType: "wechat", sourceCode: normalized };
+  }
+  if (normalized === "sales_link" || normalized.startsWith("sales_link:")) {
+    return { sourceType: "sales_link", sourceCode: normalized };
+  }
+  if (normalized === "douyin") return { sourceType: "douyin", sourceCode: normalized };
+  if (normalized === "expo") return { sourceType: "expo", sourceCode: normalized };
+  return { sourceType: "website", sourceCode: normalized };
+}
 
 export class SelectionPagesService {
   constructor(
@@ -65,7 +83,7 @@ export class SelectionPagesService {
     return this.repo.delete(workspaceId, id);
   }
 
-  async submit(slug: string, submission: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[] }) {
+  async submit(slug: string, submission: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[]; source?: string }) {
     const page = await this.repo.findBySlug(slug);
     if (!page || page.status !== "published") throw new SelectionPagesAccessError("Not found or not published.");
     const attachmentIds = [...new Set(submission.attachmentIds ?? [])];
@@ -73,18 +91,20 @@ export class SelectionPagesService {
       throw new SelectionPagesAccessError("Selection attachment not found in workspace.");
     }
     const summary = Object.entries(submission.answers).map(([key, value]) => `${key}: ${value}`).join("\n");
+    const acquisition = resolveSelectionAcquisitionSource(submission.source ?? submission.answers.source, page.slug);
     const inquiry = this.sales ? await this.sales.createInquiry(page.workspaceId, {
       customerName: submission.contactName?.trim() || "AI选型客户",
       customerContact: submission.contactName?.trim() || null,
       phone: submission.contactPhone?.trim() || null,
       email: submission.contactEmail?.trim() || null,
-      sourceType: "website",
-      sourceCode: `selection:${page.slug}`,
+      sourceType: acquisition.sourceType,
+      sourceCode: acquisition.sourceCode,
       summary,
       productNeed: summary,
       knownFields: {
         selectionPageId: page.id,
         selectionPageName: page.name,
+        acquisitionSource: acquisition.sourceCode,
         attachmentIds: attachmentIds.join(","),
       },
     }) : null;
@@ -102,7 +122,7 @@ export class SelectionPagesService {
     return this.repo.createSubmission({
       id: `ss_${randomUUID()}`,
       selectionPageId: page.id,
-      answers: submission.answers,
+      answers: { ...submission.answers, source: acquisition.sourceCode },
       contactName: submission.contactName ?? null,
       contactPhone: submission.contactPhone ?? null,
       contactEmail: submission.contactEmail ?? null,
