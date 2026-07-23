@@ -1694,6 +1694,9 @@ export class AuthService {
             name: approvedWorkspace.name,
             inviteEmail: approvedInvitation?.email ?? null,
             inviteStatus: approvedInvitation?.status ?? null,
+            inviteUrl: approvedInvitation
+              ? this.buildInvitationUrl(approvedInvitation.token)
+              : null,
           }
         : null,
     };
