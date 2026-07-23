@@ -170,6 +170,8 @@ function mapTrialRequest(row: QueryResultRow): TrialRequestRecord {
     website: asNullableString(row.website),
     requirement: asNullableString(row.requirement),
     requestedPlan: asNullableString(row.requested_plan),
+    consentAcceptedAt: normalizeDate((row.consent_accepted_at ?? null) as Date | string | null),
+    consentVersion: asNullableString(row.consent_version),
     status: asString(row.status) as TrialRequestRecord["status"],
     processedByUserId: asNullableString(row.processed_by_user_id),
     processedAt: normalizeDate((row.processed_at ?? null) as Date | string | null),
@@ -560,9 +562,9 @@ export async function persistRepositoriesToPostgres(input: {
           await client.query(
             `insert into trial_requests
              (id, company_name, contact_name, email, phone, website, requirement, requested_plan, status,
-              processed_by_user_id, processed_at, review_notes, approved_workspace_id, approved_invitation_id,
-              created_at, updated_at)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+              consent_accepted_at, consent_version, processed_by_user_id, processed_at, review_notes,
+              approved_workspace_id, approved_invitation_id, created_at, updated_at)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
              on conflict (id) do update set
                company_name = excluded.company_name,
                contact_name = excluded.contact_name,
@@ -572,6 +574,8 @@ export async function persistRepositoriesToPostgres(input: {
                requirement = excluded.requirement,
                requested_plan = excluded.requested_plan,
                status = excluded.status,
+               consent_accepted_at = excluded.consent_accepted_at,
+               consent_version = excluded.consent_version,
                processed_by_user_id = excluded.processed_by_user_id,
                processed_at = excluded.processed_at,
                review_notes = excluded.review_notes,
@@ -588,6 +592,8 @@ export async function persistRepositoriesToPostgres(input: {
               request.requirement,
               request.requestedPlan,
               request.status,
+              request.consentAcceptedAt,
+              request.consentVersion,
               request.processedByUserId,
               request.processedAt,
               request.reviewNotes,

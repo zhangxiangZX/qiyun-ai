@@ -95,6 +95,7 @@ export function TemplateEditWorkspace({ templateId }: { templateId?: string }) {
   const isEdit = Boolean(templateId);
   const [loading, setLoading] = useState(isEdit);
   const [usingMock, setUsingMock] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const seed = useMemo<QuoteTemplate | undefined>(
     () => (templateId ? mockQuoteTemplates.find((t) => t.id === templateId) : undefined),
     [templateId],
@@ -124,7 +125,8 @@ export function TemplateEditWorkspace({ templateId }: { templateId?: string }) {
     void (async () => {
       setLoading(true);
       try {
-        const mode = await fetchConsoleMode().catch(() => null);
+        setLoadError(null);
+        const mode = await fetchConsoleMode();
         if (mode && isPreviewMode(mode)) {
           if (seed) {
             setForm({
@@ -155,10 +157,9 @@ export function TemplateEditWorkspace({ templateId }: { templateId?: string }) {
         setCompanyName(tpl.companyName);
         setDescription(tpl.description);
         setUsingMock(false);
-      } catch {
-        if (seed) {
-          setUsingMock(true);
-        }
+      } catch (reason) {
+        setUsingMock(false);
+        setLoadError(reason instanceof Error ? reason.message : "报价模板加载失败。");
       } finally {
         setLoading(false);
       }
@@ -203,7 +204,23 @@ export function TemplateEditWorkspace({ templateId }: { templateId?: string }) {
         <ConsolePageAlerts>
           <ConsoleDataModeBanner feature={isEdit ? "编辑报价模板" : "新建报价模板"} />
         </ConsolePageAlerts>
-        <p className="text-sm text-muted-foreground">加载模板中…</p>
+        <p className="text-sm text-muted-foreground">{loadError ?? "加载模板中…"}</p>
+      </ConsolePage>
+    );
+  }
+
+  if (loadError && isEdit) {
+    return (
+      <ConsolePage>
+        <ConsolePageAlerts>
+          <ConsoleDataModeBanner feature="编辑报价模板" />
+        </ConsolePageAlerts>
+        <div className="rounded-card border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">
+          {loadError}
+        </div>
+        <Link href="/dashboard/quotes/templates" className="mt-4 inline-flex text-sm text-primary hover:underline">
+          返回报价模板
+        </Link>
       </ConsolePage>
     );
   }

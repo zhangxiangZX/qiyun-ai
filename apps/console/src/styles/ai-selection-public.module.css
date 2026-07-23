@@ -608,7 +608,8 @@
   color: #9ca3af;
 }
 
-.field input {
+.field input,
+.field textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 12px 8px 32px;
@@ -619,7 +620,15 @@
   color: #111827;
 }
 
-.field input:focus {
+.field textarea {
+  min-height: 76px;
+  resize: vertical;
+  padding-left: 12px;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field textarea:focus {
   outline: none;
   border-color: #2563eb;
   background: #fff;
@@ -630,8 +639,22 @@
   align-items: center;
   gap: 6px;
   margin-top: 12px;
-  font-size: 10px;
-  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.privacy input {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  accent-color: #2563eb;
+}
+
+.privacy a {
+  color: #2563eb;
+  text-decoration: none;
 }
 
 .footer {

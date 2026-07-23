@@ -135,7 +135,7 @@ export function InquiriesWorkspace() {
     setLoadError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       setIsPreview(preview);
       if (preview) {
         setData(MOCK_INQUIRIES);

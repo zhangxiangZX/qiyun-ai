@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowUp,
   BookOpen,
   Bot,
   CheckCircle,
@@ -34,7 +33,6 @@ import { ConsoleRequestError, resolveRequestErrorPresentation } from "@/componen
 import {
   buildAiStandaloneEditHref,
   buildAiStandaloneNewHref,
-  DEMO_SELECTION_PAGES,
   getPagePublicSlug,
   resolveSelectionPagePublicUrl,
   type SelectionPageIcon,
@@ -43,7 +41,7 @@ import {
 import { WechatOfficialAccountGuide } from "@/components/channels/wechat-official-account-guide";
 import { WECHAT_OFFICIAL_ACCOUNT_SOURCE } from "@/lib/public/acquisition-source";
 import { listBots } from "@/lib/bots/data";
-import { listSelectionPages } from "@/lib/bots/selection-pages-api";
+import { listSelectionPages, updateSelectionPage } from "@/lib/bots/selection-pages-api";
 import type { BotListItem } from "@/lib/bots/types";
 import { mapSelectionPageViewToItem } from "@/lib/channels/selection-page-mapper";
 import { useOnWorkspaceChanged } from "@/lib/workspace-events";
@@ -103,9 +101,8 @@ export function AiStandaloneWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [bots, setBots] = useState<BotListItem[]>([]);
-  const [pages, setPages] = useState(DEMO_SELECTION_PAGES);
-  const [createdPages, setCreatedPages] = useState<SelectionPageItem[]>([]);
-  const [selectedId, setSelectedId] = useState("outdoor");
+  const [pages, setPages] = useState<SelectionPageItem[]>([]);
+  const [selectedId, setSelectedId] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
 
   const [pageName, setPageName] = useState("户外机柜 AI 选型助手");
@@ -175,23 +172,19 @@ export function AiStandaloneWorkspace() {
     try {
       const [nextBots, apiPages] = await Promise.all([
         listBots(),
-        listSelectionPages().catch(() => []),
+        listSelectionPages(),
       ]);
       setBots(nextBots);
       if (nextBots[0]) {
         setBoundBot(nextBots[0].name);
       }
-      if (apiPages.length > 0) {
-        const mapped = apiPages.map(mapSelectionPageViewToItem);
-        setPages(mapped);
-        setCreatedPages([]);
-        setSelectedId((current) => (mapped.some((page) => page.id === current) ? current : mapped[0]!.id));
-      } else {
-        setPages(DEMO_SELECTION_PAGES);
-      }
+      const mapped = apiPages.map(mapSelectionPageViewToItem);
+      setPages(mapped);
+      setSelectedId((current) => (mapped.some((page) => page.id === current) ? current : (mapped[0]?.id ?? "")));
     } catch (nextError) {
       setError(nextError);
-      setPages(DEMO_SELECTION_PAGES);
+      setPages([]);
+      setSelectedId("");
     } finally {
       setLoading(false);
     }
@@ -205,11 +198,11 @@ export function AiStandaloneWorkspace() {
     void load();
   });
 
-  const allPages = useMemo(() => [...createdPages, ...pages], [createdPages, pages]);
+  const allPages = pages;
 
   const channelLinks: ChannelLink[] = useMemo(() => {
     const selectedPage = allPages.find((p) => p.id === selectedId) ?? allPages[0];
-    if (!selectedPage) return [];
+    if (!selectedPage || !selectedPage.published || !selectedPage.enabled) return [];
     const publicUrl = resolveSelectionPagePublicUrl(getPagePublicSlug(selectedPage));
     return [
       {
@@ -240,15 +233,15 @@ export function AiStandaloneWorkspace() {
     () => ({
       total: allPages.length,
       enabled: allPages.filter((p) => p.enabled).length,
-      visitsToday: 128,
-      submitted: 23,
-      validInquiries: 16,
-      quoteOps: 8,
+      visitsToday: allPages.reduce((sum, page) => sum + page.visits, 0),
+      submitted: allPages.reduce((sum, page) => sum + page.inquiries, 0),
+      validInquiries: allPages.reduce((sum, page) => sum + page.inquiries, 0),
+      quoteOps: 0,
     }),
     [allPages],
   );
 
-  function selectPage(page: (typeof DEMO_SELECTION_PAGES)[number]) {
+  function selectPage(page: SelectionPageItem) {
     setSelectedId(page.id);
     setPageName(page.name);
     setPageEnabled(page.enabled);
@@ -263,14 +256,33 @@ export function AiStandaloneWorkspace() {
   }
 
   function openPreview(pageId: string) {
-    const page = pages.find((p) => p.id === pageId) ?? pages[0];
-    if (!page) return;
+    const page = allPages.find((p) => p.id === pageId);
+    if (!page) {
+      setNotice("未找到该选型页，请刷新后重试。");
+      return;
+    }
     window.open(`${resolveSelectionPagePublicUrl(getPagePublicSlug(page))}?preview=1`, "_blank", "noopener,noreferrer");
   }
 
-  function togglePageEnabled(id: string, enabled: boolean) {
-    setPages((current) => current.map((p) => (p.id === id ? { ...p, enabled } : p)));
+  async function togglePageEnabled(id: string, enabled: boolean) {
+    const previous = pages.find((page) => page.id === id);
+    if (!previous) return;
+
+    setPages((current) => current.map((page) => (
+      page.id === id ? { ...page, enabled, published: enabled } : page
+    )));
     if (selectedId === id) setPageEnabled(enabled);
+
+    try {
+      const updated = await updateSelectionPage(id, { status: enabled ? "published" : "disabled" });
+      const mapped = mapSelectionPageViewToItem(updated);
+      setPages((current) => current.map((page) => (page.id === id ? mapped : page)));
+      setNotice(enabled ? "选型页已发布，公开链接可以访问。" : "选型页已停用。除预览外，公开链接不可访问。");
+    } catch (nextError) {
+      setPages((current) => current.map((page) => (page.id === id ? previous : page)));
+      if (selectedId === id) setPageEnabled(previous.enabled);
+      setNotice(resolveRequestErrorPresentation(nextError, "状态更新失败，请重试。").message);
+    }
   }
 
   function toggleChannel(channel: string) {
@@ -284,10 +296,10 @@ export function AiStandaloneWorkspace() {
   }
 
   function copyText(text: string, message: string) {
-    void navigator.clipboard.writeText(text).then(() => {
-      setNotice(message);
-      window.setTimeout(() => setNotice(null), 2400);
-    });
+    void navigator.clipboard.writeText(text)
+      .then(() => setNotice(message))
+      .catch(() => setNotice("复制失败，请手动选择链接复制。"))
+      .finally(() => window.setTimeout(() => setNotice(null), 2400));
   }
 
   if (loading) {
@@ -312,12 +324,12 @@ export function AiStandaloneWorkspace() {
 
       <div className={styles.statsGrid}>
         {[
-          { label: "已创建选型页", value: stats.total, icon: <FileText size={22} color="#fff" />, bg: "#3b82f6", trend: "1 20.0%" },
-          { label: "启用中", value: stats.enabled, icon: <Play size={22} color="#fff" />, bg: "#22c55e", trend: "1 25.0%" },
-          { label: "今日访问", value: stats.visitsToday, icon: <Eye size={22} color="#fff" />, bg: "#8b5cf6", trend: "28 28.0%" },
-          { label: "已提交需求", value: stats.submitted, icon: <MessageSquare size={22} color="#fff" />, bg: "#f59e0b", trend: "6 35.3%" },
-          { label: "有效询盘", value: stats.validInquiries, icon: <User size={22} color="#fff" />, bg: "#06b6d4", trend: "4 33.3%" },
-          { label: "报价机会", value: stats.quoteOps, icon: <Wallet size={22} color="#fff" />, bg: "#3b82f6", trend: "1 14.3%" },
+          { label: "已创建选型页", value: stats.total, icon: <FileText size={22} color="#fff" />, bg: "#3b82f6", note: "当前工作区" },
+          { label: "已发布", value: stats.enabled, icon: <Play size={22} color="#fff" />, bg: "#22c55e", note: "客户可访问" },
+          { label: "累计访问", value: stats.visitsToday, icon: <Eye size={22} color="#fff" />, bg: "#8b5cf6", note: "全部选型页" },
+          { label: "累计提交", value: stats.submitted, icon: <MessageSquare size={22} color="#fff" />, bg: "#f59e0b", note: "全部选型页" },
+          { label: "有效询盘", value: stats.validInquiries, icon: <User size={22} color="#fff" />, bg: "#06b6d4", note: "当前统计口径" },
+          { label: "报价机会", value: stats.quoteOps, icon: <Wallet size={22} color="#fff" />, bg: "#3b82f6", note: "待接入统计" },
         ].map((item) => (
           <div key={item.label} className={styles.statCard}>
             <div className={styles.statIcon} style={{ background: item.bg }}>
@@ -326,12 +338,7 @@ export function AiStandaloneWorkspace() {
             <div>
               <div className={styles.statLabel}>{item.label}</div>
               <div className={styles.statValue}>{item.value}</div>
-              <div className={styles.statTrend}>
-                较昨日{" "}
-                <span className={styles.trendUp}>
-                  <ArrowUp size={12} style={{ display: "inline", verticalAlign: -2 }} /> {item.trend}
-                </span>
-              </div>
+              <div className={styles.statTrend}>{item.note}</div>
             </div>
           </div>
         ))}
@@ -364,6 +371,13 @@ export function AiStandaloneWorkspace() {
                 </tr>
               </thead>
               <tbody>
+                {allPages.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+                      尚未创建选型页。新建并发布后，客户链接才会开放访问。
+                    </td>
+                  </tr>
+                ) : null}
                 {allPages.map((page) => (
                   <tr
                     key={page.id}
@@ -386,7 +400,7 @@ export function AiStandaloneWorkspace() {
                         <Toggle
                           green
                           checked={page.enabled}
-                          onChange={(v) => togglePageEnabled(page.id, v)}
+                          onChange={(v) => void togglePageEnabled(page.id, v)}
                         />
                         <span>{page.enabled ? "已启用" : "已停用"}</span>
                       </div>
@@ -398,7 +412,7 @@ export function AiStandaloneWorkspace() {
                       <button type="button" className={styles.btnLink} onClick={() => openPreview(page.id)}>
                         预览
                       </button>
-                      <button type="button" className={styles.btnLink} style={{ color: "#9ca3af" }}>
+                      <button type="button" className={styles.btnLink} style={{ color: "#9ca3af" }} disabled title="更多操作即将开放">
                         更多 <ChevronDown size={10} />
                       </button>
                     </td>
@@ -674,6 +688,11 @@ export function AiStandaloneWorkspace() {
               </button>
             </div>
             <div className={styles.channelList}>
+              {channelLinks.length === 0 ? (
+                <div style={{ padding: "18px 8px", color: "#64748b", fontSize: 13, lineHeight: 1.6 }}>
+                  当前页面尚未发布。请先将状态切换为“已启用”，发布成功后再复制渠道链接。
+                </div>
+              ) : null}
               {channelLinks.map((link) => (
                 <div key={link.id} className={styles.channelItem}>
                   <div className={styles.channelIcon} style={{ background: link.iconBg }}>

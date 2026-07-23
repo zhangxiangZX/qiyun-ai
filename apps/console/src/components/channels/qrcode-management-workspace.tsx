@@ -27,6 +27,7 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { QrcodeTutorialDialog } from "@/components/channels/qrcode-tutorial-dialog";
 import { listSalesLinks, resolveSalesLinkPublicUrl, type SalesLinkView } from "@/lib/channels/api";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import {
   countByStatus,
   mockQrcodeEntries,
@@ -337,11 +338,9 @@ export function QrcodeManagementWorkspace() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPreview, setIsPreview] = useState(true);
-  const [entries, setEntries] = useState<QrcodeEntry[]>(mockQrcodeEntries);
-  const [overview, setOverview] = useState<QrcodeOverviewStats>(
-    () => mockQrcodeOverview ?? EMPTY_OVERVIEW,
-  );
+  const [isPreview, setIsPreview] = useState(false);
+  const [entries, setEntries] = useState<QrcodeEntry[]>([]);
+  const [overview, setOverview] = useState<QrcodeOverviewStats>(EMPTY_OVERVIEW);
 
   const [statusTab, setStatusTab] = useState<QrcodeStatusTab>("all");
   const [typeFilter, setTypeFilter] = useState<"all" | QrcodeEntryKind>("all");
@@ -357,20 +356,22 @@ export function QrcodeManagementWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const links = await listSalesLinks();
-      if (links.length > 0) {
-        setEntries(links.map(mapApiLinkToEntry));
-        setOverview(buildQrcodeOverviewFromLinks(links) ?? mockQrcodeOverview);
-        setIsPreview(false);
-      } else {
+      const mode = await fetchConsoleMode();
+      if (isPreviewMode(mode)) {
         setEntries(mockQrcodeEntries);
         setOverview(mockQrcodeOverview);
         setIsPreview(true);
+        return;
       }
-    } catch {
-      setEntries(mockQrcodeEntries);
-      setOverview(mockQrcodeOverview);
-      setIsPreview(true);
+      const links = await listSalesLinks();
+      setEntries(links.map(mapApiLinkToEntry));
+      setOverview(buildQrcodeOverviewFromLinks(links) ?? EMPTY_OVERVIEW);
+      setIsPreview(false);
+    } catch (reason) {
+      setEntries([]);
+      setOverview(EMPTY_OVERVIEW);
+      setIsPreview(false);
+      setError(reason instanceof Error ? reason.message : "二维码数据加载失败，请稍后重试。");
     } finally {
       setLoading(false);
     }

@@ -659,6 +659,9 @@ export class AuthService {
     website?: string;
     requirement?: string;
     requestedPlan?: string;
+    consentAccepted?: boolean;
+    consentAcceptedAt?: string;
+    consentVersion?: string;
   }): Promise<TrialRequestSummary> {
     const companyName = input.companyName.trim();
     const contactName = input.contactName.trim();
@@ -671,6 +674,8 @@ export class AuthService {
       throw new AuthValidationError("A valid trial plan is required.");
     }
     const requestedPlan = requestedPlanInput;
+    const consentAcceptedAt = input.consentAcceptedAt?.trim() || "";
+    const consentVersion = input.consentVersion?.trim() || "";
 
     if (!companyName || !contactName || !email) {
       throw new AuthValidationError("Company name, contact name, and email are required.");
@@ -678,6 +683,10 @@ export class AuthService {
 
     if (!isValidEmail(email)) {
       throw new AuthValidationError("A valid work email is required.");
+    }
+
+    if (input.consentAccepted !== true || !consentVersion || !Number.isFinite(Date.parse(consentAcceptedAt))) {
+      throw new AuthValidationError("Privacy consent is required.");
     }
 
     const pending = await this.repository.findPendingTrialRequestByEmail(email);
@@ -695,6 +704,8 @@ export class AuthService {
       website,
       requirement,
       requestedPlan,
+      consentAcceptedAt: new Date(consentAcceptedAt).toISOString(),
+      consentVersion,
       status: "pending",
       processedByUserId: null,
       processedAt: null,
@@ -1664,6 +1675,8 @@ export class AuthService {
       website: record.website,
       requirement: record.requirement,
       requestedPlan: record.requestedPlan,
+      consentAcceptedAt: record.consentAcceptedAt,
+      consentVersion: record.consentVersion,
       status: record.status,
       submittedAt: record.createdAt,
       reviewedAt: record.processedAt,

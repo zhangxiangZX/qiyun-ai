@@ -222,7 +222,7 @@ export function useRoleDashboardData() {
     setError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       setIsPreview(preview);
 
       const session = await fetchAuthSession().catch(() => null);
@@ -255,7 +255,7 @@ export function useRoleDashboardData() {
         documents,
         sites,
       ] = await Promise.all([
-        loadDashboardSnapshot({}).catch(() => dashboardWithBots),
+        loadDashboardSnapshot({}),
         fetchSalesOverview().catch(() => null),
         fetchChannelAttribution().catch(() => []),
         listInquiries({ limit: 200 }).catch(() => []),
@@ -281,7 +281,7 @@ export function useRoleDashboardData() {
       }
     } catch (nextError) {
       setError(nextError);
-      setIsPreview(true);
+      setIsPreview(false);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -286,7 +286,7 @@ export function CustomersWorkspace() {
     setError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       if (preview) {
         // Preview mode (no upstream API): render demo data directly.
         setItems(MOCK_CUSTOMER_OPPORTUNITIES);
@@ -306,17 +306,18 @@ export function CustomersWorkspace() {
       if (failed?.status === "rejected") {
         setError(failed.reason);
       }
-      setItems(results[0]?.status === "fulfilled" ? results[0].value : MOCK_CUSTOMER_OPPORTUNITIES);
-      setQuotes(results[1]?.status === "fulfilled" ? results[1].value : MOCK_QUOTE_OPPORTUNITIES);
-      setInquiries(results[2]?.status === "fulfilled" ? results[2].value : MOCK_INQUIRIES);
+      setItems(results[0]?.status === "fulfilled" ? results[0].value : []);
+      setQuotes(results[1]?.status === "fulfilled" ? results[1].value : []);
+      setInquiries(results[2]?.status === "fulfilled" ? results[2].value : []);
       setRecommendations(
-        results[3]?.status === "fulfilled" ? results[3].value : MOCK_RECOMMENDATIONS,
+        results[3]?.status === "fulfilled" ? results[3].value : [],
       );
-    } catch {
-      setItems(MOCK_CUSTOMER_OPPORTUNITIES);
-      setQuotes(MOCK_QUOTE_OPPORTUNITIES);
-      setInquiries(MOCK_INQUIRIES);
-      setRecommendations(MOCK_RECOMMENDATIONS);
+    } catch (nextError) {
+      setError(nextError);
+      setItems([]);
+      setQuotes([]);
+      setInquiries([]);
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }

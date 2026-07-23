@@ -15,6 +15,7 @@ import {
 import { Badge, Button, ConfirmDialog, PageHeader, Skeleton, StatCard } from "@qiyun/ui";
 
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
+import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleEmptyState } from "@/components/console/console-empty-catalog";
 import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
@@ -62,16 +63,6 @@ const TEMPLATE_META: Record<
   },
 };
 
-const TEMPLATE_STATS = {
-  total: 28,
-  totalGrowth: 12.5,
-  defaults: 3,
-  monthlyUsage: 458,
-  monthlyGrowth: 18.3,
-  lastUpdated: "2024-06-30 10:30",
-  lastUpdatedName: "外贸英文报价模板",
-};
-
 function formatDate(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
@@ -91,11 +82,13 @@ export function TemplateListWorkspace() {
   const [deleteTarget, setDeleteTarget] = useState<QuoteTemplate | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [usingMock, setUsingMock] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<TemplateTab>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
       if (mode && isPreviewMode(mode)) {
@@ -106,9 +99,10 @@ export function TemplateListWorkspace() {
       const data = await listQuoteTemplates();
       setItems(data);
       setUsingMock(false);
-    } catch {
-      setItems(mockQuoteTemplates);
-      setUsingMock(true);
+    } catch (reason) {
+      setItems([]);
+      setUsingMock(false);
+      setLoadError(reason instanceof Error ? reason.message : "报价模板加载失败，请稍后重试。");
     } finally {
       setLoading(false);
     }
@@ -158,11 +152,14 @@ export function TemplateListWorkspace() {
   };
 
   const selectedMeta = selected ? TEMPLATE_META[selected.id] : null;
+  const latestTemplate = [...items].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))[0];
+  const defaultCount = items.filter((item) => item.isDefault).length;
 
   return (
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="报价模板管理" />
+        {loadError ? <ConsoleRequestError message={loadError} onRetry={() => void loadItems()} /> : null}
       </ConsolePageAlerts>
 
       <PageHeader
@@ -185,10 +182,10 @@ export function TemplateListWorkspace() {
 
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard emphasis="metric" label="模板总数" value={String(TEMPLATE_STATS.total)} description={`较上月 ↑ ${TEMPLATE_STATS.totalGrowth}%`} icon={<FileText size={22} />} iconTone="brand" />
-          <StatCard emphasis="metric" label="默认模板" value={String(TEMPLATE_STATS.defaults)} description={`占比 ${((TEMPLATE_STATS.defaults / TEMPLATE_STATS.total) * 100).toFixed(1)}%`} icon={<Star size={22} />} iconTone="warning" />
-          <StatCard emphasis="metric" label="本月使用次数" value={String(TEMPLATE_STATS.monthlyUsage)} description={`较上月 ↑ ${TEMPLATE_STATS.monthlyGrowth}%`} icon={<Eye size={22} />} iconTone="success" />
-          <StatCard emphasis="metric" label="最近更新" value={TEMPLATE_STATS.lastUpdated.split(" ")[0] ?? TEMPLATE_STATS.lastUpdated} description={TEMPLATE_STATS.lastUpdatedName} icon={<Pencil size={22} />} iconTone="info" />
+          <StatCard emphasis="metric" label="模板总数" value={String(items.length)} description="当前工作区" icon={<FileText size={22} />} iconTone="brand" />
+          <StatCard emphasis="metric" label="默认模板" value={String(defaultCount)} description={items.length ? `占比 ${((defaultCount / items.length) * 100).toFixed(1)}%` : "尚未设置"} icon={<Star size={22} />} iconTone="warning" />
+          <StatCard emphasis="metric" label="本月使用次数" value="—" description="待接报价使用统计" icon={<Eye size={22} />} iconTone="success" />
+          <StatCard emphasis="metric" label="最近更新" value={latestTemplate ? formatDate(latestTemplate.updatedAt).split(" ")[0] : "—"} description={latestTemplate?.templateName ?? "暂无模板"} icon={<Pencil size={22} />} iconTone="info" />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -25,12 +25,14 @@ export function TemplatePreviewWorkspace({ templateId }: { templateId: string })
   const [sample, setSample] = useState<QuotePreviewSample | undefined>(undefined);
   const [zoom, setZoom] = useState(100);
   const [usingMock, setUsingMock] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void (async () => {
       try {
-        const mode = await fetchConsoleMode().catch(() => null);
+        setLoadError(null);
+        const mode = await fetchConsoleMode();
         if (mode && isPreviewMode(mode)) {
           setTpl(mockQuoteTemplates.find((t) => t.id === templateId) ?? mockQuoteTemplates[0]!);
           setUsingMock(true);
@@ -40,15 +42,16 @@ export function TemplatePreviewWorkspace({ templateId }: { templateId: string })
         setTpl(preview.template);
         setSample(preview.sample);
         setUsingMock(false);
-      } catch {
-        setTpl(mockQuoteTemplates.find((t) => t.id === templateId) ?? mockQuoteTemplates[0]!);
-        setUsingMock(true);
+      } catch (reason) {
+        setTpl(null);
+        setUsingMock(false);
+        setLoadError(reason instanceof Error ? reason.message : "模板预览加载失败。");
       }
     })();
   }, [templateId]);
 
   if (!tpl) {
-    return <p className="p-6 text-sm text-muted-foreground">加载预览中…</p>;
+    return <p className="p-6 text-sm text-muted-foreground">{loadError ?? "加载预览中…"}</p>;
   }
 
   const handleSetDefault = async () => {

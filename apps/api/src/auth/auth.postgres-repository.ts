@@ -153,6 +153,8 @@ function mapTrialRequest(row: Record<string, unknown>): TrialRequestRecord {
     website: asNullableString(row.website),
     requirement: asNullableString(row.requirement),
     requestedPlan: asNullableString(row.requested_plan),
+    consentAcceptedAt: row.consent_accepted_at ? normalizeDate(row.consent_accepted_at) : null,
+    consentVersion: asNullableString(row.consent_version),
     status: asString(row.status) as TrialRequestRecord["status"],
     processedByUserId: asNullableString(row.processed_by_user_id),
     processedAt: row.processed_at ? normalizeDate(row.processed_at) : null,
@@ -543,9 +545,9 @@ export class PostgresAuthRepository implements AuthRepository {
     await this.runQuery(
       `insert into trial_requests
        (id, company_name, contact_name, email, phone, website, requirement, requested_plan, status,
-        processed_by_user_id, processed_at, review_notes, approved_workspace_id, approved_invitation_id,
-        created_at, updated_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+        consent_accepted_at, consent_version, processed_by_user_id, processed_at, review_notes,
+        approved_workspace_id, approved_invitation_id, created_at, updated_at)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
       [
         record.id,
         record.companyName,
@@ -556,6 +558,8 @@ export class PostgresAuthRepository implements AuthRepository {
         record.requirement,
         record.requestedPlan,
         record.status,
+        record.consentAcceptedAt,
+        record.consentVersion,
         record.processedByUserId,
         record.processedAt,
         record.reviewNotes,
@@ -582,13 +586,15 @@ export class PostgresAuthRepository implements AuthRepository {
            requirement = $7,
            requested_plan = $8,
            status = $9,
-           processed_by_user_id = $10,
-           processed_at = $11,
-           review_notes = $12,
-           approved_workspace_id = $13,
-           approved_invitation_id = $14,
-           created_at = $15,
-           updated_at = $16
+           consent_accepted_at = $10,
+           consent_version = $11,
+           processed_by_user_id = $12,
+           processed_at = $13,
+           review_notes = $14,
+           approved_workspace_id = $15,
+           approved_invitation_id = $16,
+           created_at = $17,
+           updated_at = $18
        where id = $1
        returning *`,
       [
@@ -601,6 +607,8 @@ export class PostgresAuthRepository implements AuthRepository {
         next.requirement,
         next.requestedPlan,
         next.status,
+        next.consentAcceptedAt,
+        next.consentVersion,
         next.processedByUserId,
         next.processedAt,
         next.reviewNotes,

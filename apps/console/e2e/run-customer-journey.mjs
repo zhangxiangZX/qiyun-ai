@@ -94,6 +94,7 @@ async function runPublicFlow(page) {
     await page.getByPlaceholder(/请输入企业名称/).fill("旅程测试企业");
     await page.getByPlaceholder(/联系人姓名/).fill("李测试");
     await page.getByPlaceholder(/工作邮箱/).fill(`journey-${Date.now()}@example.com`);
+    await page.getByRole("checkbox", { name: /用户协议.*隐私政策/ }).check();
     await page.getByRole("button", { name: /提交试用申请/ }).click();
     await page.getByText(/申请已提交|提交成功/).waitFor({ timeout: 15_000 });
     pass("P-02", "申请试用表单提交成功");

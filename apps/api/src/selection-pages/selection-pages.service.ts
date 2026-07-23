@@ -75,7 +75,12 @@ export class SelectionPagesService {
       const conflict = await this.repo.findBySlug(patch.slug);
       if (conflict && conflict.id !== id) throw new SelectionPagesAccessError("Slug taken.");
     }
-    return this.repo.upsert({ ...existing, ...patch, updatedAt: new Date().toISOString() });
+    return this.repo.upsert({
+      ...existing,
+      ...patch,
+      config: patch.config ? { ...existing.config, ...patch.config } : existing.config,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   async delete(workspaceId: string, id: string) {
@@ -83,9 +88,17 @@ export class SelectionPagesService {
     return this.repo.delete(workspaceId, id);
   }
 
-  async submit(slug: string, submission: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[]; source?: string }) {
+  async submit(slug: string, submission: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[]; source?: string; consentAccepted?: boolean; consentAcceptedAt?: string; consentVersion?: string }) {
     const page = await this.repo.findBySlug(slug);
     if (!page || page.status !== "published") throw new SelectionPagesAccessError("Not found or not published.");
+    if (
+      submission.consentAccepted !== true ||
+      !submission.consentVersion?.trim() ||
+      !submission.consentAcceptedAt ||
+      !Number.isFinite(Date.parse(submission.consentAcceptedAt))
+    ) {
+      throw new SelectionPagesAccessError("Privacy consent is required.");
+    }
     const attachmentIds = [...new Set(submission.attachmentIds ?? [])];
     if (this.files && attachmentIds.some((id) => !this.files!.getMeta(page.workspaceId, id))) {
       throw new SelectionPagesAccessError("Selection attachment not found in workspace.");
@@ -122,7 +135,12 @@ export class SelectionPagesService {
     return this.repo.createSubmission({
       id: `ss_${randomUUID()}`,
       selectionPageId: page.id,
-      answers: { ...submission.answers, source: acquisition.sourceCode },
+      answers: {
+        ...submission.answers,
+        source: acquisition.sourceCode,
+        consentAcceptedAt: new Date(submission.consentAcceptedAt).toISOString(),
+        consentVersion: submission.consentVersion.trim(),
+      },
       contactName: submission.contactName ?? null,
       contactPhone: submission.contactPhone ?? null,
       contactEmail: submission.contactEmail ?? null,

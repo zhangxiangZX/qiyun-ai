@@ -11,7 +11,7 @@ export function mapSelectionPageViewToItem(page: SelectionPageView): SelectionPa
     botName: page.name,
     visits: 0,
     inquiries: 0,
-    enabled: page.status !== "disabled",
+    enabled: page.status === "published",
     published: page.status === "published",
     icon: "shield",
     pageUrl: `/s/${page.slug}`,

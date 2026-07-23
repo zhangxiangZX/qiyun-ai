@@ -17,6 +17,7 @@ export interface ApiSelectionPagePublicPayload {
     theme?: { primaryColor?: string };
     botId?: string;
     siteKey?: string;
+    publicConfig?: SelectionPagePublicConfig;
   };
 }
 
@@ -29,6 +30,18 @@ export function mapApiSelectionPageToPublicConfig(
   const questions = page.config?.questions ?? [];
   const recommended = questions.map((question) => question.label).filter(Boolean).slice(0, 6);
   const brandLetter = (page.name.trim().charAt(0) || "A").toUpperCase();
+
+  if (page.config?.publicConfig) {
+    return {
+      ...page.config.publicConfig,
+      pageId: page.id,
+      slug: page.slug,
+      enabled,
+      published,
+      botId: page.config.botId?.trim() || page.config.publicConfig.botId,
+      siteKey: page.config.siteKey?.trim() || page.config.publicConfig.siteKey,
+    };
+  }
 
   return {
     pageId: page.id,

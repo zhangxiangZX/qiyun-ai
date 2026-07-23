@@ -92,7 +92,7 @@ export class AuthRouteService {
     if (pathname === "/trial-requests" && method === "POST") {
       const rate = checkRate("auth.trial.request");
       if (rate) return rate;
-      const body = await readJsonBody<{ companyName?: string; contactName?: string; email?: string; phone?: string; website?: string; requirement?: string; requestedPlan?: string }>(request);
+      const body = await readJsonBody<{ companyName?: string; contactName?: string; email?: string; phone?: string; website?: string; requirement?: string; requestedPlan?: string; consentAccepted?: boolean; consentAcceptedAt?: string; consentVersion?: string }>(request);
       const result = await this.runtime.authApi.submitTrialRequest(body);
       await this.runtime.persist();
       return ok(result);

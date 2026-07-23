@@ -181,6 +181,7 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
   const [uploadBanner, setUploadBanner] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
@@ -446,9 +447,28 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
     if (submitting || submitted) return;
     const name = formValues["name"]?.trim();
     const phone = formValues["phone"]?.trim();
-    if (!name || !phone) {
-      setFormError("请填写联系人和手机号，方便工程师与您联系");
+    const missingFields = config?.form.fields
+      .filter((field) => field.required && !formValues[field.id]?.trim())
+      .map((field) => field.label) ?? [];
+    if (missingFields.length > 0) {
+      setFormError(`请填写必填信息：${missingFields.join("、")}`);
       (formSectionRef.current ?? completenessRef.current)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (phone && !/^[+\d][\d\s-]{5,19}$/.test(phone)) {
+      setFormError("请输入有效的联系电话。");
+      formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const email = formValues["email"]?.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setFormError("请输入有效的邮箱地址。");
+      formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (!privacyAccepted) {
+      setFormError("请先阅读并同意用户协议和隐私政策。");
+      formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setFormError(null);
@@ -498,6 +518,9 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
       product: activeProduct,
       message: answers.message,
       files: uploadedFiles.map((f) => f.name),
+      consentAccepted: true,
+      consentAcceptedAt: new Date().toISOString(),
+      consentVersion: "privacy-v1.0",
     };
 
     void (async () => {
@@ -776,32 +799,52 @@ export function AiSelectionPublicPage({ slug }: { slug: string }) {
                   <label>
                     {field.label} {field.required ? <span className={styles.required}>*</span> : null}
                   </label>
-                  <div className={styles.inputWrap}>
-                    {field.type === "tel" ? (
-                      <Phone size={12} className={styles.inputIcon} />
+                    <div className={styles.inputWrap}>
+                    {field.type === "textarea" ? (
+                      <textarea
+                        rows={3}
+                        placeholder={field.placeholder}
+                        value={formValues[field.id] ?? ""}
+                        onChange={(event) => setFormValues((current) => ({ ...current, [field.id]: event.target.value }))}
+                      />
                     ) : (
-                      <User size={12} className={styles.inputIcon} />
+                      <>
+                        {field.type === "tel" ? (
+                          <Phone size={12} className={styles.inputIcon} />
+                        ) : (
+                          <User size={12} className={styles.inputIcon} />
+                        )}
+                        <input
+                          type={field.type === "tel" ? "tel" : field.id === "email" ? "email" : "text"}
+                          inputMode={field.type === "tel" ? "tel" : field.id === "email" ? "email" : undefined}
+                          placeholder={field.placeholder}
+                          value={formValues[field.id] ?? ""}
+                          onChange={(event) => setFormValues((current) => ({ ...current, [field.id]: event.target.value }))}
+                        />
+                      </>
                     )}
-                    <input
-                      type={field.type === "tel" ? "tel" : "text"}
-                      placeholder={field.placeholder}
-                      value={formValues[field.id] ?? ""}
-                      onChange={(event) =>
-                        setFormValues((current) => ({
-                          ...current,
-                          [field.id]: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                    </div>
                 </div>
               ))}
             </div>
             {formError ? <div className={styles.formError}>{formError}</div> : null}
-            <div className={styles.privacy}>
-              <Lock size={12} />
-              <span>{config.form.privacyNote}</span>
-            </div>
+            <label className={styles.privacy}>
+              <input
+                type="checkbox"
+                checked={privacyAccepted}
+                onChange={(event) => {
+                  setPrivacyAccepted(event.target.checked);
+                  if (event.target.checked) setFormError(null);
+                }}
+              />
+              <Lock size={12} aria-hidden />
+              <span>
+                {config.form.privacyNote}{" "}
+                <a href="/legal/user-agreement" target="_blank" rel="noreferrer">用户协议</a>
+                {" 与 "}
+                <a href="/legal/privacy-policy" target="_blank" rel="noreferrer">隐私政策</a>
+              </span>
+            </label>
           </section>
 
           {sourceQuery ? (

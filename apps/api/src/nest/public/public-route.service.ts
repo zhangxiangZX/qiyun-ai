@@ -88,6 +88,9 @@ export class PublicRouteService {
         contactEmail?: string;
         attachmentIds?: string[];
         source?: string;
+        consentAccepted?: boolean;
+        consentAcceptedAt?: string;
+        consentVersion?: string;
       }>(request);
       try {
         const submission = await runWithBypassRls(() =>
@@ -98,6 +101,9 @@ export class PublicRouteService {
             contactEmail: body.contactEmail,
             attachmentIds: body.attachmentIds,
             source: body.source,
+            consentAccepted: body.consentAccepted,
+            consentAcceptedAt: body.consentAcceptedAt,
+            consentVersion: body.consentVersion,
           }),
         );
         if (this.runtime.driver === "postgres" && submission.inquiryId) {
