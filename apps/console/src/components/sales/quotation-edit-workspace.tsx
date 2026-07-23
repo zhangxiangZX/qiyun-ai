@@ -20,8 +20,8 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import { getQuoteOpportunity, updateQuoteOpportunity } from "@/lib/sales/api";
-import type { QuoteDetail } from "@/lib/sales/types";
+import { getQuoteOpportunity, listQuoteAttachments, saveQuoteDocumentVersion, updateQuoteOpportunity, uploadQuoteAttachment, downloadQuoteAttachment } from "@/lib/sales/api";
+import type { QuoteAttachmentItem, QuoteDetail } from "@/lib/sales/types";
 
 /* ----------------------------------------------------------------------------
  * Helpers
@@ -72,7 +72,7 @@ function DiffRow({ label, from, to, delta }: { label: string; from: string; to: 
 }
 
 /* ----------------------------------------------------------------------------
- * Mock data
+ * Types
  * ------------------------------------------------------------------------- */
 
 interface DetailRow {
@@ -83,22 +83,31 @@ interface DetailRow {
   unit: string;
   price: number;
   discount: number;
-  subtotal: number;
   lead: string;
 }
 
-const detailRows: DetailRow[] = [
-  { id: "1", name: "工业物联网网关", model: "IGW-2000", qty: 10, unit: "台", price: 1250, discount: 5, subtotal: 11875, lead: "15 天" },
-  { id: "2", name: "温湿度传感器", model: "THS-100", qty: 20, unit: "个", price: 85, discount: 5, subtotal: 1700, lead: "7 天" },
-  { id: "3", name: "数据库模块模组", model: "DAQ-500", qty: 10, unit: "台", price: 320, discount: 5, subtotal: 3040, lead: "10 天" },
-  { id: "4", name: "云平台软件", model: "Cloud Platform Pro", qty: 1, unit: "套", price: 2400, discount: 0, subtotal: 2400, lead: "—" },
-];
+function rowSubtotal(row: DetailRow) {
+  return row.qty * row.price * (1 - row.discount / 100);
+}
+
+function emptyRow(seed = Date.now()): DetailRow {
+  return {
+    id: `row-${seed}`,
+    name: "",
+    model: "",
+    qty: 1,
+    unit: "台",
+    price: 0,
+    discount: 0,
+    lead: "",
+  };
+}
 
 const terms = [
-  { label: "交付方式", value: "FOB Los Angeles", editable: true },
-  { label: "付款条件", value: "30% 预付款，15% 工作日内", editable: true },
-  { label: "付款账期", value: "30% 验收后，70% 发货前付清", editable: true },
-  { label: "有效期", value: "2024-07-01", editable: true },
+  { label: "交付方式", value: "按合同约定", editable: true },
+  { label: "付款条件", value: "30% 预付款，发货前付清余款", editable: true },
+  { label: "付款账期", value: "按合同约定", editable: true },
+  { label: "有效期", value: "报价发出后 30 天", editable: true },
   { label: "质量保证", value: "验收合格之日起 12 个月", editable: true },
 ];
 
@@ -113,17 +122,50 @@ export function QuotationEditWorkspace() {
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingVersion, setSavingVersion] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [quotedAmount, setQuotedAmount] = useState<number | null>(null);
+  const [detailRows, setDetailRows] = useState<DetailRow[]>([emptyRow()]);
+  const [freight, setFreight] = useState(0);
+  const [install, setInstall] = useState(0);
+  const [other, setOther] = useState(0);
+  const [taxRate, setTaxRate] = useState(0.13);
+  const [attachments, setAttachments] = useState<QuoteAttachmentItem[]>([]);
 
   const load = useCallback(async () => {
     if (!quoteId) return;
     setLoading(true);
     setError(null);
     try {
-      const detail = await getQuoteOpportunity(quoteId);
+      const [detail, attachmentRows] = await Promise.all([
+        getQuoteOpportunity(quoteId),
+        listQuoteAttachments(quoteId).catch(() => [] as QuoteAttachmentItem[]),
+      ]);
       setQuote(detail);
       setQuotedAmount(detail.quotedAmount ?? detail.estimatedAmount ?? null);
+      const items = detail.details?.lineItems ?? [];
+      setDetailRows(
+        items.length > 0
+          ? items.map((item, index) => ({
+              id: item.id ?? `row-${index}`,
+              name: item.name,
+              model: item.model ?? "",
+              qty: item.qty,
+              unit: item.unit ?? "台",
+              price: item.price,
+              discount: item.discount ?? 0,
+              lead: item.deliveryCycle ?? "",
+            }))
+          : [emptyRow()],
+      );
+      setFreight(detail.details?.freight ?? 0);
+      setInstall(detail.details?.install ?? 0);
+      setOther(detail.details?.other ?? 0);
+      setTaxRate(detail.details?.taxRate ?? 0.13);
+      setComment(detail.details?.remark ?? "");
+      setAttachments(attachmentRows);
     } catch (loadError) {
       setError(getApiErrorMessage(loadError, "加载报价失败。"));
     } finally {
@@ -135,16 +177,51 @@ export function QuotationEditWorkspace() {
     void load();
   }, [load]);
 
+  const subtotal = detailRows.reduce((sum, row) => sum + rowSubtotal(row), 0);
+  const taxable = subtotal + freight + install + other;
+  const tax = taxable * taxRate;
+  const computedTotal = taxable + tax;
+  const displayAmount = quotedAmount ?? computedTotal;
+
+  const updateRow = (id: string, patch: Partial<DetailRow>) => {
+    setDetailRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
   const handleSave = async () => {
     if (!quoteId) return;
     setSaving(true);
     setError(null);
+    setNotice(null);
     try {
+      const details = {
+        lineItems: detailRows
+          .filter((row) => row.name.trim())
+          .map((row) => ({
+            id: row.id,
+            name: row.name.trim(),
+            model: row.model.trim() || undefined,
+            qty: row.qty,
+            unit: row.unit,
+            price: row.price,
+            discount: row.discount,
+            deliveryCycle: row.lead.trim() || undefined,
+          })),
+        freight,
+        install,
+        other,
+        taxRate,
+        remark: comment.trim() || undefined,
+        attachmentIds: attachments.map((item) => item.id),
+      };
       const updated = await updateQuoteOpportunity(quoteId, {
-        quotedAmount,
+        quotedAmount: quotedAmount ?? Math.round(computedTotal),
+        estimatedAmount: Math.round(computedTotal),
         title: quote?.title,
+        details,
       });
       setQuote(updated);
+      setQuotedAmount(updated.quotedAmount ?? updated.estimatedAmount ?? null);
+      setNotice("报价明细、费用与金额已保存。");
     } catch (saveError) {
       setError(getApiErrorMessage(saveError, "保存报价失败。"));
     } finally {
@@ -152,16 +229,49 @@ export function QuotationEditWorkspace() {
     }
   };
 
-  const displayAmount = quotedAmount ?? detailRows.reduce((sum, row) => sum + row.subtotal, 0);
+  const handleSaveVersion = async () => {
+    if (!quoteId || savingVersion) return;
+    setSavingVersion(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const version = await saveQuoteDocumentVersion(quoteId, {
+        label: `${quote?.title ?? "报价"}-V${Date.now().toString().slice(-4)}`,
+      });
+      setNotice(`已另存版本 V${version.version}（${version.fileName}）。可在详情页文档列表下载。`);
+    } catch (saveError) {
+      setError(getApiErrorMessage(saveError, "另存版本失败。"));
+    } finally {
+      setSavingVersion(false);
+    }
+  };
+
+  const handleUploadAttachment = async (file: File | null) => {
+    if (!quoteId || !file || uploading) return;
+    setUploading(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const uploaded = await uploadQuoteAttachment(quoteId, file);
+      setAttachments((prev) => [uploaded, ...prev]);
+      setNotice(`已上传附件：${uploaded.fileName}`);
+    } catch (uploadError) {
+      setError(getApiErrorMessage(uploadError, "附件上传失败。"));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <ConsolePage>
       <ConsolePageAlerts>
         <ConsoleDataModeBanner feature="报价编辑" />
         {error ? <ConsoleRequestError message={error} onRetry={() => void load()} /> : null}
-        <div className="rounded-control border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          产品明细与条款目前为界面示意，保存仅同步标题与报价金额到 API；完整行项目契约见 BACKEND-GAPS。发送请前往详情页，避免未接通操作显示成功。
-        </div>
+        {notice ? (
+          <div className="rounded-control border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            {notice}
+          </div>
+        ) : null}
       </ConsolePageAlerts>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -191,8 +301,15 @@ export function QuotationEditWorkspace() {
           <Button variant="default" leftIcon={<Pencil size={16} />} onClick={() => void handleSave()} disabled={saving || loading}>
             {saving ? "保存中…" : "保存修改"}
           </Button>
-          <Button variant="outline" leftIcon={<Download size={16} />} type="button" disabled title="另存版本暂未开放">
-            另存版本
+          <Button
+            variant="outline"
+            leftIcon={<Download size={16} />}
+            type="button"
+            disabled={savingVersion || loading || !quoteId}
+            loading={savingVersion}
+            onClick={() => void handleSaveVersion()}
+          >
+            {savingVersion ? "另存中…" : "另存版本"}
           </Button>
           <Button
             variant="outline"
@@ -234,24 +351,17 @@ export function QuotationEditWorkspace() {
           <Card>
             <CardTitle
               action={
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Button size="sm" leftIcon={<Plus size={14} />}>
-                    添加产品
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    批量编辑
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    导入
-                  </Button>
-                  <Button size="sm" variant="outline" leftIcon={<Download size={14} />}>
-                    导出
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  leftIcon={<Plus size={14} />}
+                  type="button"
+                  onClick={() => setDetailRows((prev) => [...prev, emptyRow(Date.now() + prev.length)])}
+                >
+                  添加产品
+                </Button>
               }
             >
-              报价明细（4 项）
-              <Badge variant="success" className="ml-2">V2</Badge>
+              报价明细（{detailRows.filter((row) => row.name.trim()).length} 项）
             </CardTitle>
 
             <div className="overflow-x-auto">
@@ -263,9 +373,9 @@ export function QuotationEditWorkspace() {
                     <th className="px-2 py-2 font-medium">规格型号</th>
                     <th className="px-2 py-2 text-right font-medium">数量</th>
                     <th className="px-2 py-2 font-medium">单位</th>
-                    <th className="px-2 py-2 text-right font-medium">单价(USD)</th>
+                    <th className="px-2 py-2 text-right font-medium">单价(CNY)</th>
                     <th className="px-2 py-2 text-right font-medium">折扣(%)</th>
-                    <th className="px-2 py-2 text-right font-medium">小计(USD)</th>
+                    <th className="px-2 py-2 text-right font-medium">小计(CNY)</th>
                     <th className="px-2 py-2 font-medium">交期</th>
                     <th className="px-2 py-2 font-medium">操作</th>
                   </tr>
@@ -274,38 +384,176 @@ export function QuotationEditWorkspace() {
                   {detailRows.map((r, idx) => (
                     <tr key={r.id} className="border-b border-border/60 last:border-0">
                       <td className="px-2 py-2 text-muted-foreground">{idx + 1}</td>
-                      <td className="px-2 py-2 font-medium text-foreground">{r.name}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{r.model}</td>
-                      <td className="px-2 py-2 text-right">{r.qty}</td>
-                      <td className="px-2 py-2">{r.unit}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{r.price.toLocaleString("en-US")}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{r.discount.toFixed(2)}</td>
-                      <td className="px-2 py-2 text-right font-medium tabular-nums">{r.subtotal.toLocaleString("en-US")}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{r.lead}</td>
                       <td className="px-2 py-2">
-                        <div className="flex items-center gap-1">
-                          <button className="text-muted-foreground hover:text-primary" aria-label="编辑">
-                            <Pencil size={14} />
-                          </button>
-                          <button className="text-muted-foreground hover:text-destructive" aria-label="删除">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        <Input
+                          className="h-8 min-w-[120px]"
+                          value={r.name}
+                          onChange={(event) => updateRow(r.id, { name: event.target.value })}
+                          placeholder="产品名称"
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          className="h-8 min-w-[100px]"
+                          value={r.model}
+                          onChange={(event) => updateRow(r.id, { model: event.target.value })}
+                          placeholder="型号"
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          className="h-8 w-20 text-right"
+                          value={r.qty}
+                          onChange={(event) => updateRow(r.id, { qty: Number(event.target.value) || 0 })}
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          className="h-8 w-16"
+                          value={r.unit}
+                          onChange={(event) => updateRow(r.id, { unit: event.target.value })}
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          className="h-8 w-28 text-right"
+                          value={r.price}
+                          onChange={(event) => updateRow(r.id, { price: Number(event.target.value) || 0 })}
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          type="number"
+                          className="h-8 w-20 text-right"
+                          value={r.discount}
+                          onChange={(event) => updateRow(r.id, { discount: Number(event.target.value) || 0 })}
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-right font-medium tabular-nums">
+                        {rowSubtotal(r).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          className="h-8 w-24"
+                          value={r.lead}
+                          onChange={(event) => updateRow(r.id, { lead: event.target.value })}
+                          placeholder="交期"
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive"
+                          aria-label="删除"
+                          onClick={() =>
+                            setDetailRows((prev) =>
+                              prev.length <= 1 ? [emptyRow()] : prev.filter((row) => row.id !== r.id),
+                            )
+                          }
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">
-              <Plus size={14} /> 添加备注（可附于可见）
-            </button>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <label className="text-xs text-muted-foreground">
+                运费
+                <Input
+                  type="number"
+                  className="mt-1 h-8"
+                  value={freight}
+                  onChange={(event) => setFreight(Number(event.target.value) || 0)}
+                />
+              </label>
+              <label className="text-xs text-muted-foreground">
+                安装
+                <Input
+                  type="number"
+                  className="mt-1 h-8"
+                  value={install}
+                  onChange={(event) => setInstall(Number(event.target.value) || 0)}
+                />
+              </label>
+              <label className="text-xs text-muted-foreground">
+                其他
+                <Input
+                  type="number"
+                  className="mt-1 h-8"
+                  value={other}
+                  onChange={(event) => setOther(Number(event.target.value) || 0)}
+                />
+              </label>
+              <label className="text-xs text-muted-foreground">
+                税率
+                <Input
+                  type="number"
+                  step="0.01"
+                  className="mt-1 h-8"
+                  value={taxRate}
+                  onChange={(event) => setTaxRate(Number(event.target.value) || 0)}
+                />
+              </label>
+            </div>
           </Card>
 
           <Card>
-            <CardTitle action={<Button size="sm" variant="outline" leftIcon={<Pencil size={14} />}>编辑</Button>}>
-              交易与付款条款
+            <CardTitle
+              action={
+                <label className="inline-flex cursor-pointer">
+                  <input
+                    type="file"
+                    className="hidden"
+                    disabled={uploading || !quoteId}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      event.target.value = "";
+                      void handleUploadAttachment(file);
+                    }}
+                  />
+                  <Button size="sm" variant="outline" leftIcon={<Plus size={14} />} disabled={uploading} asChild>
+                    <span>{uploading ? "上传中…" : "上传附件"}</span>
+                  </Button>
+                </label>
+              }
+            >
+              相关附件
             </CardTitle>
+            {attachments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">暂无附件。可上传图纸、清单等（≤20MB）。</p>
+            ) : (
+              <div className="space-y-2">
+                {attachments.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 rounded-control border border-border bg-muted/20 px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-foreground">{item.fileName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {(item.sizeBytes / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => void downloadQuoteAttachment(quoteId!, item.id, item.fileName)}
+                    >
+                      下载
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <CardTitle>交易与付款条款</CardTitle>
             <dl className="space-y-3">
               {terms.map((t) => (
                 <div
@@ -320,32 +568,12 @@ export function QuotationEditWorkspace() {
           </Card>
 
           <Card>
-            <CardTitle>备注与条件（客户可见）</CardTitle>
-            <textarea
-              className="h-20 w-full rounded-control border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              placeholder="请输入意见或备注…"
+            <CardTitle>备注</CardTitle>
+            <Input
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="保存到报价明细备注…"
             />
-          </Card>
-
-          <Card>
-            <CardTitle>内部审批与评论</CardTitle>
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                张
-              </div>
-              <div className="flex-1">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">张伟</span>
-                  <Badge variant="secondary">创建人</Badge>
-                  <span className="text-xs text-muted-foreground">2024-06-14 16:20</span>
-                </div>
-                <Input
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="添加评论或审批意见…"
-                />
-              </div>
-            </div>
           </Card>
         </div>
 

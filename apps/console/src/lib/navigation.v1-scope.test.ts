@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { workspaceNavigationGroups } from "@/lib/navigation";
+import { getNavigationGroups, workspaceNavigationGroups } from "@/lib/navigation";
 
 function sidebarTitles(): string[] {
   return workspaceNavigationGroups.flatMap((group) => [
@@ -36,5 +36,19 @@ test("workspace group children are only role homes", () => {
   assert.deepEqual(
     (workspace.children ?? []).map((child) => child.id),
     ["boss-home", "admin-home", "sales-rep-home"],
+  );
+});
+
+test("getNavigationGroups hides role homes until workspaceRole is known", () => {
+  const pending = getNavigationGroups(null, null);
+  const workspace = pending.find((group) => group.id === "workspace");
+  assert.ok(workspace);
+  assert.equal((workspace.children ?? []).length, 0);
+
+  const owner = getNavigationGroups(null, "owner");
+  const ownerWorkspace = owner.find((group) => group.id === "workspace");
+  assert.deepEqual(
+    (ownerWorkspace?.children ?? []).map((child) => child.id),
+    ["boss-home"],
   );
 });

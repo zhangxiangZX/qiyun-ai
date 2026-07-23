@@ -15,7 +15,7 @@ export class SelectionPagesApi {
     return this.service.update(context.workspaceId, id, body);
   }
   delete(context: RequestContext, id: string) { return this.service.delete(context.workspaceId, id); }
-  submit(slug: string, body: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[] }) {
+  submit(slug: string, body: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[]; source?: string | null }) {
     return this.service.submit(slug, body);
   }
   listSubmissions(context: RequestContext, pageId: string) {

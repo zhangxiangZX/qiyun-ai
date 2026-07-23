@@ -53,26 +53,51 @@ export class CalendarRouteService {
     if (pathname === "/follow-tasks" && method === "POST") {
       const context = await this.authContext.resolve(request.headers);
       assertWriteRole(context.role);
-      const body = await readJsonBody<{ title?: string; dueAt?: string; inquiryId?: string; customerName?: string; ownerName?: string; note?: string }>(request);
+      const body = await readJsonBody<{
+        title?: string;
+        dueAt?: string;
+        inquiryId?: string;
+        customerName?: string;
+        ownerName?: string;
+        note?: string;
+        priority?: "low" | "medium" | "high";
+      }>(request);
       if (!body.title?.trim() || !body.dueAt || Number.isNaN(Date.parse(body.dueAt))) {
         return json(400, { code: "VALIDATION_ERROR", message: "title and valid dueAt are required." }, requestId);
       }
       const start = new Date(body.dueAt);
+      const priority =
+        body.priority === "low" || body.priority === "high" || body.priority === "medium"
+          ? body.priority
+          : "medium";
       if (this.runtime.driver === "postgres") {
         const id = `ft_${randomUUID()}`;
         await pgQuery(`insert into follow_tasks (id, workspace_id, inquiry_id, assignee_user_id, title, priority, status, due_at, created_by)
           values ($1,$2,$3,$4,$5,$6,'pending',$7,$8)`,
-        [id, context.workspaceId, body.inquiryId ?? null, null, body.title.trim(), "medium", start.toISOString(), context.userId]);
-        return json(201, { id, workspaceId: context.workspaceId, inquiryId: body.inquiryId ?? null, title: body.title.trim(), status: "pending", dueAt: start.toISOString() }, requestId);
+        [id, context.workspaceId, body.inquiryId ?? null, null, body.title.trim(), priority, start.toISOString(), context.userId]);
+        return json(201, {
+          id,
+          workspaceId: context.workspaceId,
+          inquiryId: body.inquiryId ?? null,
+          title: body.title.trim(),
+          status: "pending",
+          dueAt: start.toISOString(),
+          priority,
+        }, requestId);
       }
+      const noteParts = [
+        body.note?.trim() || null,
+        priority !== "medium" ? `优先级:${priority}` : null,
+      ].filter(Boolean);
       const created = await this.runtime.calendarApi.createEvent(context.workspaceId, {
         title: body.title.trim(), start: start.toISOString(),
         end: new Date(start.getTime() + 30 * 60 * 1000).toISOString(),
         kind: "follow_up", status: "pending", leadId: body.inquiryId,
-        leadName: body.customerName, ownerName: body.ownerName, note: body.note,
+        leadName: body.customerName, ownerName: body.ownerName,
+        note: noteParts.length ? noteParts.join("\n") : body.note,
       });
       await this.runtime.persist();
-      return json(201, created, requestId);
+      return json(201, { ...created, priority }, requestId);
     }
 
     const followActionMatch = matchPath("/follow-tasks/:id/:action", pathname);

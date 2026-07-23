@@ -43,7 +43,69 @@ import type {
   SalesOverviewMetrics,
   SourceAnalyticsItem,
   SourceType,
+  QuoteDetails,
 } from "./sales.types";
+
+function normalizeQuoteDetails(input?: QuoteDetails | null): QuoteDetails {
+  if (!input || typeof input !== "object") {
+    return {};
+  }
+  const lineItems = Array.isArray(input.lineItems)
+    ? input.lineItems
+        .filter((item) => item && typeof item.name === "string" && item.name.trim())
+        .map((item) => ({
+          id: typeof item.id === "string" ? item.id : undefined,
+          name: String(item.name).trim(),
+          model: item.model != null ? String(item.model) : undefined,
+          qty: Number(item.qty) || 0,
+          unit: item.unit != null ? String(item.unit) : undefined,
+          price: Number(item.price) || 0,
+          discount: item.discount != null ? Number(item.discount) : undefined,
+          deliveryCycle: item.deliveryCycle != null ? String(item.deliveryCycle) : undefined,
+        }))
+    : undefined;
+  const attachmentIds = Array.isArray(input.attachmentIds)
+    ? input.attachmentIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+    : undefined;
+  const attachments = Array.isArray(input.attachments)
+    ? input.attachments
+        .filter(
+          (item) =>
+            item &&
+            typeof item.id === "string" &&
+            typeof item.fileName === "string" &&
+            typeof item.storageKey === "string",
+        )
+        .map((item) => ({
+          id: item.id,
+          fileName: item.fileName,
+          fileType: item.fileType || "application/octet-stream",
+          sizeBytes: Number(item.sizeBytes) || 0,
+          storageKey: item.storageKey,
+          createdAt: item.createdAt,
+        }))
+    : undefined;
+  return {
+    ...(lineItems && lineItems.length > 0 ? { lineItems } : {}),
+    ...(input.freight != null && Number.isFinite(Number(input.freight))
+      ? { freight: Number(input.freight) }
+      : {}),
+    ...(input.install != null && Number.isFinite(Number(input.install))
+      ? { install: Number(input.install) }
+      : {}),
+    ...(input.other != null && Number.isFinite(Number(input.other))
+      ? { other: Number(input.other) }
+      : {}),
+    ...(input.taxRate != null && Number.isFinite(Number(input.taxRate))
+      ? { taxRate: Number(input.taxRate) }
+      : {}),
+    ...(attachmentIds && attachmentIds.length > 0 ? { attachmentIds } : {}),
+    ...(attachments && attachments.length > 0 ? { attachments } : {}),
+    ...(typeof input.remark === "string" && input.remark.trim()
+      ? { remark: input.remark.trim() }
+      : {}),
+  };
+}
 
 export class SalesAccessError extends Error {
   constructor(message: string) {
@@ -679,12 +741,11 @@ export class SalesService {
     workspaceId: string,
     inquiryIds: string[],
     ownerId: string,
+    remark?: string,
   ) {
     const results: Awaited<ReturnType<typeof this.getInquiry>>[] = [];
     for (const id of inquiryIds) {
-      await this.requireInquiry(workspaceId, id);
-      await this.salesRepository.updateInquiry(workspaceId, id, { ownerId });
-      results.push(await this.getInquiry(workspaceId, id));
+      results.push(await this.assignInquiry(workspaceId, id, ownerId, remark));
     }
     return results;
   }
@@ -870,6 +931,7 @@ export class SalesService {
       title?: string;
       estimatedAmount?: number | null;
       templateId?: string | null;
+      details?: QuoteDetails | null;
     },
   ) {
     const inquiry = await this.requireInquiry(workspaceId, input.inquiryId);
@@ -898,6 +960,7 @@ export class SalesService {
       ownerId: inquiry.ownerId,
       nextFollowUpAt: null,
       title: input.title ?? inquiry.summary?.slice(0, 48) ?? inquiry.customerName,
+      details: normalizeQuoteDetails(input.details),
       createdAt: now,
       updatedAt: now,
     };
@@ -914,6 +977,7 @@ export class SalesService {
     const followUps = await this.salesRepository.listQuoteFollowUps(quote.id);
     return {
       ...this.mapQuoteListItem(quote, inquiry),
+      details: quote.details ?? {},
       followUps,
     };
   }
@@ -932,13 +996,19 @@ export class SalesService {
       nextFollowUpAt: string | null;
       title: string | null;
       templateId: string | null;
+      details: QuoteDetails | null;
     }>,
   ) {
     const quote = await this.requireQuote(workspaceId, quoteId);
+    const { details, ...recordPatch } = patch;
+    const nextPatch: Partial<QuoteOpportunityRecord> = { ...recordPatch };
+    if (details !== undefined) {
+      nextPatch.details = normalizeQuoteDetails(details);
+    }
     const updated = await this.salesRepository.updateQuoteOpportunity(
       workspaceId,
       quote.id,
-      patch,
+      nextPatch,
     );
     if (!updated) {
       throw new SalesAccessError("Quote opportunity not found.");
@@ -983,6 +1053,8 @@ export class SalesService {
       inquiryId: quote.inquiryId,
       title: `${quote.title ?? "报价"} (副本)`,
       estimatedAmount: quote.estimatedAmount,
+      templateId: quote.templateId,
+      details: quote.details,
     });
   }
 
@@ -1275,6 +1347,7 @@ export class SalesService {
         ownerId: null,
         nextFollowUpAt: null,
         title: "演示报价项目",
+        details: {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

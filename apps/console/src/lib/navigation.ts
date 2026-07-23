@@ -681,21 +681,24 @@ function groupDirectLinkMatches(group: NavigationGroup, pathname: string): boole
   return pathname === group.href || pathname.startsWith(`${group.href}/`);
 }
 
+const ROLE_HOME_NAV_IDS = new Set(["boss-home", "admin-home", "sales-rep-home"]);
+
 function filterWorkspaceNavForRole(
   groups: NavigationGroup[],
   workspaceRole?: WorkspaceRole | null,
 ): NavigationGroup[] {
-  // 会话未就绪时暂不筛，避免先闪错角色首页
-  if (workspaceRole == null) {
-    return groups;
-  }
-
-  const allowedHomeId = roleHomeNavIdForRole(workspaceRole);
-
   return groups.map((group) => {
     if (group.id !== "workspace" || !group.children?.length) {
       return group;
     }
+    // 会话未就绪时隐藏全部角色首页，保证 SSR/首屏与 hydration 一致（避免短暂渲染 3 个「首页」）。
+    if (workspaceRole == null) {
+      return {
+        ...group,
+        children: group.children.filter((child) => !ROLE_HOME_NAV_IDS.has(child.id)),
+      };
+    }
+    const allowedHomeId = roleHomeNavIdForRole(workspaceRole);
     return {
       ...group,
       children: group.children.filter((child) => child.id === allowedHomeId),

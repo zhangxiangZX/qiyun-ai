@@ -160,6 +160,23 @@ export function NewQuotationWorkspace() {
         title: `${customerName.trim()} 报价方案`,
         estimatedAmount: Math.round(total),
         templateId: appliedTemplateId,
+        details: {
+          lineItems: rows
+            .filter((row) => row.name.trim())
+            .map((row) => ({
+              id: row.id,
+              name: row.name.trim(),
+              model: row.model.trim() || undefined,
+              qty: row.qty,
+              unit: row.unit,
+              price: row.price,
+              discount: row.discount,
+            })),
+          freight,
+          install,
+          other,
+          taxRate,
+        },
       });
       router.push(`/dashboard/quotes/${quote.id}`);
     } catch (error) {

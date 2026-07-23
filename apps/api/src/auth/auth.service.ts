@@ -1745,7 +1745,7 @@ export class AuthService {
       role: this.roleLabel(input.role),
       lastLogin: new Date(user.updatedAt).toLocaleString("zh-CN"),
       loginIp: "—",
-      avatarUrl: "",
+      avatarUrl: typeof profile.avatarUrl === "string" ? profile.avatarUrl : "",
       notificationPrefs: prefs,
       language: profile.language ?? "zh",
     };
@@ -1762,6 +1762,7 @@ export class AuthService {
       jobTitle?: string;
       bio?: string;
       department?: string;
+      avatarUrl?: string;
       notificationPrefs?: UserAccountProfile["notificationPrefs"];
       language?: "zh" | "en";
     };
@@ -1779,6 +1780,8 @@ export class AuthService {
       bio: input.patch.bio ?? currentProfile.bio,
       department: input.patch.department ?? currentProfile.department,
       language: input.patch.language ?? currentProfile.language ?? "zh",
+      avatarUrl:
+        input.patch.avatarUrl !== undefined ? input.patch.avatarUrl : currentProfile.avatarUrl,
       notificationPrefs: {
         ...this.defaultNotificationPrefs(),
         ...(currentProfile.notificationPrefs ?? {}),

@@ -100,7 +100,28 @@ export interface QuoteListItem {
   updatedAt: string;
 }
 
+export interface QuoteLineItem {
+  id?: string;
+  name: string;
+  model?: string;
+  qty: number;
+  unit?: string;
+  price: number;
+  discount?: number;
+  deliveryCycle?: string;
+}
+
+export interface QuoteDetails {
+  lineItems?: QuoteLineItem[];
+  freight?: number;
+  install?: number;
+  other?: number;
+  taxRate?: number;
+  remark?: string;
+}
+
 export interface QuoteDetail extends QuoteListItem {
+  details?: QuoteDetails;
   followUps: Array<{
     id: string;
     kind: string;
@@ -109,6 +130,14 @@ export interface QuoteDetail extends QuoteListItem {
     actor?: string | null;
     createdAt: string;
   }>;
+}
+
+export interface QuoteAttachmentItem {
+  id: string;
+  fileName: string;
+  fileType: string;
+  sizeBytes: number;
+  createdAt?: string | null;
 }
 
 export interface SourceCodeItem {

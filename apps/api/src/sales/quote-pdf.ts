@@ -8,6 +8,17 @@ function resolveChineseFont(): string {
   );
 }
 
+function decodeDataUrlImage(dataUrl: string | undefined): Buffer | null {
+  if (!dataUrl || !dataUrl.startsWith("data:image/")) return null;
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) return null;
+  try {
+    return Buffer.from(dataUrl.slice(comma + 1), "base64");
+  } catch {
+    return null;
+  }
+}
+
 export async function renderQuotePdf(payload: QuoteDocumentPayload): Promise<Uint8Array> {
   const document = new PDFDocument({ size: "A4", margin: 48, info: { Title: `报价单 ${payload.sample.quoteNo}` } });
   const chunks: Buffer[] = [];
@@ -20,6 +31,15 @@ export async function renderQuotePdf(payload: QuoteDocumentPayload): Promise<Uin
   document.registerFont("NotoSansSC", resolveChineseFont());
   document.font("NotoSansSC");
   const sample = payload.sample;
+  const logoBuffer = decodeDataUrlImage(sample.company.logoUrl);
+  if (logoBuffer) {
+    try {
+      document.image(logoBuffer, document.page.margins.left, document.y, { width: 48, height: 48 });
+      document.y += 8;
+    } catch {
+      // ignore invalid logo bytes
+    }
+  }
   document.fontSize(20).fillColor("#0f172a").text(payload.template.companyName || sample.company.name || "企云 AI");
   document.moveDown(0.4).fontSize(18).fillColor("#2563eb").text("报价单", { align: "center" });
   document.moveDown().fontSize(10).fillColor("#334155");

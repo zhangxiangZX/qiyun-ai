@@ -87,6 +87,7 @@ export class PublicRouteService {
         contactPhone?: string;
         contactEmail?: string;
         attachmentIds?: string[];
+        source?: string | null;
       }>(request);
       try {
         const submission = await runWithBypassRls(() =>
@@ -96,6 +97,7 @@ export class PublicRouteService {
             contactPhone: body.contactPhone,
             contactEmail: body.contactEmail,
             attachmentIds: body.attachmentIds,
+            source: body.source,
           }),
         );
         if (this.runtime.driver === "postgres" && submission.inquiryId) {

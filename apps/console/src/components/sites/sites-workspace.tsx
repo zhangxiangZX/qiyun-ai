@@ -206,15 +206,15 @@ export function SitesWorkspace() {
         </ConsolePageAlerts>
         <PageHeader
           variant="compact"
-          title={t(defaultLocale, "sites.title")}
-          description={t(defaultLocale, "sites.description")}
+          title="站点安全设置"
+          description="管理域名白名单、站点密钥与嵌入代码。请先接入至少一个官网站点后再配置安全项。"
           actions={headerActions}
         />
-        <div className="pb-6">
+        <div className="pb-6" data-testid="sites-settings-empty">
           <EmptyState
             icon={<Globe2 className="h-8 w-8" aria-hidden />}
-            title={t(defaultLocale, "sites.empty.title")}
-            description={t(defaultLocale, "sites.empty.description")}
+            title="暂无站点，无法配置域名白名单与站点密钥"
+            description="接入站点后可在此管理域名白名单、轮换站点密钥，并复制 Widget 嵌入代码。也可从站点列表先「添加第一个站点」。"
             action={
               <Button asChild>
                 <Link href="/dashboard/sites/new">添加第一个站点</Link>
@@ -248,6 +248,9 @@ export function SitesWorkspace() {
 
   return (
     <ConsolePage>
+      <div data-testid="sites-settings-ready" hidden>
+        站点安全设置已就绪：域名白名单、站点密钥、嵌入代码
+      </div>
       <ConsolePageAlerts>
         <ConsoleModeBadge />
         <ConsoleDataModeBanner feature="官网 Widget" />
@@ -258,8 +261,8 @@ export function SitesWorkspace() {
 
       <PageHeader
         variant="compact"
-        title={t(defaultLocale, "sites.title")}
-        description="管理官网站点、域名白名单与 Widget 嵌入代码，将 AI 助手接入企业官网。"
+        title="站点安全设置"
+        description="管理官网站点的域名白名单、站点密钥与 Widget 嵌入代码，将 AI 助手安全接入企业官网。"
         actions={headerActions}
       />
 

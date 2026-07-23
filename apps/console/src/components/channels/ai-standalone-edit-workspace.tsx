@@ -1171,7 +1171,8 @@ export function AiStandaloneEditWorkspace() {
   const searchParams = useSearchParams();
   const pageId = searchParams.get("page") ?? searchParams.get("id");
   const rawSection = searchParams.get("section") ?? searchParams.get("tab");
-  const section = parseAiStandaloneSection(rawSection);
+  const sectionFromUrl = parseAiStandaloneSection(rawSection);
+  const [section, setSection] = useState<AiStandaloneSection>(sectionFromUrl);
   const initialPage = getSelectionPage(pageId);
   const isNewMode = !pageId || pageId === NEW_PAGE_ID;
 
@@ -1287,6 +1288,10 @@ export function AiStandaloneEditWorkspace() {
   });
 
   useEffect(() => {
+    setSection(sectionFromUrl);
+  }, [sectionFromUrl]);
+
+  useEffect(() => {
     setPageName(page.editName);
     setPageStatus(page.published ? "published" : "draft");
     setBoundBot(page.botName);
@@ -1299,7 +1304,10 @@ export function AiStandaloneEditWorkspace() {
   }
 
   function switchSection(next: AiStandaloneSection) {
-    router.push(buildAiStandaloneEditHref(page.id, next));
+    // Prefer URL/persisted id — page.id may flip to API uuid after load and break soft-nav.
+    const stableId = (pageId && pageId !== NEW_PAGE_ID ? pageId : null) ?? persistedPageId ?? page.id;
+    setSection(next);
+    router.replace(buildAiStandaloneEditHref(stableId, next), { scroll: false });
   }
 
   function copyText(text: string) {

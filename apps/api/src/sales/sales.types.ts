@@ -100,6 +100,37 @@ export interface InquiryAssignCandidate {
   recommended: boolean;
 }
 
+export interface QuoteLineItem {
+  id?: string;
+  name: string;
+  model?: string;
+  qty: number;
+  unit?: string;
+  price: number;
+  discount?: number;
+  deliveryCycle?: string;
+}
+
+export interface QuoteAttachmentMeta {
+  id: string;
+  fileName: string;
+  fileType: string;
+  sizeBytes: number;
+  storageKey: string;
+  createdAt?: string;
+}
+
+export interface QuoteDetails {
+  lineItems?: QuoteLineItem[];
+  freight?: number;
+  install?: number;
+  other?: number;
+  taxRate?: number;
+  attachmentIds?: string[];
+  attachments?: QuoteAttachmentMeta[];
+  remark?: string;
+}
+
 export interface QuoteOpportunityRecord {
   id: string;
   workspaceId: string;
@@ -114,6 +145,7 @@ export interface QuoteOpportunityRecord {
   ownerId: string | null;
   nextFollowUpAt: string | null;
   title: string | null;
+  details: QuoteDetails;
   createdAt: string;
   updatedAt: string;
 }
@@ -276,7 +308,7 @@ export interface QuotePreviewSample {
   date: string;
   validUntil: string;
   currency: string;
-  company: { name: string; enName: string; address: string; phone: string };
+  company: { name: string; enName: string; address: string; phone: string; logoUrl?: string };
   customer: { name: string; contact: string; phone: string; email: string };
   products: QuotePreviewProduct[];
   remark?: string;

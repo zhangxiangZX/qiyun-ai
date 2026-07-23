@@ -44,6 +44,8 @@ export function QuotationPreviewWorkspace({ quoteId: quoteIdProp }: { quoteId?: 
   const [sending, setSending] = useState(false);
   const [sendRecipient, setSendRecipient] = useState("");
   const [sendChannel, setSendChannel] = useState<"email" | "link">("email");
+  const [sendSubject, setSendSubject] = useState("");
+  const [sendBody, setSendBody] = useState("");
   const [publicLink, setPublicLink] = useState<string | null>(null);
   const [isPreviewModeFlag, setIsPreviewModeFlag] = useState(false);
 
@@ -116,6 +118,8 @@ export function QuotationPreviewWorkspace({ quoteId: quoteIdProp }: { quoteId?: 
         await sendQuote(quoteId, {
           recipient: sendRecipient.trim(),
           channel: "email",
+          subject: sendSubject.trim() || undefined,
+          body: sendBody.trim() || undefined,
         });
         setNotice("报价已提交发送，请到详情页「发送记录」查看送达状态。");
       }
@@ -254,7 +258,7 @@ export function QuotationPreviewWorkspace({ quoteId: quoteIdProp }: { quoteId?: 
               </Alert>
             ) : (
               <p className="mb-3 text-xs text-muted-foreground">
-                邮件主题/正文由后端固定生成；自定义主题与多附件上传尚未开放。
+                可自定义邮件主题与正文；未填写时使用系统默认文案。多附件上传仍待开放。
               </p>
             )}
             <label className="mt-3 block text-xs text-muted-foreground">
@@ -279,6 +283,30 @@ export function QuotationPreviewWorkspace({ quoteId: quoteIdProp }: { quoteId?: 
                 <option value="link">客户链接</option>
               </select>
             </label>
+            {sendChannel === "email" ? (
+              <>
+                <label className="mt-3 block text-xs text-muted-foreground">
+                  邮件主题（可选）
+                  <input
+                    className="mt-1 h-9 w-full rounded-lg border border-slate-200 px-3 text-sm"
+                    value={sendSubject}
+                    onChange={(event) => setSendSubject(event.target.value)}
+                    placeholder="例如：户外机柜报价方案"
+                    disabled={!emailConnected}
+                  />
+                </label>
+                <label className="mt-3 block text-xs text-muted-foreground">
+                  邮件正文（可选）
+                  <textarea
+                    className="mt-1 min-h-[88px] w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    value={sendBody}
+                    onChange={(event) => setSendBody(event.target.value)}
+                    placeholder="您好，附件为本次报价，请查收。"
+                    disabled={!emailConnected}
+                  />
+                </label>
+              </>
+            ) : null}
             {publicLink ? (
               <p className="mt-2 break-all text-xs text-primary">{publicLink}</p>
             ) : null}

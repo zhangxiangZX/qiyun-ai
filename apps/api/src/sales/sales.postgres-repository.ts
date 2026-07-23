@@ -110,6 +110,13 @@ function mapQuoteTemplate(row: Record<string, unknown>): QuoteTemplateRecord {
   };
 }
 
+function mapQuoteDetails(value: unknown): QuoteOpportunityRecord["details"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as QuoteOpportunityRecord["details"];
+}
+
 function mapQuote(row: Record<string, unknown>): QuoteOpportunityRecord {
   return {
     id: asString(row.id),
@@ -125,6 +132,7 @@ function mapQuote(row: Record<string, unknown>): QuoteOpportunityRecord {
     ownerId: asNullableString(row.owner_id),
     nextFollowUpAt: row.next_follow_up_at ? normalizeDate(row.next_follow_up_at) : null,
     title: asNullableString(row.title),
+    details: mapQuoteDetails(row.details),
     createdAt: normalizeDate(row.created_at),
     updatedAt: normalizeDate(row.updated_at),
   };
@@ -312,8 +320,8 @@ export class PostgresSalesRepository implements SalesRepository {
     await query(
       `insert into quote_opportunities (
          id, workspace_id, inquiry_id, template_id, stage, estimated_amount, quoted_amount, won_amount,
-         lost_reason, quote_due_at, owner_id, next_follow_up_at, title, created_at, updated_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+         lost_reason, quote_due_at, owner_id, next_follow_up_at, title, details, created_at, updated_at
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16)`,
       [
         record.id,
         record.workspaceId,
@@ -328,6 +336,7 @@ export class PostgresSalesRepository implements SalesRepository {
         record.ownerId,
         record.nextFollowUpAt,
         record.title,
+        JSON.stringify(record.details ?? {}),
         record.createdAt,
         record.updatedAt,
       ],
@@ -357,8 +366,9 @@ export class PostgresSalesRepository implements SalesRepository {
          owner_id = $9,
          next_follow_up_at = $10,
          title = $11,
-         updated_at = $12
-       where id = $1 and workspace_id = $13`,
+         details = $12::jsonb,
+         updated_at = $13
+       where id = $1 and workspace_id = $14`,
       [
         next.id,
         next.templateId,
@@ -371,6 +381,7 @@ export class PostgresSalesRepository implements SalesRepository {
         next.ownerId,
         next.nextFollowUpAt,
         next.title,
+        JSON.stringify(next.details ?? {}),
         next.updatedAt,
         workspaceId,
       ],

@@ -211,6 +211,8 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
   const [sendOpen, setSendOpen] = useState(false);
   const [sendRecipient, setSendRecipient] = useState("");
   const [sendChannel, setSendChannel] = useState<"email" | "link">("email");
+  const [sendSubject, setSendSubject] = useState("");
+  const [sendBody, setSendBody] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [stageUpdating, setStageUpdating] = useState(false);
@@ -305,9 +307,13 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
       await sendQuote(detail.id, {
         recipient: sendRecipient.trim() || undefined,
         channel: sendChannel,
+        subject: sendChannel === "email" ? sendSubject.trim() || undefined : undefined,
+        body: sendChannel === "email" ? sendBody.trim() || undefined : undefined,
       });
       setSendOpen(false);
       setSendRecipient("");
+      setSendSubject("");
+      setSendBody("");
       setNotice("报价已发送，可在「发送记录」中查看状态。");
       await Promise.all([load(), loadArtifacts()]);
     } catch (nextError) {
@@ -315,7 +321,7 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
     } finally {
       setSending(false);
     }
-  }, [detail, sendChannel, sendRecipient, loadArtifacts, load]);
+  }, [detail, sendChannel, sendRecipient, sendSubject, sendBody, loadArtifacts, load]);
 
   const handleRetryDelivery = useCallback(
     async (log: QuoteDeliveryLog) => {
@@ -536,6 +542,29 @@ export function QuoteDetailWorkspace({ quoteId }: { quoteId?: string | null } = 
                 <option value="link">客户链接</option>
               </select>
             </div>
+            {sendChannel === "email" ? (
+              <>
+                <div className={styles.field}>
+                  <label htmlFor="send-subject">邮件主题（可选）</label>
+                  <input
+                    id="send-subject"
+                    value={sendSubject}
+                    onChange={(event) => setSendSubject(event.target.value)}
+                    placeholder="例如：户外机柜报价方案"
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="send-body">邮件正文（可选）</label>
+                  <textarea
+                    id="send-body"
+                    value={sendBody}
+                    onChange={(event) => setSendBody(event.target.value)}
+                    placeholder="您好，附件为本次报价，请查收。"
+                    rows={3}
+                  />
+                </div>
+              </>
+            ) : null}
             {sendError ? <div className={styles.notice}>{sendError}</div> : null}
             <button
               type="button"

@@ -2,10 +2,38 @@ import { randomUUID } from "node:crypto";
 import { SelectionPagesAccessError, type SelectionPagesRepository } from "./selection-pages.repository";
 import type { SelectionPageConfig } from "./selection-pages.types";
 import type { SalesService } from "../sales/sales.service";
+import type { SourceType } from "../sales/sales.types";
 import type { CalendarApi } from "../calendar/calendar.api";
 import type { FileVaultRepository } from "../file-vault/file-vault.repository";
 
 export { SelectionPagesAccessError };
+
+function mapAcquisitionSource(
+  slug: string,
+  source?: string | null,
+): { sourceType: SourceType; sourceCode: string } {
+  const raw = (source ?? "").trim();
+  const key = raw.toLowerCase();
+  if (!key) {
+    return { sourceType: "website", sourceCode: `selection:${slug}` };
+  }
+  if (key.includes("douyin") || key === "dy" || key === "抖音") {
+    return { sourceType: "douyin", sourceCode: raw };
+  }
+  if (key.includes("wechat") || key === "wx" || key.includes("微信")) {
+    return { sourceType: "wechat", sourceCode: raw };
+  }
+  if (key.includes("expo") || key.includes("扫码") || key.includes("展会")) {
+    return { sourceType: "expo", sourceCode: raw };
+  }
+  if (key.includes("sales") || key.includes("link") || key.includes("销售")) {
+    return { sourceType: "sales_link", sourceCode: raw };
+  }
+  if (key === "website" || key.includes("官网")) {
+    return { sourceType: "website", sourceCode: raw };
+  }
+  return { sourceType: "other", sourceCode: raw };
+}
 
 export class SelectionPagesService {
   constructor(
@@ -65,7 +93,17 @@ export class SelectionPagesService {
     return this.repo.delete(workspaceId, id);
   }
 
-  async submit(slug: string, submission: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[] }) {
+  async submit(
+    slug: string,
+    submission: {
+      answers: Record<string, string>;
+      contactName?: string;
+      contactPhone?: string;
+      contactEmail?: string;
+      attachmentIds?: string[];
+      source?: string | null;
+    },
+  ) {
     const page = await this.repo.findBySlug(slug);
     if (!page || page.status !== "published") throw new SelectionPagesAccessError("Not found or not published.");
     const attachmentIds = [...new Set(submission.attachmentIds ?? [])];
@@ -73,19 +111,22 @@ export class SelectionPagesService {
       throw new SelectionPagesAccessError("Selection attachment not found in workspace.");
     }
     const summary = Object.entries(submission.answers).map(([key, value]) => `${key}: ${value}`).join("\n");
+    const answerSource = submission.answers?.source?.trim() || null;
+    const channel = mapAcquisitionSource(slug, submission.source ?? answerSource);
     const inquiry = this.sales ? await this.sales.createInquiry(page.workspaceId, {
       customerName: submission.contactName?.trim() || "AI选型客户",
       customerContact: submission.contactName?.trim() || null,
       phone: submission.contactPhone?.trim() || null,
       email: submission.contactEmail?.trim() || null,
-      sourceType: "website",
-      sourceCode: `selection:${page.slug}`,
+      sourceType: channel.sourceType,
+      sourceCode: channel.sourceCode,
       summary,
       productNeed: summary,
       knownFields: {
         selectionPageId: page.id,
         selectionPageName: page.name,
         attachmentIds: attachmentIds.join(","),
+        acquisitionSource: channel.sourceCode,
       },
     }) : null;
     const start = new Date(Date.now() + 30 * 60 * 1000);

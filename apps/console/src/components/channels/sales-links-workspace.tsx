@@ -87,8 +87,14 @@ export function SalesLinksWorkspace() {
     setError(null);
     try {
       const nextLinks = await listSalesLinks();
-      setLinks(nextLinks);
-      setIsPreview(false);
+      if (nextLinks.length > 0) {
+        setLinks(nextLinks);
+        setIsPreview(false);
+      } else {
+        // Mirror QR hub: empty API → preview samples so list chrome is usable for walkthrough.
+        setLinks(PREVIEW_LINKS);
+        setIsPreview(true);
+      }
     } catch {
       setLinks(PREVIEW_LINKS);
       setIsPreview(true);

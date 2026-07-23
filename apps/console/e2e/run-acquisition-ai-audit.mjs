@@ -225,11 +225,11 @@ async function waitForPageReady(page, { path: routePath, markers = [], minMainLe
   );
 }
 
-async function gotoReady(page, routePath, markers = []) {
+async function gotoReady(page, routePath, markers = [], minMainLen = 40) {
   const response = await page.goto(routePath, { waitUntil: "domcontentloaded", timeout: NAV_TIMEOUT_MS });
   const status = response?.status() ?? 200;
   if (status >= 500) throw new Error(`HTTP ${status}`);
-  const ready = await waitForPageReady(page, { path: routePath, markers });
+  const ready = await waitForPageReady(page, { path: routePath, markers, minMainLen });
   await assertNoErrorPage(page, routePath);
   return { status, ...ready };
 }
@@ -410,15 +410,15 @@ async function auditSites(page) {
   }
 
   // Dedicated subroutes must render
-  for (const [sub, markers] of [
-    ["/dashboard/sites/new", [/添加站点|站点名称|域名/]],
-    ["/dashboard/sites/install", [/安装|Widget|嵌入|步骤/]],
-    ["/dashboard/sites/appearance", [/外观|主题|按钮形状|预览/]],
-    ["/dashboard/sites/settings", [/站点|白名单|嵌入|安装说明|外观/]],
+  for (const [sub, markers, minMainLen] of [
+    ["/dashboard/sites/new", [/添加站点|站点名称|域名/], 80],
+    ["/dashboard/sites/install", [/安装|Widget|嵌入|步骤/], 80],
+    ["/dashboard/sites/appearance", [/外观|主题|按钮形状|预览/], 80],
+    ["/dashboard/sites/settings", [/域名白名单|站点密钥|嵌入代码|当前站点|添加第一个站点|站点安全设置/], 160],
   ]) {
     const id = `route.${sub.split("/").pop()}`;
     try {
-      const { mainText } = await gotoReady(page, sub, markers);
+      const { mainText } = await gotoReady(page, sub, markers, minMainLen);
       pagePass(key, id, `mainLen=${mainText.length}`);
     } catch (e) {
       pageFail(key, id, String(e));
@@ -451,8 +451,12 @@ async function auditLinks(page) {
   console.log("\n[3] /dashboard/channels/links — sales links");
   try {
     const { mainText, controlCount } = await gotoReady(page, "/dashboard/channels/links", [
-      /新建.*链接|销售链接|链接列表/,
+      /新建链接|导出数据|转化率|没有匹配的销售链接|链接名称|短链/,
     ]);
+    if (mainText.length < 200) {
+      pageFail(key, "display", `list body too thin (mainLen=${mainText.length} controls=${controlCount})`);
+      return;
+    }
     pagePass(key, "display", `mainLen=${mainText.length} controls=${controlCount}`);
   } catch (e) {
     pageFail(key, "display", String(e));

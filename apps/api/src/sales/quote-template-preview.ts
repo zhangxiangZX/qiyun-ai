@@ -103,28 +103,68 @@ export function buildQuotePreviewSampleFromOpportunity(
   quote: QuoteOpportunityRecord,
   inquiry: InquiryRecord | null,
   template: QuoteTemplateRecord,
+  options?: { logoUrl?: string },
 ): QuotePreviewSample {
   const date = formatDateOnly(quote.createdAt);
   const validUntil = formatDateOnly(quote.quoteDueAt) || addDaysIso(date, 30);
   const amount = quote.quotedAmount ?? quote.estimatedAmount ?? 0;
   const customerName = inquiry?.customerName?.trim() || "客户";
   const contact = inquiry?.customerContact?.trim() || customerName;
+  const details = quote.details ?? {};
+  const lineItems = details.lineItems ?? [];
+  const defaultDelivery = template.terms.delivery.includes("工作日")
+    ? template.terms.delivery
+    : "按合同约定";
   const products: QuotePreviewProduct[] =
-    amount > 0
-      ? [
-          {
-            name: quote.title ?? inquiry?.summary?.slice(0, 48) ?? "报价项目",
-            model: inquiry?.summary?.slice(0, 32) || "—",
-            qty: 1,
-            unit: "项",
-            price: amount,
-            amount,
-            deliveryCycle: template.terms.delivery.includes("工作日")
-              ? template.terms.delivery
-              : "按合同约定",
-          },
-        ]
-      : DEFAULT_QUOTE_PREVIEW_SAMPLE.products;
+    lineItems.length > 0
+      ? lineItems.map((item) => {
+          const qty = item.qty || 0;
+          const price = item.price || 0;
+          const discount = item.discount ?? 0;
+          return {
+            name: item.name,
+            model: item.model || "—",
+            qty,
+            unit: item.unit || "项",
+            price,
+            amount: qty * price * (1 - discount / 100),
+            deliveryCycle: item.deliveryCycle || defaultDelivery,
+            discount: discount || undefined,
+          };
+        })
+      : amount > 0
+        ? [
+            {
+              name: quote.title ?? inquiry?.summary?.slice(0, 48) ?? "报价项目",
+              model: inquiry?.summary?.slice(0, 32) || "—",
+              qty: 1,
+              unit: "项",
+              price: amount,
+              amount,
+              deliveryCycle: defaultDelivery,
+            },
+          ]
+        : DEFAULT_QUOTE_PREVIEW_SAMPLE.products;
+
+  const remarkParts: string[] = [];
+  if (details.remark?.trim()) {
+    remarkParts.push(details.remark.trim());
+  }
+  if (inquiry?.summary) {
+    remarkParts.push(`需求摘要：${inquiry.summary}`);
+  }
+  if (details.freight || details.install || details.other || details.taxRate != null) {
+    remarkParts.push(
+      [
+        details.freight ? `运费 ${details.freight}` : null,
+        details.install ? `安装 ${details.install}` : null,
+        details.other ? `其他 ${details.other}` : null,
+        details.taxRate != null ? `税率 ${(details.taxRate * 100).toFixed(0)}%` : null,
+      ]
+        .filter(Boolean)
+        .join("；"),
+    );
+  }
 
   return {
     quoteNo: quote.id.replace(/^qopp_/, "QT-").slice(0, 20).toUpperCase(),
@@ -136,6 +176,7 @@ export function buildQuotePreviewSampleFromOpportunity(
       enName: DEFAULT_QUOTE_PREVIEW_SAMPLE.company.enName,
       address: DEFAULT_QUOTE_PREVIEW_SAMPLE.company.address,
       phone: DEFAULT_QUOTE_PREVIEW_SAMPLE.company.phone,
+      logoUrl: options?.logoUrl,
     },
     customer: {
       name: customerName,
@@ -144,7 +185,7 @@ export function buildQuotePreviewSampleFromOpportunity(
       email: contact.includes("@") ? contact : "—",
     },
     products,
-    remark: inquiry?.summary ? `需求摘要：${inquiry.summary}` : DEFAULT_QUOTE_PREVIEW_SAMPLE.remark,
+    remark: remarkParts.length > 0 ? remarkParts.join("\n") : DEFAULT_QUOTE_PREVIEW_SAMPLE.remark,
   };
 }
 

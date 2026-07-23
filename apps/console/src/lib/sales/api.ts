@@ -1,4 +1,4 @@
-import { apiRequest, getApiPrefix } from "@/lib/api/client";
+import { apiFormDataRequest, apiRequest, getApiPrefix } from "@/lib/api/client";
 import { ApiError, normalizeApiErrorCode } from "@/lib/api/errors";
 import { WORKSPACE_ID } from "@/lib/api/workspace";
 import type {
@@ -12,7 +12,9 @@ import type {
   InquiryAssignCandidate,
   InquiryAssignStats,
   IntentLevel,
+  QuoteAttachmentItem,
   QuoteDetail,
+  QuoteDetails,
   QuoteListItem,
   SalesAssistantResult,
   SalesOverviewMetrics,
@@ -167,10 +169,11 @@ export async function createQuickEntryInquiry(input: CreateInquiryInput): Promis
 export async function batchAssignInquiries(
   inquiryIds: string[],
   ownerId: string,
+  remark?: string,
 ): Promise<InquiryDetail[]> {
   return apiRequest<InquiryDetail[]>("/inquiries/batch-assign", {
     method: "POST",
-    body: { inquiryIds, ownerId },
+    body: { inquiryIds, ownerId, ...(remark?.trim() ? { remark: remark.trim() } : {}) },
   });
 }
 
@@ -218,6 +221,7 @@ export async function createQuoteOpportunity(input: {
   title?: string;
   estimatedAmount?: number | null;
   templateId?: string | null;
+  details?: QuoteDetails | null;
 }): Promise<QuoteDetail> {
   return apiRequest<QuoteDetail>("/quote-opportunities", { method: "POST", body: input });
 }
@@ -357,22 +361,27 @@ export interface QuoteDeliveryLog {
 interface RawQuoteDocumentRow {
   id: string;
   version: number;
-  file_name: string;
-  size_bytes: number;
-  content_hash: string;
-  created_by: string | null;
-  created_at: string;
+  file_name?: string;
+  fileName?: string;
+  size_bytes?: number;
+  sizeBytes?: number;
+  content_hash?: string;
+  contentHash?: string;
+  created_by?: string | null;
+  createdBy?: string | null;
+  created_at?: string;
+  createdAt?: string;
 }
 
 function normalizeQuoteDocument(row: RawQuoteDocumentRow): QuoteDocumentVersion {
   return {
     id: row.id,
     version: row.version,
-    fileName: row.file_name,
-    sizeBytes: row.size_bytes,
-    contentHash: row.content_hash,
-    createdBy: row.created_by,
-    createdAt: row.created_at,
+    fileName: String(row.fileName ?? row.file_name ?? "quote.pdf"),
+    sizeBytes: Number(row.sizeBytes ?? row.size_bytes ?? 0),
+    contentHash: String(row.contentHash ?? row.content_hash ?? ""),
+    createdBy: (row.createdBy ?? row.created_by ?? null) as string | null,
+    createdAt: String(row.createdAt ?? row.created_at ?? new Date().toISOString()),
   };
 }
 
@@ -466,11 +475,97 @@ export async function retryQuoteDelivery(quoteId: string, logId: string): Promis
 
 export async function sendQuote(
   quoteId: string,
-  input: { recipient?: string; channel?: "email" | "link"; quotedAmount?: number | null },
+  input: {
+    recipient?: string;
+    channel?: "email" | "link";
+    quotedAmount?: number | null;
+    subject?: string;
+    body?: string;
+  },
 ): Promise<{ id: string; status: string }> {
   const result = await apiRequest<{ id: string; status?: string }>(
     `/quote-opportunities/${quoteId}/send`,
     { method: "POST", body: input },
   );
   return { id: result.id, status: result.status ?? "sent" };
+}
+
+export async function saveQuoteDocumentVersion(
+  quoteId: string,
+  input?: { label?: string },
+): Promise<QuoteDocumentVersion> {
+  const row = await apiRequest<RawQuoteDocumentRow>(`/quote-opportunities/${quoteId}/documents`, {
+    method: "POST",
+    body: input ?? {},
+  });
+  return normalizeQuoteDocument({
+    ...row,
+    version: Number(row.version ?? 1),
+  });
+}
+
+export async function listQuoteAttachments(quoteId: string): Promise<QuoteAttachmentItem[]> {
+  const rows = await apiRequest<
+    Array<{
+      id: string;
+      fileName?: string;
+      file_name?: string;
+      fileType?: string;
+      file_type?: string;
+      sizeBytes?: number;
+      size_bytes?: number;
+      createdAt?: string | null;
+      created_at?: string | null;
+    }>
+  >(`/quote-opportunities/${quoteId}/attachments`);
+  return (Array.isArray(rows) ? rows : []).map((row) => ({
+    id: row.id,
+    fileName: row.fileName ?? row.file_name ?? "attachment",
+    fileType: row.fileType ?? row.file_type ?? "application/octet-stream",
+    sizeBytes: Number(row.sizeBytes ?? row.size_bytes ?? 0),
+    createdAt: row.createdAt ?? row.created_at ?? null,
+  }));
+}
+
+export async function uploadQuoteAttachment(
+  quoteId: string,
+  file: File,
+): Promise<QuoteAttachmentItem> {
+  const form = new FormData();
+  form.append("file", file);
+  const row = await apiFormDataRequest<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    sizeBytes: number;
+    createdAt?: string | null;
+  }>(`/quote-opportunities/${quoteId}/attachments`, form);
+  return {
+    id: row.id,
+    fileName: row.fileName,
+    fileType: row.fileType,
+    sizeBytes: row.sizeBytes,
+    createdAt: row.createdAt ?? null,
+  };
+}
+
+export async function downloadQuoteAttachment(
+  quoteId: string,
+  attachmentId: string,
+  fallbackName = "attachment",
+): Promise<void> {
+  const response = await fetch(
+    `${getApiPrefix()}/quote-opportunities/${encodeURIComponent(quoteId)}/attachments/${encodeURIComponent(attachmentId)}/download`,
+    {
+      headers: { "x-workspace-id": WORKSPACE_ID },
+      credentials: "include",
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) {
+    throw new ApiError(response.status, normalizeApiErrorCode(response.status), "附件下载失败。");
+  }
+  const blob = await response.blob();
+  const filename = parseDispositionFilename(response.headers.get("content-disposition"), fallbackName);
+  triggerBlobDownload(blob, filename);
 }

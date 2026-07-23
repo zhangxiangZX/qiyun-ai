@@ -63,8 +63,8 @@ export async function createFollowTask(input: {
       body: input,
     }),
   );
-  // Postgres POST currently hardcodes priority=medium; PATCH persists the chosen value.
-  if (input.priority && input.priority !== "medium") {
+  // Postgres POST previously hardcoded medium; still PATCH as safety if POST ignored priority.
+  if (input.priority) {
     try {
       await patchFollowTask(created.id, { priority: input.priority });
     } catch {

@@ -11,6 +11,8 @@ export interface UserAccountProfile {
   bio?: string;
   department?: string;
   language?: "zh" | "en";
+  /** data URL 或可访问的头像地址 */
+  avatarUrl?: string;
   notificationPrefs?: {
     system?: boolean;
     leads?: boolean;
@@ -98,6 +100,10 @@ export interface WorkspaceProfilePatch {
   bankName?: string;
   bankAccount?: string;
   tags?: string[];
+  /** 企业 Logo（data URL 或可访问地址），用于报价 PDF / 导出图标 */
+  logoUrl?: string;
+  /** 资质附件元数据（营业执照 / 手册等） */
+  assetUploads?: Record<string, { fileName?: string; documentId?: string }>;
 }
 
 export interface WorkspaceMemberRecord {

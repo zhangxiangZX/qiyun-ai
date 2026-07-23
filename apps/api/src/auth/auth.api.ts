@@ -346,6 +346,7 @@ export class AuthApi {
       jobTitle?: string;
       bio?: string;
       department?: string;
+      avatarUrl?: string;
       notificationPrefs?: {
         system?: boolean;
         leads?: boolean;
