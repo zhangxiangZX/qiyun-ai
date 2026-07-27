@@ -278,5 +278,6 @@ export interface TrialRequestSummary {
     name: string;
     inviteEmail: string | null;
     inviteStatus: WorkspaceInvitationRecord["status"] | null;
+    inviteUrl: string | null;
   } | null;
 }

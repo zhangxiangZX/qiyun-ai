@@ -293,12 +293,6 @@ export function ReportExportWorkspace() {
         variant="compact"
         title="经营报表导出"
         description="按业务模块导出销售业绩、询盘与渠道经营数据，当前支持 CSV 格式。"
-        actions={
-          <Button type="button" onClick={() => setExportOpen(true)}>
-            <EnterpriseExportIcon className="mr-1.5 h-4 w-4" size={16} />
-            导出报表
-          </Button>
-        }
       />
 
       <div className="space-y-4 pb-6">

@@ -3054,11 +3054,16 @@ test("trial request can be submitted and approved by platform admin", { concurre
   assert.equal(reviewResponse.status, 200);
   const reviewed = (await reviewResponse.json()) as {
     status: string;
-    approvedWorkspace: { name: string; inviteEmail: string | null } | null;
+    approvedWorkspace: {
+      name: string;
+      inviteEmail: string | null;
+      inviteUrl: string | null;
+    } | null;
   };
   assert.equal(reviewed.status, "approved");
   assert.equal(reviewed.approvedWorkspace?.name, "星河工业");
   assert.equal(reviewed.approvedWorkspace?.inviteEmail, "admin@xinghe.example.com");
+  assert.match(reviewed.approvedWorkspace?.inviteUrl ?? "", /accept-invite\?token=/);
 
   const workspaceListResponse = await handleApiRequest(
     new Request("http://localhost:3001/platform/workspaces", {

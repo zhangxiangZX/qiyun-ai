@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button, Input, Label } from "@qiyun/ui";
@@ -18,6 +17,7 @@ import {
   workspacePlanLabel,
   workspacePlanOptions,
 } from "@/lib/platform/plans";
+import { copyText } from "@/lib/browser/copy-text";
 
 const planOptions = workspacePlanOptions;
 
@@ -138,7 +138,7 @@ export function PlatformWorkspacesPanel() {
     try {
       const result = await provisionCustomerWorkspace(form);
       setSuccessMessage(
-        `已创建“${result.workspace.name}”，管理员邀请已发送至 ${result.invitation.email}。`,
+        `已创建“${result.workspace.name}”，管理员邀请已发送至 ${result.invitation.email}。邀请链接：${result.invitation.inviteUrl}`,
       );
       setForm({
         companyName: "",
@@ -155,6 +155,11 @@ export function PlatformWorkspacesPanel() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleCopyInvite(inviteUrl: string) {
+    const copied = await copyText(inviteUrl);
+    setSuccessMessage(copied ? "邀请链接已复制，可直接发送给客户。" : "复制失败，请手动选择邀请链接。");
   }
 
   async function handleReview(item: TrialRequestItem, action: "approve" | "reject") {
@@ -196,8 +201,17 @@ export function PlatformWorkspacesPanel() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/invitations">查看邀请记录</Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                document.getElementById("customer-invitation-records")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
+            >
+              查看邀请记录
             </Button>
             <Button variant="outline" size="sm" onClick={() => void load()}>
               刷新
@@ -333,12 +347,37 @@ export function PlatformWorkspacesPanel() {
                     <p className="mt-2 text-sm text-foreground">备注：{item.reviewNotes}</p>
                   ) : null}
                   {item.approvedWorkspace ? (
-                    <p className="mt-2 text-sm text-foreground">
-                      已开通工作区：{item.approvedWorkspace.name}
-                      {item.approvedWorkspace.inviteEmail
-                        ? ` · 邀请邮箱：${item.approvedWorkspace.inviteEmail}`
-                        : ""}
-                    </p>
+                    <div className="mt-2 space-y-2 text-sm text-foreground">
+                      <p>
+                        已开通工作区：{item.approvedWorkspace.name}
+                        {item.approvedWorkspace.inviteEmail
+                          ? ` · 邀请邮箱：${item.approvedWorkspace.inviteEmail}`
+                          : ""}
+                      </p>
+                      {item.approvedWorkspace.inviteUrl ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <code className="max-w-full break-all rounded bg-muted px-2 py-1 text-xs">
+                            {item.approvedWorkspace.inviteUrl}
+                          </code>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void handleCopyInvite(item.approvedWorkspace!.inviteUrl!)}
+                          >
+                            复制链接
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <a
+                              href={item.approvedWorkspace.inviteUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              打开链接
+                            </a>
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                   ) : null}
                 </article>
               ))}
@@ -431,9 +470,17 @@ export function PlatformWorkspacesPanel() {
         </div>
       </section>
 
-      <section className="rounded-card border border-border bg-card p-6 shadow-sm">
+      <section
+        id="customer-invitation-records"
+        className="scroll-mt-24 rounded-card border border-border bg-card p-6 shadow-sm"
+      >
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-card-foreground">已开通工作区</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-card-foreground">客户邀请记录与工作区</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              在这里复制客户管理员邀请链接，无需跳转到客户工作区。
+            </p>
+          </div>
           <Button variant="outline" size="sm" onClick={() => void load()}>
             刷新
           </Button>
@@ -466,9 +513,32 @@ export function PlatformWorkspacesPanel() {
                     </td>
                     <td className="py-3 pr-4">
                       {item.pendingAdminInvite ? (
-                        <span>
-                          {item.pendingAdminInvite.email}（{item.pendingAdminInvite.status}）
-                        </span>
+                        <div className="space-y-2">
+                          <p>
+                            {item.pendingAdminInvite.email}（{item.pendingAdminInvite.status}）
+                          </p>
+                          <code className="block max-w-80 break-all text-xs text-muted-foreground">
+                            {item.pendingAdminInvite.inviteUrl}
+                          </code>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void handleCopyInvite(item.pendingAdminInvite!.inviteUrl)}
+                            >
+                              复制链接
+                            </Button>
+                            <Button variant="outline" size="sm" asChild>
+                              <a
+                                href={item.pendingAdminInvite.inviteUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                打开
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
                       ) : (
                         "—"
                       )}

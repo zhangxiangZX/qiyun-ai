@@ -60,6 +60,7 @@ export interface TrialRequestItem {
     name: string;
     inviteEmail: string | null;
     inviteStatus: string | null;
+    inviteUrl: string | null;
   } | null;
 }
 
