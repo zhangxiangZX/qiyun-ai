@@ -177,7 +177,7 @@ export function SalesFunnelWorkspace() {
     setError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       if (preview) {
         setOverview(MOCK_SALES_OVERVIEW);
         setFunnel(MOCK_CONVERSION_FUNNEL);
@@ -201,12 +201,13 @@ export function SalesFunnelWorkspace() {
       setQuotes(nextQuotes);
       setInquiries(nextInquiries);
       setUpdatedAt(new Date());
-    } catch {
-      setOverview(MOCK_SALES_OVERVIEW);
-      setFunnel(MOCK_CONVERSION_FUNNEL);
-      setChannels(MOCK_CHANNEL_ATTRIBUTION);
-      setQuotes(MOCK_QUOTE_OPPORTUNITIES);
-      setInquiries(MOCK_INQUIRIES);
+    } catch (nextError) {
+      setError(nextError);
+      setOverview(null);
+      setFunnel([]);
+      setChannels([]);
+      setQuotes([]);
+      setInquiries([]);
     } finally {
       setLoading(false);
     }

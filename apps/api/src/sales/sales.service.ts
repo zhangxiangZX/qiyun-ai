@@ -99,6 +99,9 @@ function normalizeQuoteDetails(input?: QuoteDetails | null): QuoteDetails {
     ...(input.taxRate != null && Number.isFinite(Number(input.taxRate))
       ? { taxRate: Number(input.taxRate) }
       : {}),
+    ...(typeof input.currency === "string" && input.currency.trim()
+      ? { currency: input.currency.trim().toUpperCase().slice(0, 8) }
+      : {}),
     ...(attachmentIds && attachmentIds.length > 0 ? { attachmentIds } : {}),
     ...(attachments && attachments.length > 0 ? { attachments } : {}),
     ...(typeof input.remark === "string" && input.remark.trim()
@@ -130,6 +133,16 @@ const QUOTE_STAGE_LABELS: Record<QuoteStage, string> = {
   won: "已成交",
   lost: "已丢单",
 };
+
+const LOST_REASONS = new Set<LostReason>([
+  "price",
+  "delivery",
+  "spec_mismatch",
+  "project_paused",
+  "competitor",
+  "no_follow_up",
+  "other",
+]);
 
 /**
  * 数据范围解析（对应文档 data_scope）：
@@ -893,6 +906,12 @@ export class SalesService {
       id: quote.id,
       inquiryId: quote.inquiryId,
       templateId: quote.templateId,
+      lineItems: quote.details?.lineItems ?? [],
+      taxRate: quote.details?.taxRate ?? 0.13,
+      freightAmount: quote.details?.freight ?? 0,
+      installationAmount: quote.details?.install ?? 0,
+      otherAmount: quote.details?.other ?? 0,
+      currency: quote.details?.currency ?? "CNY",
       stage: quote.stage,
       stageLabel: QUOTE_STAGE_LABELS[quote.stage],
       title:
@@ -932,6 +951,12 @@ export class SalesService {
       estimatedAmount?: number | null;
       templateId?: string | null;
       details?: QuoteDetails | null;
+      lineItems?: QuoteDetails["lineItems"];
+      taxRate?: number;
+      freightAmount?: number;
+      installationAmount?: number;
+      otherAmount?: number;
+      currency?: string;
     },
   ) {
     const inquiry = await this.requireInquiry(workspaceId, input.inquiryId);
@@ -946,13 +971,41 @@ export class SalesService {
       templateId = defaultTemplate?.id ?? null;
     }
     const now = new Date().toISOString();
+    const details = normalizeQuoteDetails(
+      input.details ?? {
+        lineItems: input.lineItems,
+        taxRate: input.taxRate,
+        freight: input.freightAmount,
+        install: input.installationAmount,
+        other: input.otherAmount,
+        currency: input.currency,
+      },
+    );
     const record: QuoteOpportunityRecord = {
       id: `qopp_${randomUUID()}`,
       workspaceId,
       inquiryId: inquiry.id,
       templateId,
       stage: inquiry.requirementCompleteness >= 80 ? "to_quote" : "collecting",
-      estimatedAmount: input.estimatedAmount ?? null,
+      estimatedAmount:
+        input.estimatedAmount ??
+        (details.lineItems?.length
+          ? Math.round(
+              (details.lineItems.reduce(
+                (sum, item) =>
+                  sum +
+                  item.qty *
+                    item.price *
+                    (1 - Math.min(100, Math.max(0, item.discount ?? 0)) / 100),
+                0,
+              ) *
+                (1 + (details.taxRate ?? 0.13)) +
+                (details.freight ?? 0) +
+                (details.install ?? 0) +
+                (details.other ?? 0)) *
+                100,
+            ) / 100
+          : null),
       quotedAmount: null,
       wonAmount: null,
       lostReason: null,
@@ -960,7 +1013,7 @@ export class SalesService {
       ownerId: inquiry.ownerId,
       nextFollowUpAt: null,
       title: input.title ?? inquiry.summary?.slice(0, 48) ?? inquiry.customerName,
-      details: normalizeQuoteDetails(input.details),
+      details,
       createdAt: now,
       updatedAt: now,
     };
@@ -1098,10 +1151,13 @@ export class SalesService {
   }
 
   async markQuoteLost(workspaceId: string, quoteId: string, body: { lostReason?: LostReason }) {
+    if (!body.lostReason || !LOST_REASONS.has(body.lostReason)) {
+      throw new SalesValidationError("标记丢单时必须填写有效的丢单原因。");
+    }
     const quote = await this.requireQuote(workspaceId, quoteId);
     await this.salesRepository.updateQuoteOpportunity(workspaceId, quoteId, {
       stage: "lost" as QuoteStage,
-      lostReason: body.lostReason ?? null,
+      lostReason: body.lostReason,
     });
     await this.salesRepository.createQuoteFollowUp({
       id: `qf_${randomUUID()}`,

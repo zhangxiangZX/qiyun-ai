@@ -137,13 +137,21 @@ export function resolveSelectionPagePublicUrl(slug: string, origin?: string): st
   const path = `/s/${slug}`;
   if (origin) return `${origin.replace(/\/$/, "")}${path}`;
 
-  // Selection pages are served by Console — prefer current local origin.
+  // Keep local previews on the active dev server, but publish production links
+  // on the dedicated customer-entry domain.
   if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}${path}`;
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return `${window.location.origin}${path}`;
+    }
   }
 
   const entry = process.env.NEXT_PUBLIC_ENTRY_URL?.replace(/\/$/, "");
   if (entry) return `${entry}${path}`;
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}${path}`;
+  }
 
   const app = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   if (app) return `${app}${path}`;

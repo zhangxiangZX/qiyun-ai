@@ -9,7 +9,6 @@ import { Button, Skeleton } from "@qiyun/ui";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { deleteDocument, downloadDocumentBlob } from "@/lib/documents/data";
 import { CATEGORY_META, formatDateLabel, formatFileSize, KIND_LABEL } from "@/lib/documents/format";
-import { mockDocumentDetail } from "@/lib/documents/document-detail-mock-data";
 import type { DocumentItem } from "@/lib/documents/types";
 import { getDocumentFromApi } from "@/lib/documents/api";
 
@@ -41,7 +40,8 @@ export function DocumentDetailWorkspace({ documentId }: DocumentDetailWorkspaceP
     setError(null);
     try {
       const doc = await getDocumentFromApi(documentId);
-      setDocument(doc ?? mockDocumentDetail);
+      setDocument(doc);
+      if (!doc) setError("资料不存在、已删除或当前账号无权访问。");
     } catch {
       setError("资料详情加载失败，请稍后重试。");
     } finally {
@@ -96,7 +96,15 @@ export function DocumentDetailWorkspace({ documentId }: DocumentDetailWorkspaceP
     );
   }
 
-  const current = document ?? mockDocumentDetail;
+  if (!document) {
+    return (
+      <div className="py-4">
+        <ConsoleRequestError message="资料不存在、已删除或当前账号无权访问。" onRetry={() => void load()} retryLabel="重新加载" />
+      </div>
+    );
+  }
+
+  const current = document;
   const category = CATEGORY_META[current.category];
 
   return (

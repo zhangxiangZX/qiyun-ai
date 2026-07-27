@@ -307,6 +307,12 @@ export class SalesApi {
       estimatedAmount?: number | null;
       templateId?: string | null;
       details?: QuoteDetails | null;
+      lineItems?: QuoteDetails["lineItems"];
+      taxRate?: number;
+      freightAmount?: number;
+      installationAmount?: number;
+      otherAmount?: number;
+      currency?: string;
     },
   ) {
     const result = await this.service.createQuoteOpportunity(context.workspaceId, body);

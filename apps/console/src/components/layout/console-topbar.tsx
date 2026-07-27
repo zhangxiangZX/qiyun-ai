@@ -7,11 +7,9 @@ import {
   Building2,
   Check,
   ChevronDown,
-  HelpCircle,
   Loader2,
   LogOut,
   MailPlus,
-  Search,
   ShieldCheck,
 } from "lucide-react";
 import {
@@ -179,33 +177,7 @@ export function ConsoleTopbar({
           )}
         </div>
 
-        <div className="topbar-search hidden md:block">
-          <div className="search-wrap">
-            <Search
-              className="pointer-events-none absolute left-[14px] h-4 w-4 text-[#8190a8]"
-              aria-hidden
-            />
-            <input
-              className="search topbar-search-input"
-              type="search"
-              placeholder="搜索客户、线索、产品、知识库…"
-              disabled
-              title="全局搜索即将上线"
-              aria-label="全局搜索"
-            />
-          </div>
-        </div>
-
         <div className="topbar-tools tools">
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="帮助中心"
-            title="帮助中心即将上线"
-          >
-            <HelpCircle size={20} />
-          </button>
-
           <NotificationCenter triggerClassName="icon-btn" triggerVariant="dashboard" />
 
           <DropdownMenu>

@@ -126,6 +126,7 @@ export interface QuoteDetails {
   install?: number;
   other?: number;
   taxRate?: number;
+  currency?: string;
   attachmentIds?: string[];
   attachments?: QuoteAttachmentMeta[];
   remark?: string;

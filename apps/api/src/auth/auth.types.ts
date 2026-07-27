@@ -156,6 +156,8 @@ export interface TrialRequestRecord {
   website: string | null;
   requirement: string | null;
   requestedPlan: string | null;
+  consentAcceptedAt: string | null;
+  consentVersion: string | null;
   status: "pending" | "approved" | "rejected";
   processedByUserId: string | null;
   processedAt: string | null;
@@ -260,6 +262,8 @@ export interface TrialRequestSummary {
   website: string | null;
   requirement: string | null;
   requestedPlan: string | null;
+  consentAcceptedAt: string | null;
+  consentVersion: string | null;
   status: TrialRequestRecord["status"];
   submittedAt: string;
   reviewedAt: string | null;

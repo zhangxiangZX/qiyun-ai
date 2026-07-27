@@ -9,6 +9,7 @@ import { NestAuthContextService } from "../auth/auth-context.service";
 import { API_RUNTIME } from "../runtime/runtime.tokens";
 import { query as pgQuery } from "../../db/pg";
 import { randomUUID } from "node:crypto";
+import { resolveSelectionAcquisitionSource } from "../../selection-pages/selection-pages.service";
 
 function assertManagerRole(role: WorkspaceMemberRole): void {
   if (role !== "owner" && role !== "admin") throw new AuthAccessError("Manager access required.");
@@ -104,10 +105,11 @@ export class SelectionPagesRouteService {
       if (action === "retry-conversion" && !submission.inquiryId) {
         const page = await this.runtime.selectionPagesApi.getById(ctx, submissionActionMatch.params.id);
         const summary = Object.entries(submission.answers).map(([key, value]) => `${key}: ${value}`).join("\n");
+        const acquisition = resolveSelectionAcquisitionSource(submission.answers.source, page.slug);
         const inquiry = await this.runtime.salesApi.createInquiry(ctx, {
           customerName: submission.contactName ?? "AI选型客户", customerContact: submission.contactName,
-          phone: submission.contactPhone, email: submission.contactEmail, sourceType: "website",
-          sourceCode: `selection:${page.slug}`, summary, productNeed: summary,
+          phone: submission.contactPhone, email: submission.contactEmail, sourceType: acquisition.sourceType,
+          sourceCode: acquisition.sourceCode, summary, productNeed: summary,
           knownFields: { selectionPageId: page.id, attachmentIds: submission.attachmentIds.join(",") },
         });
         submission.inquiryId = inquiry.id;

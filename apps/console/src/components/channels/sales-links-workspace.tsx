@@ -7,7 +7,6 @@ import {
   Copy,
   Download,
   Eye,
-  HelpCircle,
   Link2,
   MessageSquare,
   Plus,
@@ -24,13 +23,12 @@ import { ConsoleFeedback } from "@/components/console/console-feedback";
 import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-page-shell";
 import { ConsoleRequestError } from "@/components/console/console-request-error";
 import { listSalesLinks, resolveSalesLinkPublicUrl, type SalesLinkView } from "@/lib/channels/api";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { WechatOfficialAccountGuide } from "@/components/channels/wechat-official-account-guide";
 import {
   channelConfig,
-  getTopConversionLinks,
   mockScanRecords,
   mockSalesLinks,
-  SALES_LINKS_KPIS,
 } from "@/lib/channels/links-mock-data";
 import styles from "@/styles/sales-links.module.css";
 
@@ -72,7 +70,7 @@ export function SalesLinksWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
-  const [links, setLinks] = useState<SalesLinkView[]>(PREVIEW_LINKS);
+  const [links, setLinks] = useState<SalesLinkView[]>([]);
   const [query, setQuery] = useState("");
   const [channelFilter, setChannelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -86,19 +84,19 @@ export function SalesLinksWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const nextLinks = await listSalesLinks();
-      if (nextLinks.length > 0) {
-        setLinks(nextLinks);
-        setIsPreview(false);
-      } else {
-        // Mirror QR hub: empty API → preview samples so list chrome is usable for walkthrough.
+      const mode = await fetchConsoleMode();
+      if (isPreviewMode(mode)) {
         setLinks(PREVIEW_LINKS);
         setIsPreview(true);
+        return;
       }
-    } catch {
-      setLinks(PREVIEW_LINKS);
-      setIsPreview(true);
-      setError(null);
+      const nextLinks = await listSalesLinks();
+      setLinks(nextLinks);
+      setIsPreview(false);
+    } catch (reason) {
+      setLinks([]);
+      setIsPreview(false);
+      setError(reason instanceof Error ? reason.message : "销售链接加载失败，请稍后重试。");
     } finally {
       setLoading(false);
     }
@@ -137,8 +135,18 @@ export function SalesLinksWorkspace() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const topLinks = getTopConversionLinks(5);
+  const topLinks = [...links].sort((a, b) => b.conversionRate - a.conversionRate).slice(0, 5);
   const maxRate = topLinks[0]?.conversionRate ?? 1;
+  const kpis = [
+    { label: "链接总数", value: links.length.toLocaleString("zh-CN"), trend: "实时" },
+    { label: "累计访问", value: links.reduce((sum, item) => sum + item.visits, 0).toLocaleString("zh-CN"), trend: "实时" },
+    { label: "累计询盘", value: links.reduce((sum, item) => sum + item.inquiries, 0).toLocaleString("zh-CN"), trend: "实时" },
+    {
+      label: "平均转化率",
+      value: `${links.length ? (links.reduce((sum, item) => sum + item.conversionRate, 0) / links.length).toFixed(2) : "0.00"}%`,
+      trend: "实时",
+    },
+  ];
 
   const copyLink = (link: SalesLinkView, event?: React.MouseEvent) => {
     event?.stopPropagation();
@@ -208,7 +216,7 @@ export function SalesLinksWorkspace() {
             </div>
 
             <div className={styles.statsGrid}>
-              {SALES_LINKS_KPIS.map((kpi, index) => (
+              {kpis.map((kpi, index) => (
                 <div key={kpi.label} className={styles.statCard}>
                   <span className={styles.statIcon} style={{ background: kpiColors[index] }}>
                     {kpiIcons[index]}
@@ -482,7 +490,7 @@ export function SalesLinksWorkspace() {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockScanRecords.slice(1, 6).map((record) => (
+                    {(isPreview ? mockScanRecords.slice(1, 6) : []).map((record) => (
                       <tr key={record.id}>
                         <td>{record.visitorName}</td>
                         <td>{record.linkName}</td>
@@ -491,6 +499,13 @@ export function SalesLinksWorkspace() {
                         <td>{record.location}</td>
                       </tr>
                     ))}
+                    {!isPreview ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                          暂无扫码记录
+                        </td>
+                      </tr>
+                    ) : null}
                   </tbody>
                 </table>
               </div>
@@ -498,9 +513,6 @@ export function SalesLinksWorkspace() {
               <div className={styles.panel}>
                 <div className={styles.panelHead}>
                   <h3 className={styles.panelTitle}>快捷操作</h3>
-                  <Link href="/dashboard/help" className={styles.btnLink}>
-                    <HelpCircle size={14} style={{ display: "inline", verticalAlign: "middle" }} /> 帮助中心
-                  </Link>
                 </div>
                 <div className={styles.quickList}>
                   <Link href="/dashboard/channels/links/new" className={styles.quickItem}>

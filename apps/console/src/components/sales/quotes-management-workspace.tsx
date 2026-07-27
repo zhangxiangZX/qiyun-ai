@@ -76,6 +76,12 @@ function formatCurrency(value: number): string {
   return `¥${value.toLocaleString("zh-CN")}`;
 }
 
+function safeBusinessLabel(value: string | null | undefined, fallback: string): string {
+  const normalized = value?.trim() ?? "";
+  if (!normalized || /^\?+$/.test(normalized) || normalized.includes("�")) return fallback;
+  return normalized;
+}
+
 function mapApiToDashboardRow(item: QuoteListItem, index: number): QuoteDashboardRow {
   const status = resolveQuoteDisplayStatus(item);
   const validityNote = formatQuoteValidityNote(item);
@@ -83,14 +89,14 @@ function mapApiToDashboardRow(item: QuoteListItem, index: number): QuoteDashboar
   return {
     id: item.id,
     number: formatQuoteNumber(item, index),
-    company: item.customerName,
+    company: safeBusinessLabel(item.customerName, "未命名客户"),
     inquiryId: item.inquiryId,
-    product: item.title,
+    product: safeBusinessLabel(item.title, "未命名报价"),
     amount: item.quotedAmount ?? item.estimatedAmount ?? 0,
     status,
     validity: item.quoteDueAt?.slice(0, 10) ?? "—",
     validityNote,
-    ownerName: item.ownerId?.replace(/^sales_/, "") ?? "未分配",
+    ownerName: safeBusinessLabel(item.ownerId?.replace(/^sales_/, ""), "未分配"),
     ownerAvatar: (item.ownerId?.replace(/^sales_/, "") ?? "?").slice(0, 1),
     updatedAt: new Date(item.updatedAt).toLocaleString("zh-CN"),
   };
@@ -110,8 +116,8 @@ export function QuotesManagementWorkspace() {
     () => (searchParams.get("status") as QuoteDisplayStatus | "all") || "all",
   );
   const [exportNotice, setExportNotice] = useState<string | null>(null);
-  const [dateFrom, setDateFrom] = useState("2024-06-01");
-  const [dateTo, setDateTo] = useState("2024-06-30");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -134,7 +140,7 @@ export function QuotesManagementWorkspace() {
     setError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       setIsPreview(preview);
       if (preview) return;
       const items = await listQuoteOpportunities({ q: debouncedQuery });
@@ -194,6 +200,18 @@ export function QuotesManagementWorkspace() {
     const sourceRows = isPreview ? rows : data.map(mapApiToDashboardRow);
     return sourceRows.filter((row) => {
       if (statusTab !== "all" && row.status !== statusTab) return false;
+      const source = data.find((item) => item.id === row.id);
+      const updatedAt = source?.updatedAt
+        ? new Date(source.updatedAt)
+        : new Date(row.updatedAt.replace(" ", "T"));
+      if (dateFrom) {
+        const from = new Date(`${dateFrom}T00:00:00`);
+        if (!Number.isNaN(updatedAt.getTime()) && updatedAt < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(`${dateTo}T23:59:59.999`);
+        if (!Number.isNaN(updatedAt.getTime()) && updatedAt > to) return false;
+      }
       if (!lowered) return true;
       return (
         row.number.toLowerCase().includes(lowered) ||
@@ -202,7 +220,7 @@ export function QuotesManagementWorkspace() {
         row.inquiryId.toLowerCase().includes(lowered)
       );
     });
-  }, [rows, statusTab, debouncedQuery, data, isPreview]);
+  }, [rows, statusTab, debouncedQuery, data, isPreview, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -279,7 +297,7 @@ export function QuotesManagementWorkspace() {
           <ConsoleRequestError message={error} onRetry={() => void load()} />
         ) : loading && !isPreview ? (
           <>
-            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-28 rounded-2xl" />
               ))}
@@ -288,14 +306,14 @@ export function QuotesManagementWorkspace() {
           </>
         ) : (
           <>
-            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               <StatCard
                 emphasis="metric"
                 label="报价总数"
                 value={String(stats.total)}
                 icon={<FileText size={22} />}
                 iconTone="brand"
-                trend={<TrendPill value={`${stats.totalGrowth}%`} />}
+                trend={isPreview ? <TrendPill value={`${stats.totalGrowth}%`} /> : undefined}
               />
               <StatCard
                 emphasis="metric"
@@ -303,7 +321,7 @@ export function QuotesManagementWorkspace() {
                 value={String(stats.toSend)}
                 icon={<Send size={22} />}
                 iconTone="warning"
-                trend={<TrendPill value={`${stats.toSendGrowth}%`} />}
+                trend={isPreview ? <TrendPill value={`${stats.toSendGrowth}%`} /> : undefined}
               />
               <StatCard
                 emphasis="metric"
@@ -311,7 +329,7 @@ export function QuotesManagementWorkspace() {
                 value={String(stats.sent)}
                 icon={<Clock3 size={22} />}
                 iconTone="brand"
-                trend={<TrendPill value={`${stats.sentGrowth}%`} />}
+                trend={isPreview ? <TrendPill value={`${stats.sentGrowth}%`} /> : undefined}
               />
               <StatCard
                 emphasis="metric"
@@ -319,7 +337,7 @@ export function QuotesManagementWorkspace() {
                 value={String(stats.toConfirm)}
                 icon={<Timer size={22} />}
                 iconTone="purple"
-                trend={<TrendPill value={`${stats.toConfirmGrowth}%`} />}
+                trend={isPreview ? <TrendPill value={`${stats.toConfirmGrowth}%`} /> : undefined}
               />
               <StatCard
                 emphasis="metric"
@@ -327,7 +345,7 @@ export function QuotesManagementWorkspace() {
                 value={String(stats.won)}
                 icon={<CheckCircle2 size={22} />}
                 iconTone="success"
-                trend={<TrendPill value={`${stats.wonGrowth}%`} />}
+                trend={isPreview ? <TrendPill value={`${stats.wonGrowth}%`} /> : undefined}
               />
               <StatCard
                 emphasis="metric"
@@ -335,7 +353,7 @@ export function QuotesManagementWorkspace() {
                 value={String(stats.expiring)}
                 icon={<TrendingUp size={22} />}
                 iconTone="warning"
-                trend={<TrendPill value={`${stats.expiringGrowth}%`} />}
+                trend={isPreview ? <TrendPill value={`${stats.expiringGrowth}%`} /> : undefined}
               />
             </div>
 
@@ -352,12 +370,23 @@ export function QuotesManagementWorkspace() {
                   }}
                 />
               </div>
-              <select className="rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option>报价状态：全部</option>
+              <select
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={statusTab}
+                onChange={(event) => {
+                  setStatusTab(event.target.value as QuoteDisplayStatus | "all");
+                  setPage(1);
+                }}
+                aria-label="报价状态"
+              >
+                {STATUS_TABS.map((tab) => (
+                  <option key={tab.key} value={tab.key}>报价状态：{tab.label}</option>
+                ))}
               </select>
               <div className="flex items-center gap-2">
                 <input
                   type="date"
+                  aria-label="报价更新开始日期"
                   value={dateFrom}
                   onChange={(event) => setDateFrom(event.target.value)}
                   className="rounded-md border border-border px-2 py-2 text-sm"
@@ -365,6 +394,7 @@ export function QuotesManagementWorkspace() {
                 <span className="text-muted-foreground">→</span>
                 <input
                   type="date"
+                  aria-label="报价更新结束日期"
                   value={dateTo}
                   onChange={(event) => setDateTo(event.target.value)}
                   className="rounded-md border border-border px-2 py-2 text-sm"
@@ -376,6 +406,8 @@ export function QuotesManagementWorkspace() {
                 onClick={() => {
                   setQuery("");
                   setStatusTab("all");
+                  setDateFrom("");
+                  setDateTo("");
                   setPage(1);
                 }}
               >

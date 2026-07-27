@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { AuthFieldError, AuthFormFeedback } from "@/components/auth/auth-form-feedback";
-import { BRAND_NAME } from "@/lib/brand";
 import { defaultWorkspacePlan, workspacePlanLabel, workspacePlanOptions } from "@/lib/platform/plans";
 import { AUTH_VALIDATION, localizeAuthError } from "@/lib/auth/messages";
 import styles from "@/styles/login.module.css";
@@ -37,12 +36,14 @@ export function TrialRequestForm() {
   const [website, setWebsite] = useState("");
   const [requestedPlan, setRequestedPlan] = useState(defaultWorkspacePlan);
   const [requirement, setRequirement] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [status, setStatus] = useState<TrialStatus>("idle");
   const [message, setMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{
     companyName?: string;
     contactName?: string;
     email?: string;
+    privacy?: string;
   }>({});
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -58,6 +59,7 @@ export function TrialRequestForm() {
     } else if (!email.includes("@")) {
       nextErrors.email = AUTH_VALIDATION.emailInvalid;
     }
+    if (!privacyAccepted) nextErrors.privacy = "请阅读并同意用户协议和隐私政策。";
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
@@ -80,6 +82,9 @@ export function TrialRequestForm() {
           website: website.trim(),
           requestedPlan,
           requirement: requirement.trim(),
+          consentAccepted: true,
+          consentAcceptedAt: new Date().toISOString(),
+          consentVersion: "privacy-v1.0",
         }),
       });
 
@@ -188,7 +193,7 @@ export function TrialRequestForm() {
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <header className={styles.header}>
           <span className={styles.eyebrow}>企业试用</span>
-          <h2>申请试用 {BRAND_NAME}</h2>
+          <h2>申请试用企云图 AI</h2>
           <p>
             第一版由平台管理员统一开通工作区。提交申请后，我们会通过邮箱联系您完成审核与邀请激活。
           </p>
@@ -288,6 +293,23 @@ export function TrialRequestForm() {
             onChange={(event) => setRequirement(event.target.value)}
           />
         </label>
+
+        <label className={styles.agreement}>
+          <input
+            type="checkbox"
+            checked={privacyAccepted}
+            disabled={status === "loading"}
+            onChange={(event) => {
+              setPrivacyAccepted(event.target.checked);
+              setFieldErrors((current) => ({ ...current, privacy: undefined }));
+            }}
+          />
+          <span>
+            我已阅读并同意 <Link href="/legal/user-agreement" target="_blank">用户协议</Link> 和{" "}
+            <Link href="/legal/privacy-policy" target="_blank">隐私政策</Link>，同意平台使用上述信息处理试用申请。
+          </span>
+        </label>
+        <AuthFieldError message={fieldErrors.privacy} />
 
         <button className={styles.submit} type="submit" disabled={status === "loading"}>
           {status === "loading" ? "提交中..." : "提交试用申请"}

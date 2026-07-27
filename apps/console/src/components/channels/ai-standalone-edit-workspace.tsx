@@ -1398,6 +1398,7 @@ export function AiStandaloneEditWorkspace() {
           questions: questionPayload,
           botId,
           siteKey,
+          publicConfig: config as unknown as Record<string, unknown>,
         });
         // Upstream create always starts as draft — publish/disable via PATCH when needed.
         let finalPage = created;
@@ -1434,6 +1435,7 @@ export function AiStandaloneEditWorkspace() {
           questions: questionPayload,
           botId,
           siteKey,
+          publicConfig: config as unknown as Record<string, unknown>,
         });
         setApiPreview(false);
         setPage((current) => ({
@@ -1446,11 +1448,6 @@ export function AiStandaloneEditWorkspace() {
         }));
       }
 
-      await fetch(`/api/selection-pages/public/${encodeURIComponent(config.slug)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
       setNotice(
         isNewMode && !savedId
           ? "选型页已创建（本地预览）。"

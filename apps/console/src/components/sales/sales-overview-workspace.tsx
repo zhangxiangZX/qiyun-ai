@@ -66,7 +66,7 @@ export function SalesOverviewPanel() {
     setError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       if (preview) {
         setOverview(MOCK_SALES_OVERVIEW);
         setFunnel(MOCK_CONVERSION_FUNNEL);
@@ -91,14 +91,13 @@ export function SalesOverviewPanel() {
       setChannels(nextChannels);
       setHighIntent(nextHighIntent);
       setRecommendations(nextRecommendations);
-    } catch {
-      setOverview(MOCK_SALES_OVERVIEW);
-      setFunnel(MOCK_CONVERSION_FUNNEL);
-      setChannels(MOCK_CHANNEL_ATTRIBUTION);
-      setHighIntent(
-        MOCK_INQUIRIES.filter((item) => item.intentLevel === "high" && item.status === "open").slice(0, 5),
-      );
-      setRecommendations(MOCK_RECOMMENDATIONS);
+    } catch (nextError) {
+      setError(nextError);
+      setOverview(null);
+      setFunnel([]);
+      setChannels([]);
+      setHighIntent([]);
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }

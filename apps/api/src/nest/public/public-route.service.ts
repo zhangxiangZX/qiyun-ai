@@ -87,7 +87,10 @@ export class PublicRouteService {
         contactPhone?: string;
         contactEmail?: string;
         attachmentIds?: string[];
-        source?: string | null;
+        source?: string;
+        consentAccepted?: boolean;
+        consentAcceptedAt?: string;
+        consentVersion?: string;
       }>(request);
       try {
         const submission = await runWithBypassRls(() =>
@@ -98,6 +101,9 @@ export class PublicRouteService {
             contactEmail: body.contactEmail,
             attachmentIds: body.attachmentIds,
             source: body.source,
+            consentAccepted: body.consentAccepted,
+            consentAcceptedAt: body.consentAcceptedAt,
+            consentVersion: body.consentVersion,
           }),
         );
         if (this.runtime.driver === "postgres" && submission.inquiryId) {
@@ -151,10 +157,14 @@ export class PublicRouteService {
           userAgent,
         });
       }).catch(() => {});
+      const destination = new URL(link.targetUrl);
+      if (!destination.searchParams.has("source")) {
+        destination.searchParams.set("source", `sales_link:${slMatch.params.slug}`);
+      }
       return {
         status: 302,
         headers: {
-          location: link.targetUrl,
+          location: destination.toString(),
           "cache-control": "no-store",
         },
       };

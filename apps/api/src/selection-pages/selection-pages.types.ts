@@ -14,6 +14,9 @@ export interface SelectionPageRecord {
 export interface SelectionPageConfig {
   questions?: SelectionQuestion[];
   theme?: { primaryColor?: string };
+  botId?: string;
+  siteKey?: string;
+  publicConfig?: Record<string, unknown>;
 }
 
 export interface SelectionQuestion {

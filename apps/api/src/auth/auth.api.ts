@@ -139,6 +139,9 @@ export class AuthApi {
     website?: string;
     requirement?: string;
     requestedPlan?: string;
+    consentAccepted?: boolean;
+    consentAcceptedAt?: string;
+    consentVersion?: string;
   }): Promise<TrialRequestSummary> {
     return this.service.submitTrialRequest({
       companyName: body.companyName ?? "",
@@ -148,6 +151,9 @@ export class AuthApi {
       website: body.website,
       requirement: body.requirement,
       requestedPlan: body.requestedPlan,
+      consentAccepted: body.consentAccepted,
+      consentAcceptedAt: body.consentAcceptedAt,
+      consentVersion: body.consentVersion,
     });
   }
 

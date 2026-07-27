@@ -2,11 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { unwrapEnvelope } from "@/lib/api/envelope";
-import {
-  getPublishedSelectionPageConfig,
-  saveSelectionPageConfig,
-} from "@/lib/channels/ai-selection-page-store";
-import type { SelectionPagePublicConfig } from "@/lib/channels/ai-selection-page-config";
+import { getPublishedSelectionPageConfig } from "@/lib/channels/ai-selection-page-store";
 import {
   mapApiSelectionPageToPublicConfig,
   type ApiSelectionPagePublicPayload,
@@ -33,9 +29,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
           return NextResponse.json({ message: "选型页数据无效。" }, { status: 502 });
         }
         const config = mapApiSelectionPageToPublicConfig(page);
-        const local = getPublishedSelectionPageConfig(slug);
-        if (local?.botId && !config.botId) config.botId = local.botId;
-        if (local?.siteKey && !config.siteKey) config.siteKey = local.siteKey;
         if (!config.enabled || !config.published) {
           return NextResponse.json({ message: "选型页暂未开放访问。" }, { status: 403 });
         }
@@ -49,10 +42,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ message: "选型页暂未开放访问。" }, { status: 403 });
     }
 
-    // 404 / other: fall through to local demo configs (outdoor-cabinet 等)
-    if (proxied.status !== 404) {
-      return proxied;
-    }
+    // The upstream is authoritative in production. Never turn its 404 into a
+    // local demo page.
+    return proxied;
   }
 
   const config = getPublishedSelectionPageConfig(slug);
@@ -66,16 +58,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   return NextResponse.json(config);
-}
-
-export async function PUT(request: Request, context: RouteContext) {
-  const { slug } = await context.params;
-  const body = (await request.json()) as SelectionPagePublicConfig;
-
-  if (body.slug !== slug) {
-    return NextResponse.json({ message: "slug 不匹配。" }, { status: 400 });
-  }
-
-  const saved = saveSelectionPageConfig(body);
-  return NextResponse.json(saved);
 }

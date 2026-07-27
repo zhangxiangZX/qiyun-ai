@@ -2998,6 +2998,9 @@ test("trial request can be submitted and approved by platform admin", { concurre
         website: "https://xinghe.example.com",
         requirement: "需要官网 AI 客服与线索收集方案。",
         requestedPlan: "enterprise",
+        consentAccepted: true,
+        consentAcceptedAt: "2026-07-22T00:00:00.000Z",
+        consentVersion: "privacy-v1.0",
       }),
     }),
   );
@@ -3081,6 +3084,9 @@ test("trial request can be rejected by platform admin", { concurrency: false }, 
         companyName: "演示待筛选客户",
         contactName: "赵磊",
         email: "screening@example.com",
+        consentAccepted: true,
+        consentAcceptedAt: "2026-07-22T00:00:00.000Z",
+        consentVersion: "privacy-v1.0",
       }),
     }),
   );
@@ -3589,12 +3595,20 @@ test("quote template routes support CRUD preview and quote document", { concurre
         title: "Template Document Quote",
         estimatedAmount: 52000,
         templateId: created.id,
+        lineItems: [{ name: "控制柜", model: "KZM-01", unit: "台", qty: 2, price: 10000, discount: 5 }],
+        taxRate: 0.13,
+        freightAmount: 800,
+        installationAmount: 1200,
+        otherAmount: 100,
+        currency: "CNY",
       }),
     }),
   );
   assert.equal(quoteResponse.status, 200);
-  const quote = (await quoteResponse.json()) as { id: string; templateId: string | null };
+  const quote = (await quoteResponse.json()) as { id: string; templateId: string | null; lineItems: Array<{ name: string }>; freightAmount: number };
   assert.equal(quote.templateId, created.id);
+  assert.equal(quote.lineItems[0]?.name, "控制柜");
+  assert.equal(quote.freightAmount, 800);
 
   const documentResponse = await handleApiRequest(
     new Request(`http://localhost:3001/quote-opportunities/${quote.id}/document`, {
@@ -3605,11 +3619,21 @@ test("quote template routes support CRUD preview and quote document", { concurre
   const document = (await documentResponse.json()) as {
     html: string;
     template: { templateName: string };
-    sample: { customer: { name: string } };
+    sample: { customer: { name: string }; products: Array<{ name: string }> };
   };
   assert.equal(document.template.templateName, "测试模板");
   assert.equal(document.sample.customer.name, "Template Quote Customer");
   assert.ok(document.html.includes("测试企业"));
+  assert.equal(document.sample.products[0]?.name, "控制柜");
+
+  const lostWithoutReason = await handleApiRequest(
+    new Request(`http://localhost:3001/quote-opportunities/${quote.id}/lost`, {
+      method: "POST",
+      headers: workspaceHeaders,
+      body: JSON.stringify({}),
+    }),
+  );
+  assert.equal(lostWithoutReason.status, 400);
 
   const documentHtmlResponse = await handleApiRequest(
     new Request(`http://localhost:3001/quote-opportunities/${quote.id}/document.html`, {

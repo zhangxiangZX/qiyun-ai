@@ -168,7 +168,7 @@ export function ChannelAnalysisWorkspace() {
     setError(null);
     try {
       const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const preview = mode ? isPreviewMode(mode) : false;
       if (preview) {
         setOverview(MOCK_SALES_OVERVIEW);
         setChannels(MOCK_CHANNEL_ATTRIBUTION);
@@ -187,11 +187,12 @@ export function ChannelAnalysisWorkspace() {
       setChannels(nextChannels);
       setInquiries(nextInquiries);
       setQuotes(nextQuotes);
-    } catch {
-      setOverview(MOCK_SALES_OVERVIEW);
-      setChannels(MOCK_CHANNEL_ATTRIBUTION);
-      setInquiries(MOCK_INQUIRIES);
-      setQuotes(MOCK_QUOTE_OPPORTUNITIES);
+    } catch (nextError) {
+      setError(nextError);
+      setOverview(null);
+      setChannels([]);
+      setInquiries([]);
+      setQuotes([]);
     } finally {
       setLoading(false);
     }

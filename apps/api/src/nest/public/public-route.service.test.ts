@@ -49,7 +49,7 @@ test("active link redirects (302) and counts a visit", async () => {
 
   assert.ok(result);
   assert.equal(result.status, 302);
-  assert.equal(result.headers?.location, "https://example.com/land");
+  assert.equal(result.headers?.location, "https://example.com/land?source=sales_link%3Aactive-link");
 
   const stored = await repo.findBySlug("active-link");
   assert.equal(stored?.visits, 1);

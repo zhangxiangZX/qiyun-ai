@@ -19,6 +19,7 @@ import { ConsolePage, ConsolePageAlerts } from "@/components/console/console-pag
 import { ConsoleDataModeBanner } from "@/components/console/console-data-mode-banner";
 import { ConsoleFeedback } from "@/components/console/console-feedback";
 import { isPreviewModeError } from "@/lib/api/use-api-resource";
+import { fetchConsoleMode, isPreviewMode } from "@/lib/api/mode";
 import { listSelectionPages, type SelectionPageView } from "@/lib/bots/selection-pages-api";
 import { createSalesLink } from "@/lib/channels/api";
 import type { SalesLinkChannel } from "@/lib/channels/types";
@@ -147,20 +148,23 @@ export function CreateLinkWorkspace() {
     void (async () => {
       setLandingLoading(true);
       try {
+        const mode = await fetchConsoleMode();
+        if (isPreviewMode(mode)) {
+          if (cancelled) return;
+          setLandingPages(MOCK_LANDING_PAGES);
+          setSelectedLandingId(MOCK_LANDING_PAGES[0]?.id ?? "");
+          return;
+        }
         const pages = await listSelectionPages();
         const published = pages.filter((page) => page.status === "published");
         if (cancelled) return;
-        if (published.length > 0) {
-          setLandingPages(published);
-          setSelectedLandingId(published[0]?.id ?? "");
-        } else {
-          setLandingPages(MOCK_LANDING_PAGES);
-          setSelectedLandingId(MOCK_LANDING_PAGES[0]?.id ?? "");
-        }
-      } catch {
+        setLandingPages(published);
+        setSelectedLandingId(published[0]?.id ?? "");
+      } catch (reason) {
         if (cancelled) return;
-        setLandingPages(MOCK_LANDING_PAGES);
-        setSelectedLandingId(MOCK_LANDING_PAGES[0]?.id ?? "");
+        setLandingPages([]);
+        setSelectedLandingId("");
+        setErrorMessage(reason instanceof Error ? reason.message : "选型页加载失败，请稍后重试。");
       } finally {
         if (!cancelled) setLandingLoading(false);
       }

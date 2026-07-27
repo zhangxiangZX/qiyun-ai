@@ -22,6 +22,9 @@ type SubmitBody = {
   company?: string;
   need?: string;
   files?: string[];
+  consentAccepted?: boolean;
+  consentAcceptedAt?: string;
+  consentVersion?: string;
 };
 
 function normalizeSubmitBody(raw: SubmitBody): {
@@ -31,6 +34,9 @@ function normalizeSubmitBody(raw: SubmitBody): {
   contactEmail?: string;
   attachmentIds?: string[];
   source?: string;
+  consentAccepted?: boolean;
+  consentAcceptedAt?: string;
+  consentVersion?: string;
 } {
   const answers: Record<string, string> = { ...(raw.answers ?? {}) };
   if (raw.product && !answers.product) answers.product = raw.product;
@@ -55,6 +61,9 @@ function normalizeSubmitBody(raw: SubmitBody): {
     contactEmail,
     attachmentIds: raw.attachmentIds,
     source,
+    consentAccepted: raw.consentAccepted,
+    consentAcceptedAt: raw.consentAcceptedAt,
+    consentVersion: raw.consentVersion,
   };
 }
 
@@ -79,6 +88,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (!normalized.contactName || !normalized.contactPhone) {
     return NextResponse.json({ message: "请填写联系人和手机号" }, { status: 400 });
   }
+  if (
+    normalized.consentAccepted !== true ||
+    !normalized.consentVersion ||
+    !normalized.consentAcceptedAt ||
+    !Number.isFinite(Date.parse(normalized.consentAcceptedAt))
+  ) {
+    return NextResponse.json({ message: "请阅读并同意用户协议和隐私政策" }, { status: 400 });
+  }
 
   try {
     const upstream = await fetch(
@@ -94,6 +111,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
           contactEmail: normalized.contactEmail,
           attachmentIds: normalized.attachmentIds,
           source: normalized.source,
+          consentAccepted: true,
+          consentAcceptedAt: normalized.consentAcceptedAt,
+          consentVersion: normalized.consentVersion,
         }),
         cache: "no-store",
       },

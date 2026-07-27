@@ -1,11 +1,17 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { InMemorySelectionPagesRepository } from "./selection-pages.repository";
-import { SelectionPagesService } from "./selection-pages.service";
+import { resolveSelectionAcquisitionSource, SelectionPagesService } from "./selection-pages.service";
 
 function buildService() {
   return new SelectionPagesService(new InMemorySelectionPagesRepository());
 }
+
+const CONSENT = {
+  consentAccepted: true,
+  consentAcceptedAt: "2026-07-22T00:00:00.000Z",
+  consentVersion: "privacy-v1.0",
+} as const;
 
 describe("SelectionPagesService", () => {
   it("creates a page with default draft status and auto-generated slug", async () => {
@@ -85,11 +91,27 @@ describe("SelectionPagesService", () => {
     const svc = buildService();
     const created = await svc.create("ws-1", { name: "Sub", slug: "sub-page" });
     await svc.update("ws-1", created.id, { status: "published" });
-    const sub = await svc.submit("sub-page", { answers: { q1: "a1" }, contactName: "Alice" });
+    const sub = await svc.submit("sub-page", { answers: { q1: "a1" }, contactName: "Alice", ...CONSENT });
     assert.ok(sub.id.startsWith("ss_"));
     assert.strictEqual(sub.selectionPageId, created.id);
-    assert.deepStrictEqual(sub.answers, { q1: "a1" });
+    assert.deepStrictEqual(sub.answers, {
+      q1: "a1",
+      source: "selection:sub-page",
+      consentAcceptedAt: CONSENT.consentAcceptedAt,
+      consentVersion: CONSENT.consentVersion,
+    });
     assert.strictEqual(sub.contactName, "Alice");
+  });
+
+  it("normalizes WeChat and sales-link acquisition sources", () => {
+    assert.deepStrictEqual(resolveSelectionAcquisitionSource("wechat_official_account", "cabinet"), {
+      sourceType: "wechat",
+      sourceCode: "wechat_official_account",
+    });
+    assert.deepStrictEqual(resolveSelectionAcquisitionSource("sales_link:expo-2026", "cabinet"), {
+      sourceType: "sales_link",
+      sourceCode: "sales_link:expo-2026",
+    });
   });
 
   it("submit rejects for draft page", async () => {
@@ -112,15 +134,25 @@ describe("SelectionPagesService", () => {
     );
   });
 
+  it("submit rejects when privacy consent is missing", async () => {
+    const svc = buildService();
+    const created = await svc.create("ws-1", { name: "Consent", slug: "consent-page" });
+    await svc.update("ws-1", created.id, { status: "published" });
+    await assert.rejects(
+      () => svc.submit("consent-page", { answers: {} }),
+      { name: "SelectionPagesAccessError" },
+    );
+  });
+
   it("listSubmissions returns only submissions for the given page", async () => {
     const svc = buildService();
     const p1 = await svc.create("ws-1", { name: "P1", slug: "p1" });
     const p2 = await svc.create("ws-1", { name: "P2", slug: "p2" });
     await svc.update("ws-1", p1.id, { status: "published" });
     await svc.update("ws-1", p2.id, { status: "published" });
-    await svc.submit("p1", { answers: { a: "1" } });
-    await svc.submit("p1", { answers: { b: "2" } });
-    await svc.submit("p2", { answers: { c: "3" } });
+    await svc.submit("p1", { answers: { a: "1" }, ...CONSENT });
+    await svc.submit("p1", { answers: { b: "2" }, ...CONSENT });
+    await svc.submit("p2", { answers: { c: "3" }, ...CONSENT });
 
     const subs1 = await svc.listSubmissions("ws-1", p1.id);
     assert.strictEqual(subs1.length, 2);

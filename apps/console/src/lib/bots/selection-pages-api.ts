@@ -37,6 +37,7 @@ interface SelectionPageApiItem {
     theme?: { primaryColor?: string };
     botId?: string;
     siteKey?: string;
+    publicConfig?: Record<string, unknown>;
   };
 }
 
@@ -78,6 +79,7 @@ export async function createSelectionPage(input: {
   primaryColor?: string | null;
   botId?: string | null;
   siteKey?: string | null;
+  publicConfig?: Record<string, unknown>;
 }): Promise<SelectionPageView> {
   const item = await apiRequest<SelectionPageApiItem>("/selection-pages", {
     method: "POST",
@@ -91,6 +93,7 @@ export async function createSelectionPage(input: {
         theme: input.primaryColor ? { primaryColor: input.primaryColor } : undefined,
         ...(input.botId ? { botId: input.botId } : {}),
         ...(input.siteKey ? { siteKey: input.siteKey } : {}),
+        ...(input.publicConfig ? { publicConfig: input.publicConfig } : {}),
       },
     },
   });
@@ -108,6 +111,7 @@ export async function updateSelectionPage(
     primaryColor?: string | null;
     botId?: string | null;
     siteKey?: string | null;
+    publicConfig?: Record<string, unknown>;
   },
 ): Promise<SelectionPageView> {
   const body: Record<string, unknown> = {};
@@ -119,7 +123,8 @@ export async function updateSelectionPage(
     input.questions !== undefined ||
     input.primaryColor !== undefined ||
     input.botId !== undefined ||
-    input.siteKey !== undefined
+    input.siteKey !== undefined ||
+    input.publicConfig !== undefined
   ) {
     body.config = {
       ...(input.questions !== undefined ? { questions: input.questions } : {}),
@@ -128,6 +133,7 @@ export async function updateSelectionPage(
         : {}),
       ...(input.botId !== undefined ? { botId: input.botId || undefined } : {}),
       ...(input.siteKey !== undefined ? { siteKey: input.siteKey || undefined } : {}),
+      ...(input.publicConfig !== undefined ? { publicConfig: input.publicConfig } : {}),
     };
   }
   const item = await apiRequest<SelectionPageApiItem>(`/selection-pages/${encodeURIComponent(id)}`, {

@@ -2,37 +2,27 @@ import { randomUUID } from "node:crypto";
 import { SelectionPagesAccessError, type SelectionPagesRepository } from "./selection-pages.repository";
 import type { SelectionPageConfig } from "./selection-pages.types";
 import type { SalesService } from "../sales/sales.service";
-import type { SourceType } from "../sales/sales.types";
 import type { CalendarApi } from "../calendar/calendar.api";
 import type { FileVaultRepository } from "../file-vault/file-vault.repository";
+import type { SourceType } from "../sales/sales.types";
 
 export { SelectionPagesAccessError };
 
-function mapAcquisitionSource(
+export function resolveSelectionAcquisitionSource(
+  source: string | undefined,
   slug: string,
-  source?: string | null,
 ): { sourceType: SourceType; sourceCode: string } {
-  const raw = (source ?? "").trim();
-  const key = raw.toLowerCase();
-  if (!key) {
-    return { sourceType: "website", sourceCode: `selection:${slug}` };
+  const normalized = source?.trim().toLowerCase().replace(/[^a-z0-9:_-]/g, "").slice(0, 64);
+  if (!normalized) return { sourceType: "website", sourceCode: `selection:${slug}` };
+  if (normalized === "wechat" || normalized === "wechat_official_account") {
+    return { sourceType: "wechat", sourceCode: normalized };
   }
-  if (key.includes("douyin") || key === "dy" || key === "抖音") {
-    return { sourceType: "douyin", sourceCode: raw };
+  if (normalized === "sales_link" || normalized.startsWith("sales_link:")) {
+    return { sourceType: "sales_link", sourceCode: normalized };
   }
-  if (key.includes("wechat") || key === "wx" || key.includes("微信")) {
-    return { sourceType: "wechat", sourceCode: raw };
-  }
-  if (key.includes("expo") || key.includes("扫码") || key.includes("展会")) {
-    return { sourceType: "expo", sourceCode: raw };
-  }
-  if (key.includes("sales") || key.includes("link") || key.includes("销售")) {
-    return { sourceType: "sales_link", sourceCode: raw };
-  }
-  if (key === "website" || key.includes("官网")) {
-    return { sourceType: "website", sourceCode: raw };
-  }
-  return { sourceType: "other", sourceCode: raw };
+  if (normalized === "douyin") return { sourceType: "douyin", sourceCode: normalized };
+  if (normalized === "expo") return { sourceType: "expo", sourceCode: normalized };
+  return { sourceType: "website", sourceCode: normalized };
 }
 
 export class SelectionPagesService {
@@ -85,7 +75,12 @@ export class SelectionPagesService {
       const conflict = await this.repo.findBySlug(patch.slug);
       if (conflict && conflict.id !== id) throw new SelectionPagesAccessError("Slug taken.");
     }
-    return this.repo.upsert({ ...existing, ...patch, updatedAt: new Date().toISOString() });
+    return this.repo.upsert({
+      ...existing,
+      ...patch,
+      config: patch.config ? { ...existing.config, ...patch.config } : existing.config,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   async delete(workspaceId: string, id: string) {
@@ -93,40 +88,37 @@ export class SelectionPagesService {
     return this.repo.delete(workspaceId, id);
   }
 
-  async submit(
-    slug: string,
-    submission: {
-      answers: Record<string, string>;
-      contactName?: string;
-      contactPhone?: string;
-      contactEmail?: string;
-      attachmentIds?: string[];
-      source?: string | null;
-    },
-  ) {
+  async submit(slug: string, submission: { answers: Record<string, string>; contactName?: string; contactPhone?: string; contactEmail?: string; attachmentIds?: string[]; source?: string; consentAccepted?: boolean; consentAcceptedAt?: string; consentVersion?: string }) {
     const page = await this.repo.findBySlug(slug);
     if (!page || page.status !== "published") throw new SelectionPagesAccessError("Not found or not published.");
+    if (
+      submission.consentAccepted !== true ||
+      !submission.consentVersion?.trim() ||
+      !submission.consentAcceptedAt ||
+      !Number.isFinite(Date.parse(submission.consentAcceptedAt))
+    ) {
+      throw new SelectionPagesAccessError("Privacy consent is required.");
+    }
     const attachmentIds = [...new Set(submission.attachmentIds ?? [])];
     if (this.files && attachmentIds.some((id) => !this.files!.getMeta(page.workspaceId, id))) {
       throw new SelectionPagesAccessError("Selection attachment not found in workspace.");
     }
     const summary = Object.entries(submission.answers).map(([key, value]) => `${key}: ${value}`).join("\n");
-    const answerSource = submission.answers?.source?.trim() || null;
-    const channel = mapAcquisitionSource(slug, submission.source ?? answerSource);
+    const acquisition = resolveSelectionAcquisitionSource(submission.source ?? submission.answers.source, page.slug);
     const inquiry = this.sales ? await this.sales.createInquiry(page.workspaceId, {
       customerName: submission.contactName?.trim() || "AI选型客户",
       customerContact: submission.contactName?.trim() || null,
       phone: submission.contactPhone?.trim() || null,
       email: submission.contactEmail?.trim() || null,
-      sourceType: channel.sourceType,
-      sourceCode: channel.sourceCode,
+      sourceType: acquisition.sourceType,
+      sourceCode: acquisition.sourceCode,
       summary,
       productNeed: summary,
       knownFields: {
         selectionPageId: page.id,
         selectionPageName: page.name,
+        acquisitionSource: acquisition.sourceCode,
         attachmentIds: attachmentIds.join(","),
-        acquisitionSource: channel.sourceCode,
       },
     }) : null;
     const start = new Date(Date.now() + 30 * 60 * 1000);
@@ -143,7 +135,12 @@ export class SelectionPagesService {
     return this.repo.createSubmission({
       id: `ss_${randomUUID()}`,
       selectionPageId: page.id,
-      answers: submission.answers,
+      answers: {
+        ...submission.answers,
+        source: acquisition.sourceCode,
+        consentAcceptedAt: new Date(submission.consentAcceptedAt).toISOString(),
+        consentVersion: submission.consentVersion.trim(),
+      },
       contactName: submission.contactName ?? null,
       contactPhone: submission.contactPhone ?? null,
       contactEmail: submission.contactEmail ?? null,

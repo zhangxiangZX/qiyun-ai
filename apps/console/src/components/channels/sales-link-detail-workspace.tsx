@@ -124,8 +124,8 @@ export function SalesLinkDetailWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const mode = await fetchConsoleMode().catch(() => null);
-      const preview = mode ? isPreviewMode(mode) : true;
+      const mode = await fetchConsoleMode();
+      const preview = isPreviewMode(mode);
       setIsPreview(preview);
       if (preview) {
         const nextLink = await getSalesLinkById(linkId);
@@ -154,23 +154,12 @@ export function SalesLinkDetailWorkspace() {
         const logs = await getSalesLinkScanLogs(linkId);
         setScanLogs(logs);
       } catch {
-        setScanLogs(buildMockScanLogs(linkId));
+        setScanLogs([]);
+        setStatusError("访问记录加载失败，请稍后刷新。");
       }
     } catch (nextError) {
-      const fallback =
-        mockSalesLinks.find((entry) => entry.id === linkId) ?? mockSalesLinks[0] ?? null;
-      setLink(
-        fallback
-          ? {
-              ...fallback,
-              slug: fallback.id,
-              targetUrl: null,
-              createdAt: fallback.lastUpdated,
-              updatedAt: fallback.lastUpdated,
-            }
-          : null,
-      );
-      setScanLogs(fallback ? buildMockScanLogs(fallback.id) : []);
+      setLink(null);
+      setScanLogs([]);
       setError(nextError);
     } finally {
       setLoading(false);

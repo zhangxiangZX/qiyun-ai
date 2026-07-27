@@ -63,42 +63,6 @@ const APPEARANCE_STORAGE_PREFIX = "qiyun:widget-appearance:";
 
 const THEME_COLORS = ["#2563eb", "#22c55e", "#a855f7", "#f97316", "#ef4444", "#6b7280", "linear-gradient(135deg,#60a5fa,#9333ea)"];
 
-const DEMO_SITES: WidgetSiteRow[] = [
-  {
-    id: "site_kuzimash_web",
-    botId: "",
-    name: "酷子码时官网",
-    domain: "www.kuzimash.com",
-    botName: "售前咨询助手",
-    installStatus: "installed",
-    sourceId: "site_kuzimash_web",
-    enabled: true,
-    lastSeenAt: "2026-07-11T18:42:00.000Z",
-  },
-  {
-    id: "site_kuzimash_m",
-    botId: "",
-    name: "酷子码时官网（移动）",
-    domain: "m.kuzimash.com",
-    botName: "移动端客服助手",
-    installStatus: "pending",
-    sourceId: "site_kuzimash_m",
-    enabled: true,
-    lastSeenAt: null,
-  },
-  {
-    id: "site_qiyun_demo",
-    botId: "",
-    name: "企云 AI 演示站",
-    domain: "demo.qiyun.ai",
-    botName: "通用咨询助手",
-    installStatus: "installed",
-    sourceId: "site_qiyun_demo",
-    enabled: true,
-    lastSeenAt: "2026-07-11T12:05:00.000Z",
-  },
-];
-
 const DEFAULT_EMBED = `<script>
 function(w,d,s,o){
   QIYUN_WIDGET=w;
@@ -173,8 +137,8 @@ function saveAppearancePrefs(siteId: string, prefs: WidgetAppearancePrefs) {
 export function WebsiteWidgetWorkspace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
-  const [sites, setSites] = useState<WidgetSiteRow[]>(DEMO_SITES);
-  const [selectedId, setSelectedId] = useState(DEMO_SITES[0].id);
+  const [sites, setSites] = useState<WidgetSiteRow[]>([]);
+  const [selectedId, setSelectedId] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [rechecking, setRechecking] = useState(false);
   const [creatingSite, setCreatingSite] = useState(false);
@@ -183,12 +147,12 @@ export function WebsiteWidgetWorkspace() {
   const [defaultBotId, setDefaultBotId] = useState("");
   const [siteForm, setSiteForm] = useState<{ name: string; domain: string }>({ name: "", domain: "" });
 
-  const [siteName, setSiteName] = useState("酷子码时官网");
-  const [boundBot, setBoundBot] = useState("售前咨询助手");
-  const [domainWhitelist, setDomainWhitelist] = useState("www.kuzimash.com, *.kuzimash.com");
+  const [siteName, setSiteName] = useState("");
+  const [boundBot, setBoundBot] = useState("");
+  const [domainWhitelist, setDomainWhitelist] = useState("");
   const [position, setPosition] = useState<WidgetPosition>("br");
   const [welcomeMessage, setWelcomeMessage] = useState("您好！我是企云 AI 客服助手，很高兴为您服务！");
-  const [sourceId, setSourceId] = useState("site_kuzimash_web");
+  const [sourceId, setSourceId] = useState("");
   const [widgetEnabled, setWidgetEnabled] = useState(true);
 
   const [themeColor, setThemeColor] = useState("#2563eb");
@@ -203,14 +167,17 @@ export function WebsiteWidgetWorkspace() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setSites([]);
+    setSelectedId("");
     try {
       const [apiSites, bots] = await Promise.all([
         listSites(),
         import("@/lib/bots/api").then((m) => m.listBotsFromApi()).catch(() => []),
       ]);
       if (bots.length > 0) setDefaultBotId(bots[0].id);
-      if (apiSites.length > 0) {
-        const mapped = apiSites.map(mapApiSite);
+      const mapped = apiSites.map(mapApiSite);
+      setSites(mapped);
+      if (mapped.length > 0) {
         const checks = await Promise.all(mapped.map((site) => checkSiteInstallOnApi(site.id).catch(() => null)));
         checks.forEach((check, index) => {
           if (!mapped[index]) return;
@@ -237,6 +204,8 @@ export function WebsiteWidgetWorkspace() {
           setAutoPopupDelay(prefs.autoPopupDelay);
           setFirstWelcome(prefs.firstWelcome);
         }
+      } else {
+        setSelectedId("");
       }
     } catch (reason) {
       setError(reason);
@@ -255,7 +224,9 @@ export function WebsiteWidgetWorkspace() {
 
   const selected = useMemo(() => sites.find((s) => s.id === selectedId) ?? sites[0], [sites, selectedId]);
 
-  const embedCode = selected?.embedSnippet?.trim() || DEFAULT_EMBED.replace("site_kuzimash_web", selected?.sourceId ?? "site_kuzimash_web");
+  const embedCode = selected
+    ? selected.embedSnippet?.trim() || DEFAULT_EMBED.replace("site_kuzimash_web", selected.sourceId)
+    : "";
 
   const enabledCount = sites.filter((s) => s.enabled).length;
   const pendingCount = sites.filter((s) => s.installStatus === "pending").length;
@@ -584,7 +555,7 @@ export function WebsiteWidgetWorkspace() {
         >
           <div className="bg-card rounded-card" style={{ width: "100%", maxWidth: 480, padding: 24 }}>
             <h3 className="text-foreground" style={{ margin: "0 0 4px", fontSize: 16 }}>接入新站点</h3>
-            <p className="text-muted-foreground" style={{ margin: "0 0 16px", fontSize: 12 }}>演示模式：创建的数据仅在本次会话内可见</p>
+            <p className="text-muted-foreground" style={{ margin: "0 0 16px", fontSize: 12 }}>创建后请复制安装代码并完成域名检测。</p>
             <div className={styles.field}>
               <label>站点名称</label>
               <input
@@ -840,7 +811,7 @@ export function WebsiteWidgetWorkspace() {
               <div className={styles.previewLabel}>桌面端预览（示例页面）</div>
               <div className={styles.browserFrame}>
                 <div className={styles.browserBar}>
-                  <Lock size={10} /> {selected.domain}
+                  <Lock size={10} /> {selected?.domain ?? "尚未绑定域名"}
                 </div>
                 <div className={styles.browserBody}>
                   <div className={styles.demoTitle}>让 AI 客服更智能</div>
@@ -865,7 +836,7 @@ export function WebsiteWidgetWorkspace() {
               <div className={styles.previewLabel}>移动端预览（示例页面）</div>
               <div className={`${styles.browserFrame} ${styles.mobileFrame}`}>
                 <div className={styles.browserBar} style={{ justifyContent: "center", fontSize: 10 }}>
-                  m.{selected.domain.replace(/^www\./, "")}
+                  {selected ? `m.${selected.domain.replace(/^www\./, "")}` : "尚未绑定域名"}
                 </div>
                 <div className={styles.browserBodyMobile}>
                   <div className={styles.demoTitle} style={{ fontSize: 12 }}>

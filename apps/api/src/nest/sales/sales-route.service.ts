@@ -335,6 +335,12 @@ export class SalesRouteService {
           estimatedAmount?: number | null;
           templateId?: string | null;
           details?: import("../../sales/sales.types").QuoteDetails | null;
+          lineItems?: import("../../sales/sales.types").QuoteDetails["lineItems"];
+          taxRate?: number;
+          freightAmount?: number;
+          installationAmount?: number;
+          otherAmount?: number;
+          currency?: string;
         }>(request);
         const created = await this.runtime.salesApi.createQuoteOpportunity(context, {
           inquiryId: body.inquiryId ?? "",
@@ -342,6 +348,12 @@ export class SalesRouteService {
           estimatedAmount: body.estimatedAmount ?? null,
           templateId: body.templateId ?? null,
           details: body.details ?? null,
+          lineItems: body.lineItems,
+          taxRate: body.taxRate,
+          freightAmount: body.freightAmount,
+          installationAmount: body.installationAmount,
+          otherAmount: body.otherAmount,
+          currency: body.currency,
         });
         await this.runtime.persist();
         return ok(created);
