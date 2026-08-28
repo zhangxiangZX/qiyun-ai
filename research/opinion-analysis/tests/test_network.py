@@ -17,6 +17,8 @@ def test_centrality_for_leaders(tmp_path: Path):
     }
     assert len(table) == len(leaders)
     assert table["degree_centrality"].max() > 0
+    assert table["betweenness_centrality"].max() > 0
+    assert table["closeness_centrality"].max() > 0
     gexf = export_gexf(graph, tmp_path / "network.gexf")
     assert gexf.exists()
     assert "<graph" in gexf.read_text(encoding="utf-8")

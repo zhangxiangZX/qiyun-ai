@@ -84,6 +84,9 @@ def build_sample(n_leaders: int = 12, n_comments: int = 96, seed: int = RANDOM_S
         if j % 4 == 0:
             mid = leaders[(j + 3) % n_leaders]
             edges.append({"source_id": src, "target_id": mid, "relation": "mention"})
+    for i in range(n_leaders - 1):
+        edges.append({"source_id": leaders[i], "target_id": leaders[i + 1], "relation": "mention"})
+    edges.append({"source_id": leaders[-1], "target_id": leaders[0], "relation": "retweet"})
     edges_df = pd.DataFrame(edges)
 
     n = 180
